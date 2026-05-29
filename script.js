@@ -373,6 +373,30 @@ function sortedSources(name) {
 // ============================================================
 //  RENDER CHARTS
 // ============================================================
+function interestScore(country) {
+  const total = country.latestTotal;        // TWh generated
+  const dpc   = country.latestDpc ?? 0;    // MWh/capita
+
+  // Reward high generation OR high per-capita (interesting either way)
+  const generationScore = Math.log10(Math.max(total, 1));   // log scale so China doesn't dominate
+  const dpcScore        = Math.log10(Math.max(dpc * 10, 1));
+
+  // Penalise very tiny generators with low dpc (uninteresting)
+  const penalty = (total < 5 && dpc < 1) ? 0.2 : 1;
+
+  return (generationScore + dpcScore) * penalty;
+}
+
+function weightedRandomCountry() {
+  const scores = COUNTRIES.map(c => interestScore(c));
+  const total  = scores.reduce((a, b) => a + b, 0);
+  let   rand   = Math.random() * total;
+  for (let i = 0; i < COUNTRIES.length; i++) {
+    rand -= scores[i];
+    if (rand <= 0) return COUNTRIES[i];
+  }
+  return COUNTRIES[COUNTRIES.length - 1];
+}
 
 function renderCharts() {
   const info       = ALL_DATA[target.name];
@@ -807,7 +831,7 @@ function setupAutocomplete() {
 // ============================================================
 
 function newGame() {
-  target   = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];
+  target = weightedRandomCountry();
   guesses  = [];
   gameOver = false;
 
