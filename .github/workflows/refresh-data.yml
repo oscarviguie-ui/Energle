@@ -1,0 +1,38 @@
+name: Refresh Ember Data
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'   # 1st of every month at 6am UTC
+  workflow_dispatch:        # lets you trigger it manually from GitHub UI
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Download latest Ember CSV
+        run: |
+          curl -L "https://storage.googleapis.com/emb-prod-bkt-publicdata/public-downloads/yearly_full_release_long_format.csv" \
+            -o yearly_full_release_long_format.csv
+
+      - name: Rebuild energle_data.json
+        run: python scripts/refresh_data.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add energle_data.json
+          git diff --staged --quiet || git commit -m "Auto-refresh: Ember data $(date +'%Y-%m')"
+          git push
