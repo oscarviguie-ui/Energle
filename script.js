@@ -223,7 +223,7 @@ function modeSwitcherHTML() {
   const dailyActive    = MODE === 'normal'   ? 'active' : '';
   const practiceActive = MODE === 'practice' ? 'active' : '';
   const lockedClass    = locked ? 'locked' : '';
-  const lockIcon       = locked ? ' \uD83D\uDD12' : '';
+  const lockIcon       = locked ? ' 🔒' : '';
   return '<div class="mode-switcher">'
     + '<button class="mode-btn ' + dailyActive + '" onclick="switchMode(\'normal\')">Daily</button>'
     + '<button class="mode-btn ' + practiceActive + ' ' + lockedClass + '" onclick="switchMode(\'practice\')">Practice' + lockIcon + '</button>'
@@ -357,7 +357,7 @@ function renderGameScreen() {
     + '<button id="submit-btn">Guess</button>'
     + '</div>'
 
-    + '<button id="new-game-btn" style="display:none">' + (isPractice ? 'Next puzzle \u21ba' : 'Come back tomorrow \uD83C\uDF19') + '</button>'
+    + '<button id="new-game-btn" style="display:none">' + (isPractice ? 'Next puzzle \u21ba' : 'Come back tomorrow 🌙') + '</button>'
 
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
 
@@ -812,7 +812,7 @@ function showBanner(won) {
   const div     = document.createElement('div');
   div.className = won ? 'win' : 'lose';
   div.textContent = won
-    ? '\uD83C\uDF89 Correct in ' + guesses.length + (guesses.length === 1 ? ' guess!' : ' guesses!')
+    ? '🎉 Correct in ' + guesses.length + (guesses.length === 1 ? ' guess!' : ' guesses!')
     : '\u274C The answer was ' + target.name + (MODE === 'practice' ? '. Keep practising!' : '. Better luck tomorrow!');
   banner.innerHTML = '';
   banner.appendChild(div);
