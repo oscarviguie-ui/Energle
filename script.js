@@ -318,18 +318,22 @@ function startPractice(catId) {
 //  RENDER HELPERS
 // ============================================================
 
+function modeSwitcherHTML() {
+  const locked         = !practiceUnlocked();
+  const dailyActive    = MODE === 'normal'   ? 'active' : '';
+  const practiceActive = MODE === 'practice' ? 'active' : '';
+  const lockedClass    = locked ? 'locked' : '';
+  const lockIcon       = locked ? ' 🔒' : '';
+  return '<div class="mode-switcher">'
+    + '<button class="mode-btn ' + dailyActive + '" onclick="switchMode('normal')">Daily</button>'
+    + '<button class="mode-btn ' + practiceActive + ' ' + lockedClass + '" onclick="switchMode('practice')">'
+    + 'Practice' + lockIcon
+    + '</button>'
+    + '</div>';
+}
+
 function modeSwitcher() {
-  const locked = !practiceUnlocked();
-  return `
-    <div class="mode-switcher">
-      <button class="mode-btn ${MODE === 'normal' ? 'active' : ''}"
-        onclick="switchMode('normal')">Daily</button>
-      <button class="mode-btn ${MODE === 'practice' ? 'active' : ''} ${locked ? 'locked' : ''}"
-        onclick="switchMode('practice')">
-        Practice${locked ? ' 🔒' : ''}
-      </button>
-    </div>
-  `;
+  return modeSwitcherHTML();
 }
 
 function practiceSubtitle() {
@@ -339,9 +343,11 @@ function practiceSubtitle() {
 }
 
 function renderGameScreen() {
-  const subtitle = MODE === 'practice'
+  const isPractice   = MODE === 'practice';
+  const subtitle     = isPractice
     ? practiceSubtitle()
-    : `Puzzle #${getDayNumber()} · Guess the country from its electricity generation mix`;
+    : 'Puzzle #' + getDayNumber() + ' · Guess the country from its electricity generation mix';
+  const backBtn      = isPractice ? '<button id="back-to-categories">← Categories</button>' : '';
 
   document.getElementById('app').innerHTML = `
     <header>
@@ -351,7 +357,7 @@ function renderGameScreen() {
       </div>
       <div class="subtitle-row">
         <p class="subtitle">${subtitle}</p>
-        ${MODE === 'practice' ? '<button id="back-to-categories">← Categories</button>' : ''}
+        ${backBtn}
       </div>
     </header>
 
@@ -953,11 +959,14 @@ function endGame() {
   document.getElementById('input-area').style.display   = 'none';
   document.getElementById('new-game-btn').style.display = 'block';
 
-  // Re-render the mode switcher so Practice button unlocks immediately
+  // Replace the mode-switcher element so Practice button unlocks immediately
   if (MODE === 'normal') {
     const switcher = document.querySelector('.mode-switcher');
-    if (switcher) switcher.outerHTML = modeSwitcher();
-    document.querySelector('.mode-switcher').outerHTML = modeSwitcher();
+    if (switcher) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = modeSwitcherHTML();
+      switcher.replaceWith(tmp.firstElementChild);
+    }
   }
 }
 
