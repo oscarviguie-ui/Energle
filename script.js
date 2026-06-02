@@ -43,10 +43,10 @@ const PRACTICE_CATEGORIES = [
 
 // ============================================================
 //  DAILY PUZZLE — epoch & numbering
-//  Puzzle #1 = 2026-06-02 UTC. Increments at midnight UTC.
+//  Puzzle #1 = 2025-06-02 UTC. Increments at midnight UTC.
 // ============================================================
 
-const EPOCH_DATE = new Date(Date.UTC(2025, 5, 2)); // June 2 2025
+const EPOCH_DATE = new Date(Date.UTC(2026, 5, 2)); // June 2 2026
 
 function getDayNumber() {
   const now      = new Date();
