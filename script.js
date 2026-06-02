@@ -24,6 +24,10 @@ const COLORS = {
 
 // ============================================================
 //  PRACTICE CATEGORIES
+//  Continent strings from Ember CSV:
+//    Africa | Asia | Europe | North America | South America | Oceania
+//  Americas category combines North + South America.
+//  Asia & Pacific category combines Asia + Oceania.
 // ============================================================
 
 const PRACTICE_CATEGORIES = [
@@ -101,17 +105,68 @@ let PRACTICE_CAT = null;     // active category id in practice mode
 
 // ============================================================
 //  PRACTICE GATE
-//  Practice is only accessible once the daily game is over
-//  (either won or all guesses exhausted) in the current session.
-//  This will be persisted via localStorage when the daily seed
-//  system is implemented.
 // ============================================================
 
 function practiceUnlocked() {
-  // Unlocked if: we finished the daily (gameOver=true in normal mode),
-  // OR we are already in practice mode (stay unlocked once in)
   return gameOver || MODE === 'practice';
 }
+
+// ============================================================
+//  ISO3 → CONTINENT FALLBACK
+//  Used when the JSON pre-dates the continent field (i.e. before
+//  build_json.py is re-run with the Ember CSV Continent column).
+//  Once the JSON is rebuilt this map is still consulted as a
+//  safety net for any country that comes through with a null.
+// ============================================================
+
+const ISO3_CONTINENT = {
+  // Europe
+  'ALB':'Europe','ARM':'Europe','AUT':'Europe','AZE':'Europe','BLR':'Europe',
+  'BEL':'Europe','BIH':'Europe','BGR':'Europe','HRV':'Europe','CYP':'Europe',
+  'CZE':'Europe','DNK':'Europe','EST':'Europe','FIN':'Europe','FRA':'Europe',
+  'GEO':'Europe','DEU':'Europe','GRC':'Europe','HUN':'Europe','ISL':'Europe',
+  'IRL':'Europe','ITA':'Europe','XKX':'Europe','LVA':'Europe','LTU':'Europe',
+  'LUX':'Europe','MLT':'Europe','MDA':'Europe','MNE':'Europe','NLD':'Europe',
+  'MKD':'Europe','NOR':'Europe','POL':'Europe','PRT':'Europe','ROU':'Europe',
+  'RUS':'Europe','SRB':'Europe','SVK':'Europe','SVN':'Europe','ESP':'Europe',
+  'SWE':'Europe','CHE':'Europe','UKR':'Europe','GBR':'Europe',
+  // Africa
+  'DZA':'Africa','AGO':'Africa','BEN':'Africa','BWA':'Africa','BFA':'Africa',
+  'BDI':'Africa','CPV':'Africa','CMR':'Africa','CAF':'Africa','TCD':'Africa',
+  'COM':'Africa','COD':'Africa','COG':'Africa','CIV':'Africa','DJI':'Africa',
+  'EGY':'Africa','GNQ':'Africa','ERI':'Africa','SWZ':'Africa','ETH':'Africa',
+  'GAB':'Africa','GMB':'Africa','GHA':'Africa','GIN':'Africa','GNB':'Africa',
+  'KEN':'Africa','LSO':'Africa','LBR':'Africa','LBY':'Africa','MDG':'Africa',
+  'MWI':'Africa','MLI':'Africa','MRT':'Africa','MUS':'Africa','MAR':'Africa',
+  'MOZ':'Africa','NAM':'Africa','NER':'Africa','NGA':'Africa','RWA':'Africa',
+  'SEN':'Africa','SLE':'Africa','SOM':'Africa','ZAF':'Africa','SSD':'Africa',
+  'SDN':'Africa','TZA':'Africa','TGO':'Africa','TUN':'Africa','UGA':'Africa',
+  'ZMB':'Africa','ZWE':'Africa',
+  // Asia
+  'AFG':'Asia','BHR':'Asia','BGD':'Asia','BTN':'Asia','BRN':'Asia',
+  'KHM':'Asia','CHN':'Asia','IND':'Asia','IDN':'Asia','IRN':'Asia',
+  'IRQ':'Asia','ISR':'Asia','JPN':'Asia','JOR':'Asia','KAZ':'Asia',
+  'PRK':'Asia','KOR':'Asia','KWT':'Asia','KGZ':'Asia','LAO':'Asia',
+  'LBN':'Asia','MYS':'Asia','MDV':'Asia','MNG':'Asia','MMR':'Asia',
+  'NPL':'Asia','OMN':'Asia','PAK':'Asia','PHL':'Asia','QAT':'Asia',
+  'SAU':'Asia','SGP':'Asia','LKA':'Asia','SYR':'Asia','TWN':'Asia',
+  'TJK':'Asia','THA':'Asia','TLS':'Asia','TKM':'Asia','ARE':'Asia',
+  'UZB':'Asia','VNM':'Asia','YEM':'Asia','PSE':'Asia',
+  // Oceania
+  'AUS':'Oceania','NZL':'Oceania','FJI':'Oceania','PNG':'Oceania',
+  // North America
+  'BHS':'North America','BLZ':'North America','CAN':'North America',
+  'CRI':'North America','CUB':'North America','DOM':'North America',
+  'SLV':'North America','GTM':'North America','HTI':'North America',
+  'HND':'North America','JAM':'North America','MEX':'North America',
+  'NIC':'North America','PAN':'North America','PRI':'North America',
+  'TTO':'North America','USA':'North America',
+  // South America
+  'ARG':'South America','BOL':'South America','BRA':'South America',
+  'CHL':'South America','COL':'South America','ECU':'South America',
+  'GUY':'South America','PRY':'South America','PER':'South America',
+  'SUR':'South America','URY':'South America','VEN':'South America',
+};
 
 // ============================================================
 //  LOAD DATA
@@ -139,7 +194,7 @@ async function loadData() {
       iso3:         info.iso3,
       lat:          info.lat,
       lng:          info.lng,
-      continent:    info.continent ?? null,
+      continent:    info.continent ?? ISO3_CONTINENT[info.iso3] ?? null,
       latestYear:   latest,
       latestDpc:    info.latestDpc,
       latestTotal:  total,
@@ -157,9 +212,7 @@ async function loadData() {
 // ============================================================
 
 function switchMode(mode) {
-  // Block practice if daily not yet complete
   if (mode === 'practice' && !practiceUnlocked()) {
-    // Flash the practice button red to signal it's locked
     const btn = document.querySelector('.mode-btn.locked');
     if (btn) {
       btn.classList.add('locked-flash');
@@ -334,13 +387,7 @@ function renderGameScreen() {
   `;
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
-  document.getElementById('new-game-btn').addEventListener('click', () => {
-    if (MODE === 'practice') {
-      newGame();
-    } else {
-      newGame();
-    }
-  });
+  document.getElementById('new-game-btn').addEventListener('click', () => newGame());
   setupAutocomplete();
 }
 
@@ -832,7 +879,6 @@ function endGame() {
   if (MODE === 'normal') {
     const switcher = document.querySelector('.mode-switcher');
     if (switcher) switcher.outerHTML = modeSwitcher();
-    // Re-attach after outerHTML replacement
     document.querySelector('.mode-switcher').outerHTML = modeSwitcher();
   }
 }
