@@ -88,6 +88,67 @@ const PRACTICE_CATEGORIES = [
 ];
 
 // ============================================================
+//  DAILY PUZZLE — epoch & numbering
+//  Puzzle #1 = 2025-06-02 UTC. Number increments at midnight UTC.
+// ============================================================
+
+const EPOCH_DATE = new Date(Date.UTC(2025, 5, 2)); // month is 0-indexed
+
+function getDayNumber() {
+  const now      = new Date();
+  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  return Math.floor((todayUTC - EPOCH_DATE.getTime()) / 86400000) + 1;
+}
+
+// Deterministic seeded RNG (mulberry32)
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function getDailyTarget(countries) {
+  const day = getDayNumber();
+  const rng = mulberry32(day * 2654435761);
+  const arr = [...countries];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr[0];
+}
+
+// ============================================================
+//  DAILY STATE — localStorage persistence
+// ============================================================
+
+const LS_KEY = 'energle_daily_v1';
+
+function loadDailyState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (saved.day !== getDayNumber()) return null;
+    return saved; // { day, guesses: [iso3, ...], gameOver }
+  } catch { return null; }
+}
+
+function saveDailyState() {
+  if (MODE !== 'normal') return;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      day:      getDayNumber(),
+      guesses:  guesses.map(g => g.iso3),
+      gameOver,
+    }));
+  } catch {}
+}
+
+// ============================================================
 //  STATE
 // ============================================================
 
@@ -108,7 +169,11 @@ let PRACTICE_CAT = null;     // active category id in practice mode
 // ============================================================
 
 function practiceUnlocked() {
-  return gameOver || MODE === 'practice';
+  // Unlocked if daily is done today (saved or current session)
+  if (MODE === 'practice') return true;
+  if (gameOver) return true;
+  const saved = loadDailyState();
+  return saved?.gameOver === true;
 }
 
 // ============================================================
@@ -229,7 +294,7 @@ function switchMode(mode) {
     POOL = COUNTRIES;
     PRACTICE_CAT = null;
     renderGameScreen();
-    newGame();
+    restoreDailyGame(); // never re-randomise — always restore today's puzzle
   } else {
     renderPracticePickerScreen();
   }
@@ -276,7 +341,7 @@ function practiceSubtitle() {
 function renderGameScreen() {
   const subtitle = MODE === 'practice'
     ? practiceSubtitle()
-    : 'Guess the country from its electricity generation mix';
+    : `Puzzle #${getDayNumber()} · Guess the country from its electricity generation mix`;
 
   document.getElementById('app').innerHTML = `
     <header>
@@ -428,7 +493,7 @@ function renderPracticePickerScreen() {
 function initApp() {
   POOL = COUNTRIES;
   renderGameScreen();
-  newGame();
+  restoreDailyGame();
 }
 
 // ============================================================
@@ -816,6 +881,8 @@ function submitGuess() {
   input.value = '';
   document.getElementById('autocomplete-list').style.display = 'none';
 
+  saveDailyState(); // persist after every guess (no-op in practice mode)
+
   if (isCorrect)                          { showBanner(true);  endGame(); }
   else if (guesses.length >= MAX_GUESSES) { showBanner(false); endGame(); }
 }
@@ -872,6 +939,7 @@ function showBanner(won) {
 
 function endGame() {
   gameOver = true;
+  saveDailyState(); // capture gameOver=true so practice unlocks on reload
   document.getElementById('input-area').style.display   = 'none';
   document.getElementById('new-game-btn').style.display = 'block';
 
@@ -925,6 +993,7 @@ function setupAutocomplete() {
 //  NEW GAME
 // ============================================================
 
+// newGame is used only for PRACTICE — picks a weighted random country.
 function newGame() {
   target   = weightedRandomCountry();
   guesses  = [];
@@ -941,6 +1010,47 @@ function newGame() {
   renderStatBar();
   renderFlowBar();
   renderCharts();
+}
+
+// restoreDailyGame — always called when entering/returning to Daily mode.
+// Picks today's seeded target and replays any saved guesses from localStorage.
+function restoreDailyGame() {
+  target   = getDailyTarget(COUNTRIES);
+  guesses  = [];
+  gameOver = false;
+
+  document.getElementById('guesses').innerHTML      = '';
+  document.getElementById('banner').innerHTML       = '';
+  document.getElementById('error').textContent      = '';
+  document.getElementById('input-area').style.display   = 'flex';
+  document.getElementById('new-game-btn').style.display = 'none';
+  document.getElementById('guess-input').value      = '';
+
+  renderLives();
+  renderStatBar();
+  renderFlowBar();
+  renderCharts();
+
+  // Replay saved guesses silently
+  const saved = loadDailyState();
+  if (saved && saved.guesses.length > 0) {
+    for (const iso3 of saved.guesses) {
+      const country = COUNTRIES.find(c => c.iso3 === iso3);
+      if (!country) continue;
+      guesses.push(country);
+      const isCorrect = country.iso3 === target.iso3;
+      addGuessRow(country, isCorrect);
+    }
+    renderLives();
+    // Restore end state if game was already over
+    if (saved.gameOver) {
+      const won = guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
+      showBanner(won);
+      gameOver = true;
+      document.getElementById('input-area').style.display   = 'none';
+      document.getElementById('new-game-btn').style.display = 'block';
+    }
+  }
 }
 
 // ============================================================
