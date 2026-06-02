@@ -264,6 +264,7 @@ function startPractice(catId) {
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
 
+  resetPracticeQueue(); // build fresh weighted queue for this category
   renderGameScreen();
   newGame();
 }
@@ -528,7 +529,12 @@ function sortedSources(name) {
 }
 
 // ============================================================
-//  WEIGHTED RANDOM (practice only)
+//  PRACTICE QUEUE
+//  Works through every country in the pool exactly once per
+//  "round" using a weighted shuffle (interesting countries
+//  slightly earlier). Countries guessed wrong are appended
+//  to a retry list played after the main round completes.
+//  This ensures full coverage with no repeats mid-round.
 // ============================================================
 
 function interestScore(country) {
@@ -540,15 +546,51 @@ function interestScore(country) {
   return (generationScore + dpcScore) * penalty;
 }
 
-function weightedRandomCountry() {
-  const scores = POOL.map(c => interestScore(c));
-  const total  = scores.reduce((a, b) => a + b, 0);
-  let   rand   = Math.random() * total;
-  for (let i = 0; i < POOL.length; i++) {
-    rand -= scores[i];
-    if (rand <= 0) return POOL[i];
+// Weighted Fisher-Yates: countries with higher scores tend to appear earlier.
+function weightedShuffle(arr) {
+  const items = arr.map(c => ({ c, score: interestScore(c) }));
+  const result = [];
+  while (items.length) {
+    const total = items.reduce((s, x) => s + x.score, 0);
+    let rand = Math.random() * total;
+    let idx  = 0;
+    for (; idx < items.length - 1; idx++) {
+      rand -= items[idx].score;
+      if (rand <= 0) break;
+    }
+    result.push(items[idx].c);
+    items.splice(idx, 1);
   }
-  return POOL[POOL.length - 1];
+  return result;
+}
+
+// Session state — reset when the category changes (startPractice)
+let practiceQueue  = [];   // upcoming countries this round
+let practiceRetry  = [];   // countries guessed wrong → replayed after round
+
+function resetPracticeQueue() {
+  practiceQueue = weightedShuffle([...POOL]);
+  practiceRetry = [];
+}
+
+function nextPracticeCountry() {
+  // If the main queue is empty, start the retry round then a fresh round
+  if (practiceQueue.length === 0) {
+    if (practiceRetry.length > 0) {
+      // Shuffle retries so they don't come back in the same order
+      practiceQueue = weightedShuffle(practiceRetry);
+      practiceRetry = [];
+    } else {
+      // Everyone answered correctly — start a brand new round
+      practiceQueue = weightedShuffle([...POOL]);
+    }
+  }
+  return practiceQueue.shift();
+}
+
+// Called by endGame when in practice mode
+function recordPracticeResult(won) {
+  if (!won) practiceRetry.push(target);
 }
 
 // ============================================================
@@ -821,6 +863,10 @@ function showBanner(won) {
 function endGame() {
   gameOver = true;
   saveDailyState();
+  if (MODE === 'practice') {
+    const won = guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
+    recordPracticeResult(won);
+  }
   document.getElementById('input-area').style.display   = 'none';
   document.getElementById('new-game-btn').style.display = 'block';
 
@@ -837,14 +883,40 @@ function endGame() {
 
 // ============================================================
 //  AUTOCOMPLETE
+//  Arrow keys navigate, Tab/Enter selects into the input field.
+//  A second Enter (or clicking Guess) submits the guess.
 // ============================================================
 
 function setupAutocomplete() {
   const input = document.getElementById('guess-input');
   const list  = document.getElementById('autocomplete-list');
+  let activeIdx = -1; // which suggestion is highlighted
 
-  input.addEventListener('input', () => {
-    const q = input.value.toLowerCase().trim();
+  function getItems() { return list.querySelectorAll('.ac-item'); }
+
+  function highlight(idx) {
+    const items = getItems();
+    items.forEach(el => el.classList.remove('ac-active'));
+    if (idx >= 0 && idx < items.length) {
+      items[idx].classList.add('ac-active');
+      items[idx].scrollIntoView({ block: 'nearest' });
+    }
+    activeIdx = idx;
+  }
+
+  function selectActive() {
+    const items = getItems();
+    if (activeIdx >= 0 && activeIdx < items.length) {
+      input.value = items[activeIdx].textContent;
+      list.style.display = 'none';
+      activeIdx = -1;
+      return true;
+    }
+    return false;
+  }
+
+  function buildList(q) {
+    activeIdx = -1;
     if (q.length < 2) { list.style.display = 'none'; return; }
     const matches = COUNTRIES.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
     if (!matches.length) { list.style.display = 'none'; return; }
@@ -857,19 +929,59 @@ function setupAutocomplete() {
         e.preventDefault();
         input.value        = c.name;
         list.style.display = 'none';
-        submitGuess();
+        activeIdx          = -1;
+        // just fill the field — user presses Enter or Guess to submit
       });
       list.appendChild(item);
     });
     list.style.display = 'block';
+  }
+
+  input.addEventListener('input', () => {
+    buildList(input.value.toLowerCase().trim());
   });
 
   input.addEventListener('keydown', e => {
-    if (e.key === 'Enter') { list.style.display = 'none'; submitGuess(); }
+    const items = getItems();
+    const open  = list.style.display === 'block' && items.length > 0;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlight(open ? Math.min(activeIdx + 1, items.length - 1) : 0);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlight(open ? Math.max(activeIdx - 1, 0) : items.length - 1);
+    } else if (e.key === 'Tab') {
+      if (open) {
+        e.preventDefault();
+        // Tab cycles forward (Shift+Tab backward)
+        const next = e.shiftKey
+          ? Math.max(activeIdx - 1, 0)
+          : Math.min(activeIdx + 1, items.length - 1);
+        highlight(next === activeIdx && activeIdx === -1 ? 0 : next);
+        selectActive();
+      }
+    } else if (e.key === 'Enter') {
+      if (open && activeIdx >= 0) {
+        // First Enter: select the highlighted suggestion
+        e.preventDefault();
+        selectActive();
+      } else {
+        // No suggestion highlighted (or list closed): submit
+        list.style.display = 'none';
+        submitGuess();
+      }
+    } else if (e.key === 'Escape') {
+      list.style.display = 'none';
+      activeIdx = -1;
+    }
   });
 
   document.addEventListener('click', e => {
-    if (!e.target.closest('#autocomplete-wrapper')) list.style.display = 'none';
+    if (!e.target.closest('#autocomplete-wrapper')) {
+      list.style.display = 'none';
+      activeIdx = -1;
+    }
   });
 }
 
@@ -915,11 +1027,11 @@ function restoreDailyGame() {
 }
 
 // ============================================================
-//  PRACTICE GAME — weighted random
+//  PRACTICE GAME — queue-based
 // ============================================================
 
 function newGame() {
-  target   = weightedRandomCountry();
+  target   = nextPracticeCountry();
   guesses  = [];
   gameOver = false;
 
