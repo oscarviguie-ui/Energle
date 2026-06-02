@@ -682,7 +682,8 @@ h1 {
   transition: background 0.1s;
 }
 
-.ac-item:hover { background: #f5f5f5; }
+.ac-item:hover  { background: #f5f5f5; }
+.ac-item.ac-active { background: #f0f0f0; font-weight: 600; }
 
 #submit-btn {
   padding: 9px 22px;
