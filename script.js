@@ -349,7 +349,10 @@ function renderGameScreen() {
         <h1>Energle ⚡</h1>
         ${modeSwitcher()}
       </div>
-      <p class="subtitle">${subtitle}</p>
+      <div class="subtitle-row">
+        <p class="subtitle">${subtitle}</p>
+        ${MODE === 'practice' ? '<button id="back-to-categories">← Categories</button>' : ''}
+      </div>
     </header>
 
     <div id="lives-container"></div>
@@ -453,6 +456,13 @@ function renderGameScreen() {
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
   document.getElementById('new-game-btn').addEventListener('click', () => newGame());
+  if (MODE === 'practice') {
+    document.getElementById('back-to-categories').addEventListener('click', () => {
+      if (lineChart) { lineChart.destroy(); lineChart = null; }
+      if (barChart)  { barChart.destroy();  barChart  = null; }
+      renderPracticePickerScreen();
+    });
+  }
   setupAutocomplete();
 }
 
