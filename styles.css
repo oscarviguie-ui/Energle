@@ -549,6 +549,8 @@ h1 {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   line-height: 1.6;
   max-width: 270px;
+  width: max-content;
+  word-break: break-word;
 }
 
 /* ---------- GUESS HISTORY ---------- */
