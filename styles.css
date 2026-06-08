@@ -748,3 +748,217 @@ footer {
 
 footer a { color: #888; text-decoration: none; }
 footer a:hover { text-decoration: underline; }
+
+/* ---------- CAT CARD WRAP (list button) ---------- */
+
+.cat-card-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.cat-list-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #e0e0e0;
+  border-radius: 3px;
+  background: #fff;
+  color: #aaa;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, color 0.15s;
+  z-index: 1;
+}
+
+.cat-list-btn:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+/* ---------- COUNTRY LIST MODAL ---------- */
+
+#cl-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cl-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+
+.cl-box {
+  position: relative;
+  background: #fff;
+  border-radius: 6px;
+  width: min(480px, 92vw);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+.cl-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.cl-count {
+  font-weight: 400;
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.cl-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.cl-close:hover { color: #1a1a1a; }
+
+.cl-body {
+  overflow-y: auto;
+  padding: 0.4rem 0;
+}
+
+.cl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 1rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.cl-row:last-child { border-bottom: none; }
+
+.cl-name { font-weight: 500; }
+
+.cl-meta {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+/* ---------- BROWSE BUTTON ---------- */
+
+.browse-btn-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.browse-all-btn {
+  padding: 8px 22px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.browse-all-btn:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
+
+/* ---------- BROWSE SCREEN ---------- */
+
+.browse-search-wrap {
+  position: sticky;
+  top: 0;
+  background: #f7f7f5;
+  padding: 0.5rem 0;
+  z-index: 10;
+}
+
+#browse-search {
+  width: 100%;
+  padding: 9px 13px;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+#browse-search:focus { border-color: #888; }
+
+.browse-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.browse-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 3px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+
+.browse-row:hover {
+  border-color: #1a1a1a;
+  background: #fafafa;
+}
+
+.browse-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #1a1a1a;
+}
+
+.browse-meta {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+#back-to-browse, #back-to-cats {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #666;
+  background: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+#back-to-browse:hover, #back-to-cats:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}
