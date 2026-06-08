@@ -701,14 +701,47 @@ function renderLegend(ordered) {
 // ============================================================
 function showTooltip(html, canvasEl, caretX, caretY) {
   const tip = document.getElementById('tooltip');
-  tip.innerHTML = html; tip.style.opacity = '1';
-  const rect = canvasEl.getBoundingClientRect(), tw = 270, margin = 12;
-  let left = rect.left + caretX + 14, top = rect.top + caretY - 10;
-  if (left + tw > window.innerWidth - margin) left = rect.left + caretX - tw - 14;
-  tip.style.left = left + 'px'; tip.style.top = top + 'px';
-  const h = tip.getBoundingClientRect().height;
-  if (top + h > window.innerHeight - margin) top = window.innerHeight - h - margin;
-  tip.style.top = top + 'px';
+  tip.innerHTML = html;
+
+  // On narrow screens, cap width to viewport and pin to top of chart area
+  const isMobile = window.innerWidth <= 600;
+  const margin   = 8;
+  const maxW     = Math.min(270, window.innerWidth - margin * 2);
+  tip.style.maxWidth = maxW + 'px';
+
+  // Temporarily show off-screen to measure height
+  tip.style.opacity = '0';
+  tip.style.left = '0px';
+  tip.style.top  = '0px';
+  tip.style.display = 'block';
+  const tipH = tip.getBoundingClientRect().height;
+  tip.style.display = '';
+
+  const rect = canvasEl.getBoundingClientRect();
+
+  let left, top;
+
+  if (isMobile) {
+    // On mobile: centre the tooltip above the chart, pinned just below the header
+    left = margin;
+    top  = rect.top - tipH - 8;
+    // If no room above the chart, show just inside the top of the chart
+    if (top < margin) top = rect.top + 8;
+  } else {
+    // Desktop: prefer right of cursor, flip left if it would overflow
+    left = rect.left + caretX + 14;
+    top  = rect.top  + caretY - 10;
+    if (left + maxW > window.innerWidth - margin) left = rect.left + caretX - maxW - 14;
+    if (top  + tipH > window.innerHeight - margin) top = window.innerHeight - tipH - margin;
+  }
+
+  // Hard clamp — never let it go off either edge
+  left = Math.max(margin, Math.min(left, window.innerWidth  - maxW - margin));
+  top  = Math.max(margin, Math.min(top,  window.innerHeight - tipH - margin));
+
+  tip.style.left    = left + 'px';
+  tip.style.top     = top  + 'px';
+  tip.style.opacity = '1';
 }
 function hideTooltip() { document.getElementById('tooltip').style.opacity = '0'; }
 
