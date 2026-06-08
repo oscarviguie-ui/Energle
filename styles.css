@@ -1282,3 +1282,133 @@ footer a:hover { text-decoration: underline; }
 
 .lb-score--won  { color: #16a34a; font-weight: 700; }
 .lb-score--lost { color: #dc2626; }
+
+/* ============================================================
+   MOBILE — iPhone and small screens (max 600px)
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+  body {
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  h1 { font-size: 1.4rem; }
+
+  /* Mode switcher — 2x2 grid on mobile */
+  .mode-switcher {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .mode-btn {
+    padding: 6px 8px;
+    font-size: 0.75rem;
+  }
+
+  .mode-btn:nth-child(1),
+  .mode-btn:nth-child(2) {
+    border-bottom: 1px solid #d0d0d0;
+  }
+
+  /* Stack charts vertically */
+  #charts-section {
+    grid-template-columns: 1fr;
+    padding: 0.9rem 0.9rem 0.75rem;
+  }
+
+  #chart-right {
+    border-left: none;
+    border-top: 1px solid #e8e8e8;
+    padding-left: 0;
+    padding-top: 0.75rem;
+  }
+
+  #line-wrapper  { height: 220px; }
+  #bar-wrapper   { min-height: 180px; }
+
+  /* Stat bar — 2 columns */
+  #stat-bar {
+    gap: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-divider { display: none; }
+
+  .stat-value { font-size: 0.85rem; }
+
+  /* Flow bar */
+  #flow-bar { padding: 0.6rem 0.9rem 0.55rem; }
+
+  /* Category grid — 2 columns */
+  .cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .cat-card { padding: 0.9rem 0.5rem; }
+  .cat-emoji { font-size: 1.5rem; }
+  .cat-label { font-size: 0.78rem; }
+  .cat-desc  { font-size: 0.65rem; }
+
+  /* Guess rows — stack hint below name */
+  .guess-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+
+  .guess-hint {
+    font-size: 0.75rem;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+
+  /* Input area */
+  #input-area { gap: 6px; }
+  #guess-input { font-size: 0.85rem; padding: 8px 10px; }
+  #submit-btn  { padding: 8px 14px; font-size: 0.85rem; }
+
+  /* Stats modal */
+  .st-box { width: 96vw; }
+  .st-num  { font-size: 1.6rem; }
+
+  .st-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+  }
+
+  .st-share-btn,
+  .st-practice-btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* Country list modal */
+  .cl-box { width: 96vw; max-height: 75vh; }
+
+  /* Browse list */
+  .browse-row { padding: 8px 10px; }
+  .browse-name { font-size: 0.83rem; }
+  .browse-meta { font-size: 0.7rem; }
+
+  /* Leaderboard */
+  .lb-body { max-height: 260px; }
+  .lb-row  { padding: 0.45rem 0.75rem; font-size: 0.8rem; }
+  .lb-score { width: 40px; font-size: 0.75rem; }
+
+  /* Glossary */
+  .glossary-grid { grid-template-columns: 1fr; }
+
+  /* Legend */
+  #legend-shared { gap: 4px 10px; }
+  .legend-item   { font-size: 0.72rem; }
+
+  /* Footer */
+  footer { font-size: 0.65rem; }
+}
