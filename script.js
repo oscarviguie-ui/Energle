@@ -24,29 +24,35 @@ const COLORS = {
 
 // ============================================================
 //  PRACTICE CATEGORIES
-//  Continent strings from Ember CSV:
-//    Africa | Asia | Europe | North America | South America | Oceania
-//  Americas combines North + South. Asia & Pacific combines Asia + Oceania.
 // ============================================================
 
 const PRACTICE_CATEGORIES = [
-  { id:'europe',    emoji:'🇪🇺', label:'Europe',          filter: c => c.continent === 'Europe' },
-  { id:'africa',    emoji:'🌍', label:'Africa',           filter: c => c.continent === 'Africa' },
-  { id:'asia',      emoji:'🌏', label:'Asia & Pacific',   filter: c => c.continent === 'Asia' || c.continent === 'Oceania' },
-  { id:'americas',  emoji:'🌎', label:'Americas',         filter: c => c.continent === 'North America' || c.continent === 'South America' },
-  { id:'major',     emoji:'⚡', label:'Major Producers',  filter: c => c.latestTotal >= 100 },
-  { id:'highcap',   emoji:'💡', label:'High Per-Capita',  filter: c => (c.latestDpc ?? 0) >= 7 },
-  { id:'green',     emoji:'🌱', label:'Green Leaders',    filter: c => (c.renewablePct ?? 0) >= 70 },
-  { id:'fossil',    emoji:'🔥', label:'Fossil Heavy',     filter: c => (c.fossilPct ?? 0) >= 90 },
-  { id:'lowcap',    emoji:'🏚️', label:'Low Per-Capita',   filter: c => (c.latestDpc ?? 0) > 0 && (c.latestDpc ?? 0) < 0.5 },
+  { id:'all',      emoji:'GLOBE',  label:'All Countries',  filter: c => true },
+  { id:'europe',   emoji:'EU',     label:'Europe',         filter: c => c.continent === 'Europe' },
+  { id:'africa',   emoji:'EARTH1', label:'Africa',         filter: c => c.continent === 'Africa' },
+  { id:'asia',     emoji:'EARTH2', label:'Asia & Pacific', filter: c => c.continent === 'Asia' || c.continent === 'Oceania' },
+  { id:'americas', emoji:'EARTH3', label:'Americas',       filter: c => c.continent === 'North America' || c.continent === 'South America' },
+  { id:'major',    emoji:'BOLT',   label:'Major Producers',filter: c => c.latestTotal >= 100 },
+  { id:'highcap',  emoji:'BULB',   label:'High Per-Capita',filter: c => (c.latestDpc ?? 0) >= 7 },
+  { id:'green',    emoji:'LEAF',   label:'Green Leaders',  filter: c => (c.renewablePct ?? 0) >= 70 },
+  { id:'fossil',   emoji:'FIRE',   label:'Fossil Heavy',   filter: c => (c.fossilPct ?? 0) >= 90 },
+  { id:'lowcap',   emoji:'HOUSE',  label:'Low Per-Capita', filter: c => (c.latestDpc ?? 0) > 0 && (c.latestDpc ?? 0) < 0.5 },
 ];
 
+const CAT_EMOJI = {
+  'GLOBE':'🌐','EU':'🇪🇺','EARTH1':'🌍','EARTH2':'🌏','EARTH3':'🌎',
+  'BOLT':'⚡','BULB':'💡','LEAF':'🌱','FIRE':'🔥','HOUSE':'🏚️',
+};
+function catEmoji(id) {
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === id);
+  return cat ? (CAT_EMOJI[cat.emoji] || cat.emoji) : '';
+}
+
 // ============================================================
-//  DAILY PUZZLE — epoch & numbering
-//  Puzzle #1 = 2025-06-02 UTC. Increments at midnight UTC.
+//  DAILY PUZZLE
 // ============================================================
 
-const EPOCH_DATE = new Date(Date.UTC(2026, 5, 2)); // June 2 2026
+const EPOCH_DATE = new Date(Date.UTC(2026, 5, 2));
 
 function getDayNumber() {
   const now      = new Date();
@@ -75,7 +81,7 @@ function getDailyTarget(countries) {
 }
 
 // ============================================================
-//  DAILY STATE — localStorage persistence
+//  DAILY STATE — localStorage
 // ============================================================
 
 const LS_KEY = 'energle_daily_v1';
@@ -94,16 +100,13 @@ function saveDailyState() {
   if (MODE !== 'normal') return;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      day:      getDayNumber(),
-      guesses:  guesses.map(g => g.iso3),
-      gameOver,
+      day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver,
     }));
   } catch {}
 }
 
 // ============================================================
-//  ISO3 → CONTINENT FALLBACK
-//  Used when JSON pre-dates the continent field.
+//  ISO3 CONTINENT FALLBACK
 // ============================================================
 
 const ISO3_CONTINENT = {
@@ -181,37 +184,39 @@ function practiceUnlocked() {
 // ============================================================
 
 async function loadData() {
-  document.getElementById('app').innerHTML = '<div id="loading">Loading data\u2026</div>';
-  const res = await fetch('energle_data.json');
-  const raw = await res.json();
-  WORLD_DPC = raw['__world_dpc__'];
-  delete raw['__world_dpc__'];
-  ALL_DATA  = raw;
+  document.getElementById('app').innerHTML = '<div id="loading">Loading data...</div>';
+  try {
+    const res = await fetch('energle_data.json');
+    const raw = await res.json();
+    WORLD_DPC = raw['__world_dpc__'];
+    delete raw['__world_dpc__'];
+    ALL_DATA  = raw;
 
-  COUNTRIES = Object.entries(ALL_DATA).map(([name, info]) => {
-    const latest   = info.latestYear;
-    const yearData = info.years[latest] ?? {};
-    const total    = yearData.Total ?? 0;
-    const renewables = ['Hydro','Wind','Solar','Bioenergy','Other Renewables'];
-    const fossils    = ['Coal','Gas','Other Fossil'];
-    const renSum  = renewables.reduce((s, k) => s + (yearData[k] ?? 0), 0);
-    const fosSum  = fossils.reduce((s, k) => s + (yearData[k] ?? 0), 0);
-    return {
-      name,
-      iso3:         info.iso3,
-      lat:          info.lat,
-      lng:          info.lng,
-      continent:    info.continent ?? ISO3_CONTINENT[info.iso3] ?? null,
-      latestYear:   latest,
-      latestDpc:    info.latestDpc,
-      latestTotal:  total,
-      renewablePct: total > 0 ? (renSum / total * 100) : 0,
-      fossilPct:    total > 0 ? (fosSum / total * 100) : 0,
-    };
-  });
+    COUNTRIES = Object.entries(ALL_DATA).map(([name, info]) => {
+      const latest   = info.latestYear;
+      const yearData = info.years[latest] ?? {};
+      const total    = yearData.Total ?? 0;
+      const renewables = ['Hydro','Wind','Solar','Bioenergy','Other Renewables'];
+      const fossils    = ['Coal','Gas','Other Fossil'];
+      const renSum = renewables.reduce((s, k) => s + (yearData[k] ?? 0), 0);
+      const fosSum = fossils.reduce((s, k) => s + (yearData[k] ?? 0), 0);
+      return {
+        name, iso3: info.iso3, lat: info.lat, lng: info.lng,
+        continent:    info.continent ?? ISO3_CONTINENT[info.iso3] ?? null,
+        latestYear:   latest,
+        latestDpc:    info.latestDpc,
+        latestTotal:  total,
+        renewablePct: total > 0 ? (renSum / total * 100) : 0,
+        fossilPct:    total > 0 ? (fosSum / total * 100) : 0,
+      };
+    });
 
-  POOL = COUNTRIES;
-  initApp();
+    POOL = COUNTRIES;
+    initApp();
+  } catch(err) {
+    document.getElementById('app').innerHTML =
+      '<div id="loading">Error loading data: ' + err.message + '</div>';
+  }
 }
 
 // ============================================================
@@ -223,10 +228,11 @@ function modeSwitcherHTML() {
   const dailyActive    = MODE === 'normal'   ? 'active' : '';
   const practiceActive = MODE === 'practice' ? 'active' : '';
   const lockedClass    = locked ? 'locked' : '';
-  const lockIcon       = locked ? ' 🔒' : '';
+  const lockIcon       = locked ? ' \uD83D\uDD12' : '';
   return '<div class="mode-switcher">'
     + '<button class="mode-btn ' + dailyActive + '" onclick="switchMode(\'normal\')">Daily</button>'
-    + '<button class="mode-btn ' + practiceActive + ' ' + lockedClass + '" onclick="switchMode(\'practice\')">Practice' + lockIcon + '</button>'
+    + '<button class="mode-btn ' + practiceActive + ' ' + lockedClass
+    + '" onclick="switchMode(\'practice\')">Practice' + lockIcon + '</button>'
     + '</div>';
 }
 
@@ -239,10 +245,8 @@ function switchMode(mode) {
     }
     return;
   }
-
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
-
   MODE = mode;
   if (mode === 'normal') {
     POOL = COUNTRIES;
@@ -260,13 +264,184 @@ function startPractice(catId) {
   PRACTICE_CAT = catId;
   POOL = COUNTRIES.filter(cat.filter);
   if (POOL.length === 0) { alert('No countries match this category.'); return; }
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  resetPracticeQueue();
+  renderGameScreen();
+  newGame();
+}
 
+// ============================================================
+//  COUNTRY LIST MODAL
+// ============================================================
+
+function showCountryList(catId) {
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === catId);
+  if (!cat) return;
+  const countries = COUNTRIES.filter(cat.filter)
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const rows = countries.map(c =>
+    '<div class="cl-row">'
+    + '<span class="cl-name">' + c.name + '</span>'
+    + '<span class="cl-meta">' + (c.continent || '') + '</span>'
+    + '</div>'
+  ).join('');
+
+  const existing = document.getElementById('cl-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'cl-modal';
+  modal.innerHTML =
+    '<div class="cl-backdrop"></div>'
+    + '<div class="cl-box">'
+    + '<div class="cl-header">'
+    + '<span>' + catEmoji(catId) + ' ' + cat.label
+    + ' <span class="cl-count">(' + countries.length + ' countries)</span></span>'
+    + '<button class="cl-close" id="cl-close-btn">x</button>'
+    + '</div>'
+    + '<div class="cl-body">' + rows + '</div>'
+    + '</div>';
+
+  modal.querySelector('.cl-backdrop').addEventListener('click', () => modal.remove());
+  document.body.appendChild(modal);
+  document.getElementById('cl-close-btn').addEventListener('click', () => modal.remove());
+}
+
+// ============================================================
+//  BROWSE MODE
+// ============================================================
+
+function renderBrowseScreen() {
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
 
-  resetPracticeQueue(); // build fresh weighted queue for this category
+  const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
+  const rows = sorted.map(c =>
+    '<button class="browse-row" onclick="browseCountry(\'' + c.iso3 + '\')">'
+    + '<span class="browse-name">' + c.name + '</span>'
+    + '<span class="browse-meta">' + (c.continent || '') + ' \u00b7 ' + c.latestTotal.toFixed(1) + ' TWh</span>'
+    + '</button>'
+  ).join('');
+
+  document.getElementById('app').innerHTML =
+    '<header>'
+    + '<div class="header-top"><h1>Energle \u26a1</h1>' + modeSwitcherHTML() + '</div>'
+    + '<div class="subtitle-row">'
+    + '<p class="subtitle">Browse all country energy profiles</p>'
+    + '<button id="back-to-cats">\u2190 Categories</button>'
+    + '</div>'
+    + '</header>'
+    + '<div class="browse-search-wrap">'
+    + '<input id="browse-search" type="text" placeholder="Search countries..." autocomplete="off" />'
+    + '</div>'
+    + '<div class="browse-list" id="browse-list">' + rows + '</div>'
+    + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
+
+  document.getElementById('back-to-cats').addEventListener('click', renderPracticePickerScreen);
+  document.getElementById('browse-search').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.browse-row').forEach(btn => {
+      const visible = btn.querySelector('.browse-name').textContent.toLowerCase().includes(q);
+      btn.style.display = visible ? '' : 'none';
+    });
+  });
+}
+
+function browseCountry(iso3) {
+  const country = COUNTRIES.find(c => c.iso3 === iso3);
+  if (!country) return;
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+
+  const prevTarget = target;
+  target = country;
+
+  document.getElementById('app').innerHTML =
+    '<header>'
+    + '<div class="header-top"><h1>Energle \u26a1</h1>' + modeSwitcherHTML() + '</div>'
+    + '<div class="subtitle-row">'
+    + '<p class="subtitle">' + country.name + ' \u00b7 ' + (country.continent || '') + '</p>'
+    + '<button id="back-to-browse">\u2190 Browse</button>'
+    + '</div>'
+    + '</header>'
+    + '<div id="stat-bar">'
+    + '<div class="stat-item"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">\u2014</span></div>'
+    + '<div class="stat-divider"></div>'
+    + '<div class="stat-item"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">\u2014</span></div>'
+    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world">\u2014</span></div>'
+    + '</div>'
+    + '<div id="flow-bar"><div class="flow-label">Energy balance \u2014 latest year</div>'
+    + '<div class="flow-track" id="flow-track"></div>'
+    + '<div class="flow-legend">'
+    + '<span class="flow-legend-item"><span class="flow-swatch generation"></span>Generation</span>'
+    + '<span class="flow-legend-item"><span class="flow-swatch exports"></span>Net exports</span>'
+    + '<span class="flow-legend-item"><span class="flow-swatch imports"></span>Net imports</span>'
+    + '</div></div>'
+    + '<div id="charts-section">'
+    + '<div id="chart-left"><p class="chart-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
+    + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
+    + '</div>'
+    + '<div id="legend-shared"></div>'
+    + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
+
+  document.getElementById('back-to-browse').addEventListener('click', () => {
+    if (lineChart) { lineChart.destroy(); lineChart = null; }
+    if (barChart)  { barChart.destroy();  barChart  = null; }
+    target = prevTarget;
+    renderBrowseScreen();
+  });
+
+  renderStatBar();
+  renderFlowBar();
+  renderCharts();
+}
+
+// ============================================================
+//  PRACTICE PICKER
+// ============================================================
+
+function renderPracticePickerScreen() {
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+
+  const cards = PRACTICE_CATEGORIES.map(cat => {
+    const count = COUNTRIES.filter(cat.filter).length;
+    return '<div class="cat-card-wrap">'
+      + '<button class="cat-card" onclick="startPractice(\'' + cat.id + '\')">'
+      + '<span class="cat-emoji">' + catEmoji(cat.id) + '</span>'
+      + '<span class="cat-label">' + cat.label + '</span>'
+      + '<span class="cat-desc">' + count + ' countries</span>'
+      + '</button>'
+      + '<button class="cat-list-btn" onclick="showCountryList(\'' + cat.id + '\')" title="See country list">'
+      + '\u2630'
+      + '</button>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('app').innerHTML =
+    '<header>'
+    + '<div class="header-top"><h1>Energle \u26a1</h1>' + modeSwitcherHTML() + '</div>'
+    + '<p class="subtitle">Choose a category to practice</p>'
+    + '</header>'
+    + '<div class="cat-grid">' + cards + '</div>'
+    + '<div class="browse-btn-wrap">'
+    + '<button class="browse-all-btn" onclick="renderBrowseScreen()">'
+    + '\uD83D\uDD0D\u00a0 Browse all countries'
+    + '</button>'
+    + '</div>'
+    + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+
+function initApp() {
+  POOL = COUNTRIES;
   renderGameScreen();
-  newGame();
+  restoreDailyGame();
 }
 
 // ============================================================
@@ -276,7 +451,7 @@ function startPractice(catId) {
 function practiceSubtitle() {
   if (MODE !== 'practice' || !PRACTICE_CAT) return '';
   const cat = PRACTICE_CATEGORIES.find(c => c.id === PRACTICE_CAT);
-  return cat ? cat.emoji + ' ' + cat.label + ' \u00b7 ' + POOL.length + ' countries' : '';
+  return cat ? catEmoji(cat.id) + ' ' + cat.label + ' \u00b7 ' + POOL.length + ' countries' : '';
 }
 
 function renderGameScreen() {
@@ -290,47 +465,34 @@ function renderGameScreen() {
 
   document.getElementById('app').innerHTML =
     '<header>'
-    + '<div class="header-top">'
-    + '<h1>Energle \u26a1</h1>'
-    + modeSwitcherHTML()
-    + '</div>'
-    + '<div class="subtitle-row">'
-    + '<p class="subtitle">' + subtitle + '</p>'
-    + backBtn
-    + '</div>'
+    + '<div class="header-top"><h1>Energle \u26a1</h1>' + modeSwitcherHTML() + '</div>'
+    + '<div class="subtitle-row"><p class="subtitle">' + subtitle + '</p>' + backBtn + '</div>'
     + '</header>'
-
     + '<div id="lives-container"></div>'
-
     + '<div id="stat-bar">'
     + '<div class="stat-item"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">\u2014</span></div>'
     + '<div class="stat-divider"></div>'
     + '<div class="stat-item"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">\u2014</span></div>'
     + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world">\u2014</span></div>'
     + '</div>'
-
-    + '<div id="flow-bar">'
-    + '<div class="flow-label">Energy balance \u2014 latest year</div>'
+    + '<div id="flow-bar"><div class="flow-label">Energy balance \u2014 latest year</div>'
     + '<div class="flow-track" id="flow-track"></div>'
     + '<div class="flow-legend">'
     + '<span class="flow-legend-item"><span class="flow-swatch generation"></span>Generation</span>'
     + '<span class="flow-legend-item"><span class="flow-swatch exports"></span>Net exports</span>'
     + '<span class="flow-legend-item"><span class="flow-swatch imports"></span>Net imports</span>'
     + '</div></div>'
-
     + '<div id="charts-section">'
     + '<div id="chart-left"><p class="chart-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
     + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
     + '</div>'
-
     + '<div id="legend-shared"></div>'
-
     + '<details id="glossary">'
     + '<summary id="glossary-trigger"><span class="glossary-icon">?</span><span>What does each source mean?</span><span class="glossary-arrow">\u203a</span></summary>'
     + '<div id="glossary-body">'
     + '<div class="glossary-section"><h3 class="glossary-heading fossil">Fossil fuels</h3><div class="glossary-grid">'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#4a4a4a"></span><div><strong>Coal</strong><p>Hard coal and lignite burned in thermal power stations. The most carbon-intensive electricity source.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#e8925a"></span><div><strong>Gas</strong><p>Natural gas and LNG burned in gas turbines or combined-cycle plants. Roughly half the CO\u2082 of coal per kWh.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#4a4a4a"></span><div><strong>Coal</strong><p>Hard coal and lignite burned in thermal power stations.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#e8925a"></span><div><strong>Gas</strong><p>Natural gas and LNG burned in gas turbines or combined-cycle plants.</p></div></div>'
     + '<div class="glossary-item"><span class="glossary-swatch" style="background:#c0654a"></span><div><strong>Other Fossil</strong><p>Oil, diesel, heavy fuel oil, petroleum products, manufactured gas, and waste incineration.</p></div></div>'
     + '</div></div>'
     + '<div class="glossary-section"><h3 class="glossary-heading low-carbon">Low-carbon</h3><div class="glossary-grid">'
@@ -345,21 +507,19 @@ function renderGameScreen() {
     + '</div></div>'
     + '<p class="glossary-source">Source: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p>'
     + '</div></details>'
-
     + '<div id="guesses"></div>'
     + '<div id="banner"></div>'
     + '<p id="error"></p>'
-
     + '<div id="input-area">'
     + '<div id="autocomplete-wrapper">'
-    + '<input id="guess-input" type="text" placeholder="Type a country name\u2026" autocomplete="off" />'
+    + '<input id="guess-input" type="text" placeholder="Type a country name..." autocomplete="off" />'
     + '<div id="autocomplete-list"></div>'
     + '</div>'
     + '<button id="submit-btn">Guess</button>'
     + '</div>'
-
-    + '<button id="new-game-btn" style="display:none">' + (isPractice ? 'Next puzzle \u21ba' : 'Come back tomorrow 🌙') + '</button>'
-
+    + '<button id="new-game-btn" style="display:none">'
+    + (isPractice ? 'Next puzzle \u21ba' : 'Come back tomorrow \uD83C\uDF19')
+    + '</button>'
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
@@ -374,38 +534,6 @@ function renderGameScreen() {
     });
   }
   setupAutocomplete();
-}
-
-function renderPracticePickerScreen() {
-  const cards = PRACTICE_CATEGORIES.map(cat => {
-    const count = COUNTRIES.filter(cat.filter).length;
-    return '<button class="cat-card" onclick="startPractice(\'' + cat.id + '\')">'
-      + '<span class="cat-emoji">' + cat.emoji + '</span>'
-      + '<span class="cat-label">' + cat.label + '</span>'
-      + '<span class="cat-desc">' + count + ' countries</span>'
-      + '</button>';
-  }).join('');
-
-  document.getElementById('app').innerHTML =
-    '<header>'
-    + '<div class="header-top">'
-    + '<h1>Energle \u26a1</h1>'
-    + modeSwitcherHTML()
-    + '</div>'
-    + '<p class="subtitle">Choose a category to practice</p>'
-    + '</header>'
-    + '<div class="cat-grid">' + cards + '</div>'
-    + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
-}
-
-// ============================================================
-//  INIT
-// ============================================================
-
-function initApp() {
-  POOL = COUNTRIES;
-  renderGameScreen();
-  restoreDailyGame();
 }
 
 // ============================================================
@@ -432,10 +560,8 @@ function bearingDeg(lat1, lng1, lat2, lng2) {
 
 function bearingArrowSVG(deg) {
   return '<svg width="18" height="18" viewBox="0 0 20 20"'
-    + ' style="transform:rotate(' + deg + 'deg);display:inline-block;vertical-align:middle;flex-shrink:0"'
-    + ' aria-label="' + Math.round(deg) + '\u00b0">'
-    + '<polygon points="10,2 14,16 10,13 6,16" fill="currentColor"/>'
-    + '</svg>';
+    + ' style="transform:rotate(' + deg + 'deg);display:inline-block;vertical-align:middle;flex-shrink:0">'
+    + '<polygon points="10,2 14,16 10,13 6,16" fill="currentColor"/></svg>';
 }
 
 function bearingLabel(deg) {
@@ -455,8 +581,7 @@ function fmtTWh(v) {
 }
 
 function fmtFlowLabel(v, label) {
-  const abs = Math.abs(v);
-  const num = abs >= 1000 ? (v / 1000).toFixed(1) + ' PWh' : v.toFixed(1) + ' TWh';
+  const num = Math.abs(v) >= 1000 ? (v / 1000).toFixed(1) + ' PWh' : v.toFixed(1) + ' TWh';
   return num + (label ? ' ' + label : '');
 }
 
@@ -470,7 +595,6 @@ function renderStatBar() {
   const total    = info.years[latest]?.Total ?? 0;
   const dpc      = info.latestDpc;
   const worldDpc = WORLD_DPC[latest] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
-
   document.getElementById('stat-total').textContent = fmtTWh(total);
   document.getElementById('stat-dpc').textContent =
     dpc != null ? dpc.toFixed(1) + ' MWh / person (' + latest + ')' : '\u2014';
@@ -493,7 +617,6 @@ function renderFlowBar() {
   const tradeAbs   = Math.abs(netImp);
   const track      = document.getElementById('flow-track');
   track.innerHTML  = '';
-
   if (isExporter) {
     const genPct    = (demand / gen * 100).toFixed(1);
     const exportPct = (tradeAbs / gen * 100).toFixed(1);
@@ -529,66 +652,58 @@ function sortedSources(name) {
 }
 
 // ============================================================
-//  PRACTICE QUEUE
-//  Works through every country in the pool exactly once per
-//  "round" using a weighted shuffle (interesting countries
-//  slightly earlier). Countries guessed wrong are appended
-//  to a retry list played after the main round completes.
-//  This ensures full coverage with no repeats mid-round.
+//  PRACTICE QUEUE — with anti-repetition cooldown
 // ============================================================
 
 function interestScore(country) {
   const total = country.latestTotal;
   const dpc   = country.latestDpc ?? 0;
-  const generationScore = Math.log10(Math.max(total, 1));
-  const dpcScore        = Math.log10(Math.max(dpc * 10, 1));
-  const penalty         = (total < 5 && dpc < 1) ? 0.2 : 1;
-  return (generationScore + dpcScore) * penalty;
+  return (Math.log10(Math.max(total, 1)) + Math.log10(Math.max(dpc * 10, 1)))
+    * ((total < 5 && dpc < 1) ? 0.2 : 1);
 }
 
-// Weighted Fisher-Yates: countries with higher scores tend to appear earlier.
 function weightedShuffle(arr) {
   const items = arr.map(c => ({ c, score: interestScore(c) }));
   const result = [];
   while (items.length) {
     const total = items.reduce((s, x) => s + x.score, 0);
-    let rand = Math.random() * total;
-    let idx  = 0;
-    for (; idx < items.length - 1; idx++) {
-      rand -= items[idx].score;
-      if (rand <= 0) break;
-    }
+    let rand = Math.random() * total, idx = 0;
+    for (; idx < items.length - 1; idx++) { rand -= items[idx].score; if (rand <= 0) break; }
     result.push(items[idx].c);
     items.splice(idx, 1);
   }
   return result;
 }
 
-// Session state — reset when the category changes (startPractice)
-let practiceQueue  = [];   // upcoming countries this round
-let practiceRetry  = [];   // countries guessed wrong → replayed after round
+function applyCooldown(queue, history) {
+  const cooldown = Math.min(Math.floor(POOL.length / 2), 12);
+  const hot = new Set(history.slice(-cooldown).map(c => c.iso3));
+  return [...queue.filter(c => !hot.has(c.iso3)), ...queue.filter(c => hot.has(c.iso3))];
+}
+
+let practiceQueue   = [];
+let practiceRetry   = [];
+let practiceHistory = [];
 
 function resetPracticeQueue() {
-  practiceQueue = weightedShuffle([...POOL]);
-  practiceRetry = [];
+  practiceQueue   = weightedShuffle([...POOL]);
+  practiceRetry   = [];
+  practiceHistory = [];
 }
 
 function nextPracticeCountry() {
-  // If the main queue is empty, start the retry round then a fresh round
   if (practiceQueue.length === 0) {
-    if (practiceRetry.length > 0) {
-      // Shuffle retries so they don't come back in the same order
-      practiceQueue = weightedShuffle(practiceRetry);
-      practiceRetry = [];
-    } else {
-      // Everyone answered correctly — start a brand new round
-      practiceQueue = weightedShuffle([...POOL]);
-    }
+    practiceQueue = practiceRetry.length > 0
+      ? applyCooldown(weightedShuffle(practiceRetry), practiceHistory)
+      : applyCooldown(weightedShuffle([...POOL]), practiceHistory);
+    practiceRetry = [];
   }
-  return practiceQueue.shift();
+  const next = practiceQueue.shift();
+  practiceHistory.push(next);
+  if (practiceHistory.length > 200) practiceHistory.shift();
+  return next;
 }
 
-// Called by endGame when in practice mode
 function recordPracticeResult(won) {
   if (!won) practiceRetry.push(target);
 }
@@ -605,29 +720,23 @@ function renderCharts() {
   const ordered    = sortedSources(target.name);
 
   document.getElementById('bar-label').textContent = 'Latest mix (' + latest + ')';
-
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
 
   const sourceDatasets = ordered.map(src => ({
     label: src, data: years.map(y => info.years[y]?.[src] ?? 0),
     borderColor: COLORS[src], backgroundColor: COLORS[src] + '22',
-    borderWidth: 1.5, pointRadius: 1.5, pointHoverRadius: 4,
-    fill: false, tension: 0.3,
+    borderWidth: 1.5, pointRadius: 1.5, pointHoverRadius: 4, fill: false, tension: 0.3,
   }));
 
   const hiddenDatasets = [
     { label: '__total__',      data: years.map(y => info.years[y]?.Total ?? 0) },
     { label: '__netimports__', data: years.map(y => info.years[y]?.NetImports ?? null), spanGaps: true },
     { label: '__demand__',     data: years.map(y => info.years[y]?.Demand ?? null), spanGaps: true },
-  ].map(d => ({
-    ...d, borderColor: 'transparent', backgroundColor: 'transparent',
-    borderWidth: 0, pointRadius: 0, pointHoverRadius: 0,
-    hidden: true, fill: false, tension: 0.3,
-  }));
+  ].map(d => ({ ...d, borderColor: 'transparent', backgroundColor: 'transparent',
+    borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, hidden: true, fill: false, tension: 0.3 }));
 
-  const lineCtx = document.getElementById('line-chart').getContext('2d');
-  lineChart = new Chart(lineCtx, {
+  lineChart = new Chart(document.getElementById('line-chart').getContext('2d'), {
     type: 'line',
     data: { labels: years, datasets: [...sourceDatasets, ...hiddenDatasets] },
     options: {
@@ -641,16 +750,11 @@ function renderCharts() {
     },
   });
 
-  const reversed = [...ordered].reverse();
-  const barDatasets = reversed.map(src => ({
-    label: src, data: [latestData[src] || 0],
-    backgroundColor: COLORS[src], borderWidth: 0,
-  }));
-
-  const barCtx = document.getElementById('bar-chart').getContext('2d');
-  barChart = new Chart(barCtx, {
+  barChart = new Chart(document.getElementById('bar-chart').getContext('2d'), {
     type: 'bar',
-    data: { labels: [''], datasets: barDatasets },
+    data: { labels: [''], datasets: [...ordered].reverse().map(src => ({
+      label: src, data: [latestData[src] || 0], backgroundColor: COLORS[src], borderWidth: 0,
+    })) },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipBar } },
@@ -664,18 +768,13 @@ function renderCharts() {
   renderLegend(ordered);
 }
 
-// ============================================================
-//  SHARED LEGEND
-// ============================================================
-
 function renderLegend(ordered) {
   const info  = ALL_DATA[target.name];
   const years = Object.keys(info.years).map(Number);
-  const items = ordered
+  document.getElementById('legend-shared').innerHTML = ordered
     .filter(src => years.some(y => (info.years[y]?.[src] ?? 0) > 0))
     .map(src => '<div class="legend-item"><span class="legend-swatch" style="background:' + COLORS[src] + '"></span>' + src + '</div>')
     .join('');
-  document.getElementById('legend-shared').innerHTML = items;
 }
 
 // ============================================================
@@ -683,25 +782,19 @@ function renderLegend(ordered) {
 // ============================================================
 
 function showTooltip(html, canvasEl, caretX, caretY) {
-  const tip    = document.getElementById('tooltip');
-  tip.innerHTML     = html;
-  tip.style.opacity = '1';
-  const rect   = canvasEl.getBoundingClientRect();
-  const tw     = 270;
-  const margin = 12;
-  let left = rect.left + caretX + 14;
-  let top  = rect.top  + caretY - 10;
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = html; tip.style.opacity = '1';
+  const rect = canvasEl.getBoundingClientRect();
+  const tw = 270, margin = 12;
+  let left = rect.left + caretX + 14, top = rect.top + caretY - 10;
   if (left + tw > window.innerWidth - margin) left = rect.left + caretX - tw - 14;
-  tip.style.left = left + 'px';
-  tip.style.top  = top  + 'px';
-  const tipHeight = tip.getBoundingClientRect().height;
-  if (top + tipHeight > window.innerHeight - margin) top = window.innerHeight - tipHeight - margin;
+  tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  const h = tip.getBoundingClientRect().height;
+  if (top + h > window.innerHeight - margin) top = window.innerHeight - h - margin;
   tip.style.top = top + 'px';
 }
 
-function hideTooltip() {
-  document.getElementById('tooltip').style.opacity = '0';
-}
+function hideTooltip() { document.getElementById('tooltip').style.opacity = '0'; }
 
 function tooltipRow(color, label, twh, total, bold) {
   const pct = total > 0 ? (Math.abs(twh) / total * 100).toFixed(1) : '0.0';
@@ -716,11 +809,9 @@ function tooltipRow(color, label, twh, total, bold) {
 function externalTooltipLine(context) {
   const model = context.tooltip;
   if (model.opacity === 0) { hideTooltip(); return; }
-  const year     = parseInt(model.title?.[0]);
+  const year = parseInt(model.title?.[0]);
   const yearData = ALL_DATA[target.name]?.years[year] ?? {};
-  const total    = yearData.Total      ?? 0;
-  const demand   = yearData.Demand     ?? null;
-  const netImp   = yearData.NetImports ?? null;
+  const total = yearData.Total ?? 0, demand = yearData.Demand ?? null, netImp = yearData.NetImports ?? null;
   let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Year: ' + year + '</div>';
   html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
   if (demand !== null && demand > 0) html += tooltipRow('#1a1a1a', 'Demand', demand, total, true);
@@ -729,8 +820,7 @@ function externalTooltipLine(context) {
     html += tooltipRow(isExport ? '#2ab5a0' : '#e8925a', isExport ? 'Net exports' : 'Net imports', Math.abs(netImp), total, true);
   }
   html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
-  model.dataPoints
-    .filter(dp => !dp.dataset.label.startsWith('__') && (dp.parsed?.y ?? 0) > 0)
+  model.dataPoints.filter(dp => !dp.dataset.label.startsWith('__') && (dp.parsed?.y ?? 0) > 0)
     .sort((a, b) => (b.parsed?.y ?? 0) - (a.parsed?.y ?? 0))
     .forEach(dp => { html += tooltipRow(COLORS[dp.dataset.label], dp.dataset.label, dp.parsed.y, total, false); });
   html += '</div>';
@@ -740,10 +830,7 @@ function externalTooltipLine(context) {
 function externalTooltipBar(context) {
   const model = context.tooltip;
   if (model.opacity === 0) { hideTooltip(); return; }
-  const info   = ALL_DATA[target.name];
-  const latest = info.latestYear;
-  const data   = info.years[latest];
-  const total  = data.Total ?? 0;
+  const info = ALL_DATA[target.name], latest = info.latestYear, data = info.years[latest], total = data.Total ?? 0;
   let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Mix (' + latest + ')</div>';
   html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
   if (data.Demand && data.Demand > 0) html += tooltipRow('#1a1a1a', 'Demand', data.Demand, total, true);
@@ -771,11 +858,10 @@ function renderLives() {
   const container = document.getElementById('lives-container');
   container.innerHTML = '';
   const label = document.createElement('span');
-  label.className   = 'lives-label';
-  label.textContent = 'Guesses left:';
+  label.className = 'lives-label'; label.textContent = 'Guesses left:';
   container.appendChild(label);
   for (let i = 0; i < MAX_GUESSES; i++) {
-    const dot     = document.createElement('div');
+    const dot = document.createElement('div');
     dot.className = 'life' + (i < MAX_GUESSES - guesses.length ? ' active' : '');
     container.appendChild(dot);
   }
@@ -790,72 +876,59 @@ function submitGuess() {
   const input = document.getElementById('guess-input');
   const error = document.getElementById('error');
   const val   = input.value.trim();
-
   if (!val) { error.textContent = 'Please type a country name.'; return; }
-
   const match = COUNTRIES.find(c => c.name.toLowerCase() === val.toLowerCase());
   if (!match) { error.textContent = '"' + val + '" not found \u2014 check spelling.'; return; }
   if (guesses.find(g => g.iso3 === match.iso3)) { error.textContent = 'Already guessed!'; return; }
-
   error.textContent = '';
   guesses.push(match);
   renderLives();
-
   const isCorrect = match.iso3 === target.iso3;
   addGuessRow(match, isCorrect);
   input.value = '';
   document.getElementById('autocomplete-list').style.display = 'none';
-
   saveDailyState();
-
   if (isCorrect)                          { showBanner(true);  endGame(); }
   else if (guesses.length >= MAX_GUESSES) { showBanner(false); endGame(); }
 }
 
 function addGuessRow(country, isCorrect) {
-  const row     = document.createElement('div');
+  const row = document.createElement('div');
   row.className = 'guess-row' + (isCorrect ? ' correct' : '');
-
-  const nameEl  = document.createElement('span');
-  nameEl.className   = 'guess-name';
+  const nameEl = document.createElement('span');
+  nameEl.className = 'guess-name';
   nameEl.textContent = (isCorrect ? '\u2713 ' : '\u2717 ') + country.name;
   row.appendChild(nameEl);
-
   if (!isCorrect) {
     const dist    = Math.round(haversineKm(country.lat, country.lng, target.lat, target.lng));
     const bearing = bearingDeg(country.lat, country.lng, target.lat, target.lng);
-    const label   = bearingLabel(bearing);
-    const guessTotal = country.latestTotal;
-    const guessDpc   = country.latestDpc;
-    const worldDpc   = WORLD_DPC[country.latestYear] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
-
-    const hint     = document.createElement('span');
+    const worldDpc = WORLD_DPC[country.latestYear] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
+    const hint = document.createElement('span');
     hint.className = 'guess-hint';
     hint.innerHTML =
       '<span class="guess-arrow">' + bearingArrowSVG(bearing) + '</span>'
-      + '<span class="guess-direction">' + label + '</span>'
+      + '<span class="guess-direction">' + bearingLabel(bearing) + '</span>'
       + '<span class="hint-divider">\u00b7</span>'
       + '<span>' + dist.toLocaleString() + ' km</span>'
       + '<span class="hint-divider">\u00b7</span>'
-      + '<span>' + fmtTWh(guessTotal) + ' generated</span>'
-      + (guessDpc != null
+      + '<span>' + fmtTWh(country.latestTotal) + ' generated</span>'
+      + (country.latestDpc != null
         ? '<span class="hint-divider">\u00b7</span>'
-          + '<span>' + guessDpc.toFixed(1) + ' MWh/person</span>'
+          + '<span>' + country.latestDpc.toFixed(1) + ' MWh/person</span>'
           + '<span style="color:#bbb">&nbsp;(world avg: ' + (worldDpc?.toFixed(1) ?? '\u2014') + ')</span>'
         : '');
     row.appendChild(hint);
   }
-
   document.getElementById('guesses').appendChild(row);
 }
 
 function showBanner(won) {
-  const banner  = document.getElementById('banner');
-  const div     = document.createElement('div');
+  const div = document.createElement('div');
   div.className = won ? 'win' : 'lose';
   div.textContent = won
-    ? '🎉 Correct in ' + guesses.length + (guesses.length === 1 ? ' guess!' : ' guesses!')
+    ? '\uD83C\uDF89 Correct in ' + guesses.length + (guesses.length === 1 ? ' guess!' : ' guesses!')
     : '\u274C The answer was ' + target.name + (MODE === 'practice' ? '. Keep practising!' : '. Better luck tomorrow!');
+  const banner = document.getElementById('banner');
   banner.innerHTML = '';
   banner.appendChild(div);
 }
@@ -864,13 +937,10 @@ function endGame() {
   gameOver = true;
   saveDailyState();
   if (MODE === 'practice') {
-    const won = guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
-    recordPracticeResult(won);
+    recordPracticeResult(guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3);
   }
   document.getElementById('input-area').style.display   = 'none';
   document.getElementById('new-game-btn').style.display = 'block';
-
-  // Unlock Practice button immediately after daily ends
   if (MODE === 'normal') {
     const switcher = document.querySelector('.mode-switcher');
     if (switcher) {
@@ -883,14 +953,12 @@ function endGame() {
 
 // ============================================================
 //  AUTOCOMPLETE
-//  Arrow keys navigate, Tab/Enter selects into the input field.
-//  A second Enter (or clicking Guess) submits the guess.
 // ============================================================
 
 function setupAutocomplete() {
   const input = document.getElementById('guess-input');
   const list  = document.getElementById('autocomplete-list');
-  let activeIdx = -1; // which suggestion is highlighted
+  let activeIdx = -1;
 
   function getItems() { return list.querySelectorAll('.ac-item'); }
 
@@ -908,9 +976,7 @@ function setupAutocomplete() {
     const items = getItems();
     if (activeIdx >= 0 && activeIdx < items.length) {
       input.value = items[activeIdx].textContent;
-      list.style.display = 'none';
-      activeIdx = -1;
-      return true;
+      list.style.display = 'none'; activeIdx = -1; return true;
     }
     return false;
   }
@@ -922,91 +988,57 @@ function setupAutocomplete() {
     if (!matches.length) { list.style.display = 'none'; return; }
     list.innerHTML = '';
     matches.forEach(c => {
-      const item       = document.createElement('div');
-      item.className   = 'ac-item';
-      item.textContent = c.name;
+      const item = document.createElement('div');
+      item.className = 'ac-item'; item.textContent = c.name;
       item.addEventListener('mousedown', e => {
-        e.preventDefault();
-        input.value        = c.name;
-        list.style.display = 'none';
-        activeIdx          = -1;
-        // just fill the field — user presses Enter or Guess to submit
+        e.preventDefault(); input.value = c.name;
+        list.style.display = 'none'; activeIdx = -1;
       });
       list.appendChild(item);
     });
     list.style.display = 'block';
   }
 
-  input.addEventListener('input', () => {
-    buildList(input.value.toLowerCase().trim());
-  });
+  input.addEventListener('input', () => buildList(input.value.toLowerCase().trim()));
 
   input.addEventListener('keydown', e => {
     const items = getItems();
     const open  = list.style.display === 'block' && items.length > 0;
-
     if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      highlight(open ? Math.min(activeIdx + 1, items.length - 1) : 0);
+      e.preventDefault(); highlight(open ? Math.min(activeIdx + 1, items.length - 1) : 0);
     } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); highlight(open ? Math.max(activeIdx - 1, 0) : items.length - 1);
+    } else if (e.key === 'Tab' && open) {
       e.preventDefault();
-      highlight(open ? Math.max(activeIdx - 1, 0) : items.length - 1);
-    } else if (e.key === 'Tab') {
-      if (open) {
-        e.preventDefault();
-        // Tab cycles forward (Shift+Tab backward)
-        const next = e.shiftKey
-          ? Math.max(activeIdx - 1, 0)
-          : Math.min(activeIdx + 1, items.length - 1);
-        highlight(next === activeIdx && activeIdx === -1 ? 0 : next);
-        selectActive();
-      }
+      const next = e.shiftKey ? Math.max(activeIdx - 1, 0) : Math.min(activeIdx + 1, items.length - 1);
+      highlight(activeIdx === -1 ? 0 : next); selectActive();
     } else if (e.key === 'Enter') {
-      if (open && activeIdx >= 0) {
-        // First Enter: select the highlighted suggestion
-        e.preventDefault();
-        selectActive();
-      } else {
-        // No suggestion highlighted (or list closed): submit
-        list.style.display = 'none';
-        submitGuess();
-      }
+      if (open && activeIdx >= 0) { e.preventDefault(); selectActive(); }
+      else { list.style.display = 'none'; submitGuess(); }
     } else if (e.key === 'Escape') {
-      list.style.display = 'none';
-      activeIdx = -1;
+      list.style.display = 'none'; activeIdx = -1;
     }
   });
 
   document.addEventListener('click', e => {
-    if (!e.target.closest('#autocomplete-wrapper')) {
-      list.style.display = 'none';
-      activeIdx = -1;
-    }
+    if (!e.target.closest('#autocomplete-wrapper')) { list.style.display = 'none'; activeIdx = -1; }
   });
 }
 
 // ============================================================
-//  DAILY GAME — start fresh or restore saved state
+//  DAILY GAME
 // ============================================================
 
 function restoreDailyGame() {
-  target   = getDailyTarget(COUNTRIES);
-  guesses  = [];
-  gameOver = false;
-
+  target = getDailyTarget(COUNTRIES);
+  guesses = []; gameOver = false;
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
   document.getElementById('input-area').style.display   = 'flex';
   document.getElementById('new-game-btn').style.display = 'none';
   document.getElementById('guess-input').value      = '';
-
-  renderLives();
-  renderStatBar();
-  renderFlowBar();
-  renderCharts();
-
-  // Replay any saved guesses from localStorage
+  renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
   const saved = loadDailyState();
   if (saved && saved.guesses.length > 0) {
     for (const iso3 of saved.guesses) {
@@ -1018,8 +1050,7 @@ function restoreDailyGame() {
     renderLives();
     if (saved.gameOver) {
       const won = guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
-      showBanner(won);
-      gameOver = true;
+      showBanner(won); gameOver = true;
       document.getElementById('input-area').style.display   = 'none';
       document.getElementById('new-game-btn').style.display = 'block';
     }
@@ -1027,25 +1058,18 @@ function restoreDailyGame() {
 }
 
 // ============================================================
-//  PRACTICE GAME — queue-based
+//  PRACTICE GAME
 // ============================================================
 
 function newGame() {
-  target   = nextPracticeCountry();
-  guesses  = [];
-  gameOver = false;
-
+  target = nextPracticeCountry(); guesses = []; gameOver = false;
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
   document.getElementById('input-area').style.display   = 'flex';
   document.getElementById('new-game-btn').style.display = 'none';
   document.getElementById('guess-input').value      = '';
-
-  renderLives();
-  renderStatBar();
-  renderFlowBar();
-  renderCharts();
+  renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
 }
 
 // ============================================================
