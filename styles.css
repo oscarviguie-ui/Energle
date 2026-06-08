@@ -1186,3 +1186,99 @@ footer a:hover { text-decoration: underline; }
 .mode-switcher {
   flex-wrap: wrap;
 }
+
+/* ---------- LEADERBOARD MODAL ---------- */
+
+.lb-tabs {
+  display: flex;
+  border-bottom: 1px solid #efefef;
+}
+
+.lb-tab {
+  flex: 1;
+  padding: 0.65rem;
+  background: none;
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.lb-tab:hover { color: #1a1a1a; }
+
+.lb-tab--active {
+  color: #1a1a1a;
+  border-bottom: 2px solid #1a1a1a;
+  margin-bottom: -1px;
+}
+
+.lb-body {
+  overflow-y: auto;
+  max-height: 340px;
+  padding: 0.5rem 0;
+}
+
+.lb-loading, .lb-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.lb-list { display: flex; flex-direction: column; }
+
+.lb-header-row {
+  display: flex;
+  align-items: center;
+  padding: 0.3rem 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #bbb;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  border-bottom: 1px solid #f8f8f8;
+  transition: background 0.1s;
+}
+
+.lb-row:last-child { border-bottom: none; }
+.lb-row:hover { background: #fafafa; }
+.lb-row--me { background: #f0fdf4; font-weight: 600; }
+.lb-row--me:hover { background: #e8faf0; }
+
+.lb-rank {
+  width: 32px;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.lb-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1a1a1a;
+}
+
+.lb-score {
+  width: 52px;
+  text-align: right;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: #888;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-score--won  { color: #16a34a; font-weight: 700; }
+.lb-score--lost { color: #dc2626; }
