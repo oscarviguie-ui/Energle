@@ -863,16 +863,24 @@ function endGame() {
   if (MODE === 'normal') {
     const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
     recordDailyResult(won, guesses.length);
-    ensureUsername().then(username => {
+    // If username already set, submit immediately; otherwise prompt after 2.5s
+    // so the player can see their result first
+    const submitScore = (username) => {
       sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won }).catch(() => {});
-    });
+    };
+    if (getUsername()) {
+      submitScore(getUsername());
+    } else {
+      setTimeout(() => ensureUsername().then(submitScore), 2500);
+    }
   }
   document.getElementById('input-area').style.display   = 'none';
   document.getElementById('new-game-btn').style.display = 'block';
   if (MODE === 'normal') {
     const switcher = document.querySelector('.mode-switcher');
     if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
-    setTimeout(() => showStatsModal(true), 1200);
+    // 2.5s delay so banner is fully visible before stats modal opens
+    setTimeout(() => showStatsModal(true), 2500);
   }
 }
 
@@ -1002,12 +1010,22 @@ function showStatsModal(afterGame) {
       + '<div class="st-dist-bar-wrap"><div class="st-dist-bar' + (isCurrent ? ' st-dist-bar--current' : '') + '" style="width:max(' + pct + '%,24px)">' + val + '</div></div></div>';
   }).join('');
 
+  // Today's result banner shown at top of modal when opened after a game
+  const todayResult = (afterGame && MODE === 'normal' && gameOver)
+    ? ('<div class="st-today ' + (won ? 'st-today--won' : 'st-today--lost') + '">'
+      + (won
+        ? '🎉 Puzzle #' + getDayNumber() + ' solved in ' + guesses.length + (guesses.length === 1 ? ' guess' : ' guesses') + '!'
+        : '❌ Puzzle #' + getDayNumber() + ' — the answer was <strong>' + target.name + '</strong>')
+      + '</div>')
+    : '';
+
   const cdId = 'stcd' + Date.now();
   const modal = document.createElement('div'); modal.id = 'stats-modal';
   modal.innerHTML =
     '<div class="st-backdrop"></div>'
     + '<div class="st-box">'
     + '<div class="st-header"><span class="st-title">Statistics</span><button class="st-close" id="st-close-btn">×</button></div>'
+    + todayResult
     + '<div class="st-grid">'
     + '<div class="st-stat"><span class="st-num">' + stats.played + '</span><span class="st-lbl">Played</span></div>'
     + '<div class="st-stat"><span class="st-num">' + winPct + '</span><span class="st-lbl">Win %</span></div>'
@@ -1099,25 +1117,37 @@ function renderLbAllTime(rows, me) {
   }
   const agg = {};
   rows.forEach(r => {
-    if (!agg[r.username]) agg[r.username] = { played:0, won:0, streak:0, bestStreak:0, lastDay:0 };
+    if (!agg[r.username]) agg[r.username] = { played:0, won:0, totalGuesses:0, streak:0, bestStreak:0, lastDay:0 };
     const a = agg[r.username]; a.played++;
+    a.totalGuesses += r.won ? r.guesses : 7; // count a loss as 7 (worse than max)
     if (r.won) { a.won++; a.streak = r.day === a.lastDay+1 ? a.streak+1 : 1; a.bestStreak = Math.max(a.bestStreak, a.streak); }
     else { a.streak = 0; }
     a.lastDay = r.day;
   });
   const sorted = Object.entries(agg)
-    .map(([username, s]) => ({ username, ...s, winPct: Math.round(s.won/s.played*100) }))
-    .sort((a,b) => b.winPct - a.winPct || b.played - a.played);
+    .map(([username, s]) => ({
+      username, ...s,
+      avgGuesses: (s.totalGuesses / s.played).toFixed(2),
+      winPct: Math.round(s.won / s.played * 100),
+    }))
+    // Rank by win% descending, ties broken by avg guesses ascending (lower = better)
+    .sort((a,b) => b.winPct - a.winPct || parseFloat(a.avgGuesses) - parseFloat(b.avgGuesses));
+  const medals = ['🥇','🥈','🥉'];
   document.getElementById('lb-body').innerHTML = '<div class="lb-list">'
-    + '<div class="lb-header-row"><span class="lb-rank">#</span><span class="lb-name">Player</span><span class="lb-score">Win%</span><span class="lb-score">Played</span><span class="lb-score">Best</span></div>'
+    + '<div class="lb-header-row">'
+    + '<span class="lb-rank">#</span>'
+    + '<span class="lb-name">Player</span>'
+    + '<span class="lb-score lb-score--hdr">Win %</span>'
+    + '<span class="lb-score lb-score--hdr">Avg guesses</span>'
+    + '</div>'
     + sorted.map((r, i) => {
         const isMe = me && r.username.toLowerCase() === me.toLowerCase();
+        const rank = i < 3 ? medals[i] : (i+1) + '.';
         return '<div class="lb-row lb-row--alltime' + (isMe ? ' lb-row--me' : '') + '">'
-          + '<span class="lb-rank">' + (i+1) + '</span>'
+          + '<span class="lb-rank">' + rank + '</span>'
           + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
           + '<span class="lb-score' + (r.winPct >= 50 ? ' lb-score--won' : '') + '">' + r.winPct + '%</span>'
-          + '<span class="lb-score">' + r.played + '</span>'
-          + '<span class="lb-score">' + r.bestStreak + '</span>'
+          + '<span class="lb-score lb-score--won">' + r.avgGuesses + '</span>'
           + '</div>';
       }).join('')
     + '</div>';
