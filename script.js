@@ -1130,15 +1130,16 @@ function renderLbAllTime(rows, me) {
       avgGuesses: (s.totalGuesses / s.played).toFixed(2),
       winPct: Math.round(s.won / s.played * 100),
     }))
-    // Rank by win% descending, ties broken by avg guesses ascending (lower = better)
-    .sort((a,b) => b.winPct - a.winPct || parseFloat(a.avgGuesses) - parseFloat(b.avgGuesses));
+    // Rank by win% desc, then avg guesses asc, then games played desc
+    .sort((a,b) => b.winPct - a.winPct || parseFloat(a.avgGuesses) - parseFloat(b.avgGuesses) || b.played - a.played);
   const medals = ['🥇','🥈','🥉'];
   document.getElementById('lb-body').innerHTML = '<div class="lb-list">'
     + '<div class="lb-header-row">'
     + '<span class="lb-rank">#</span>'
     + '<span class="lb-name">Player</span>'
     + '<span class="lb-score lb-score--hdr">Win %</span>'
-    + '<span class="lb-score lb-score--hdr">Avg guesses</span>'
+    + '<span class="lb-score lb-score--hdr">Avg</span>'
+    + '<span class="lb-score lb-score--hdr">Played</span>'
     + '</div>'
     + sorted.map((r, i) => {
         const isMe = me && r.username.toLowerCase() === me.toLowerCase();
@@ -1148,6 +1149,7 @@ function renderLbAllTime(rows, me) {
           + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
           + '<span class="lb-score' + (r.winPct >= 50 ? ' lb-score--won' : '') + '">' + r.winPct + '%</span>'
           + '<span class="lb-score lb-score--won">' + r.avgGuesses + '</span>'
+          + '<span class="lb-score">' + r.played + '</span>'
           + '</div>';
       }).join('')
     + '</div>';
