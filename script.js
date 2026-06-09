@@ -282,7 +282,7 @@ function modeSwitcherHTML() {
     <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
     <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
     <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
-    <button class="mode-btn" onclick="showLeaderboardModal()">Board</button>
+    <button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button>
   </div>`;
 }
 
