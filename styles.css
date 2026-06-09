@@ -1274,7 +1274,7 @@ footer a:hover { text-decoration: underline; }
 }
 
 .lb-score {
-  width: 52px;
+  width: 72px;
   text-align: right;
   flex-shrink: 0;
   font-size: 0.82rem;
@@ -1414,3 +1414,43 @@ footer a:hover { text-decoration: underline; }
   /* Footer */
   footer { font-size: 0.65rem; }
 }
+
+/* ---------- STATS MODAL — today's result ---------- */
+
+.st-today {
+  margin: 0 1.2rem 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.st-today--won {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.st-today--lost {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+.st-today strong { font-weight: 700; }
+
+/* ---------- LEADERBOARD — all-time avg column header ---------- */
+
+.lb-score--hdr {
+  color: #999;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Give the all-time table a touch more room */
+.lb-row--alltime { padding: 0.65rem 1rem; }
+
+.lb-body { max-height: 380px; }
