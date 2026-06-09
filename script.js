@@ -1130,8 +1130,8 @@ function renderLbAllTime(rows, me) {
       avgGuesses: (s.totalGuesses / s.played).toFixed(2),
       winPct: Math.round(s.won / s.played * 100),
     }))
-    // Rank by win% desc,  then games played desc, then avg guesses asc
-    .sort((a,b) => b.winPct - a.winPct  || b.played - a.played)|| parseFloat(a.avgGuesses) - parseFloat(b.avgGuesses);
+    // Rank by win% desc, then games played desc, then avg guesses asc (lower = better)
+    .sort((a,b) => b.winPct - a.winPct || b.played - a.played || parseFloat(a.avgGuesses) - parseFloat(b.avgGuesses));
   const medals = ['🥇','🥈','🥉'];
   document.getElementById('lb-body').innerHTML = '<div class="lb-list">'
     + '<div class="lb-header-row">'
