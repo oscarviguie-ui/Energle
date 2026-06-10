@@ -282,7 +282,7 @@ function modeSwitcherHTML() {
     <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
     <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
     <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
-    <button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button>
+    <button class="mode-btn" onclick="showLeaderboardModal()">Board</button>
   </div>`;
 }
 
@@ -477,32 +477,14 @@ function renderGameScreen() {
     + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
     + '</div>'
     + '<div id="legend-shared"></div>'
-    + '<details id="glossary">'
-    + '<summary id="glossary-trigger"><span class="glossary-icon">?</span><span>What does each source mean?</span><span class="glossary-arrow">›</span></summary>'
-    + '<div id="glossary-body">'
-    + '<div class="glossary-section"><h3 class="glossary-heading fossil">Fossil fuels</h3><div class="glossary-grid">'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#4a4a4a"></span><div><strong>Coal</strong><p>Hard coal and lignite burned in thermal power stations.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#e8925a"></span><div><strong>Gas</strong><p>Natural gas and LNG burned in gas turbines or combined-cycle plants.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#c0654a"></span><div><strong>Other Fossil</strong><p>Oil, diesel, heavy fuel oil, petroleum products, and waste incineration.</p></div></div>'
-    + '</div></div>'
-    + '<div class="glossary-section"><h3 class="glossary-heading low-carbon">Low-carbon</h3><div class="glossary-grid">'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#9b6dbd"></span><div><strong>Nuclear</strong><p>Electricity from uranium fission. Very low lifecycle emissions.</p></div></div>'
-    + '</div></div>'
-    + '<div class="glossary-section"><h3 class="glossary-heading renewables">Renewables</h3><div class="glossary-grid">'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#4a90c4"></span><div><strong>Hydro</strong><p>Run-of-river and reservoir hydropower.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#5ab88a"></span><div><strong>Wind</strong><p>Onshore and offshore wind turbines.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#f5c842"></span><div><strong>Solar</strong><p>Solar photovoltaic (PV) panels and solar thermal plants.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#a0724a"></span><div><strong>Bioenergy</strong><p>Biomass burning, biogas, sugarcane bagasse, and wood pellets.</p></div></div>'
-    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#2ab5a0"></span><div><strong>Other Renewables</strong><p>Geothermal, tidal, and wave energy.</p></div></div>'
-    + '</div></div>'
-    + '<p class="glossary-source">Source: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p>'
-    + '</div></details>'
-    + '<div id="guesses"></div><div id="banner"></div><p id="error"></p>'
     + '<div id="input-area"><div id="autocomplete-wrapper">'
     + '<input id="guess-input" type="text" placeholder="Type a country name…" autocomplete="off" />'
     + '<div id="autocomplete-list"></div></div>'
     + '<button id="submit-btn">Guess</button></div>'
+    + '<p id="error"></p>'
+    + '<div id="banner"></div>'
     + '<button id="new-game-btn" style="display:none">' + (isPractice ? 'Next puzzle ↺' : 'Come back tomorrow 🌙') + '</button>'
+    + '<div id="guesses"></div>'
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
@@ -696,7 +678,41 @@ function renderLegend(ordered) {
   document.getElementById('legend-shared').innerHTML = ordered
     .filter(src => years.some(y => (info.years[y]?.[src] ?? 0) > 0))
     .map(src => '<div class="legend-item"><span class="legend-swatch" style="background:' + COLORS[src] + '"></span>' + src + '</div>')
-    .join('');
+    .join('')
+    + '<button class="glossary-btn" onclick="showGlossaryModal()"><span class="glossary-icon">?</span> Resource type details</button>';
+}
+
+// ============================================================
+//  GLOSSARY MODAL
+// ============================================================
+function showGlossaryModal() {
+  const existing = document.getElementById('glossary-modal'); if (existing) existing.remove();
+  const modal = document.createElement('div'); modal.id = 'glossary-modal';
+  modal.innerHTML =
+    '<div class="st-backdrop"></div>'
+    + '<div class="st-box gl-box">'
+    + '<div class="st-header"><span class="st-title">Resource types</span><button class="st-close" id="gl-close-btn">×</button></div>'
+    + '<div class="gl-body">'
+    + '<div class="glossary-section"><h3 class="glossary-heading fossil">Fossil fuels</h3><div class="glossary-grid">'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#4a4a4a"></span><div><strong>Coal</strong><p>Hard coal and lignite burned in thermal power stations.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#e8925a"></span><div><strong>Gas</strong><p>Natural gas and LNG burned in gas turbines or combined-cycle plants.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#c0654a"></span><div><strong>Other Fossil</strong><p>Oil, diesel, heavy fuel oil, petroleum products, and waste incineration.</p></div></div>'
+    + '</div></div>'
+    + '<div class="glossary-section"><h3 class="glossary-heading low-carbon">Low-carbon</h3><div class="glossary-grid">'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#9b6dbd"></span><div><strong>Nuclear</strong><p>Electricity from uranium fission. Very low lifecycle emissions.</p></div></div>'
+    + '</div></div>'
+    + '<div class="glossary-section"><h3 class="glossary-heading renewables">Renewables</h3><div class="glossary-grid">'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#4a90c4"></span><div><strong>Hydro</strong><p>Run-of-river and reservoir hydropower.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#5ab88a"></span><div><strong>Wind</strong><p>Onshore and offshore wind turbines.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#f5c842"></span><div><strong>Solar</strong><p>Solar photovoltaic (PV) panels and solar thermal plants.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#a0724a"></span><div><strong>Bioenergy</strong><p>Biomass burning, biogas, sugarcane bagasse, and wood pellets.</p></div></div>'
+    + '<div class="glossary-item"><span class="glossary-swatch" style="background:#2ab5a0"></span><div><strong>Other Renewables</strong><p>Geothermal, tidal, and wave energy.</p></div></div>'
+    + '</div></div>'
+    + '<p class="glossary-source">Source: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p>'
+    + '</div></div>';
+  modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
+  document.body.appendChild(modal);
+  document.getElementById('gl-close-btn').addEventListener('click', () => modal.remove());
 }
 
 // ============================================================
@@ -906,8 +922,10 @@ function setupAutocomplete() {
   }
   function buildList(q) {
     activeIdx = -1;
-    if (q.length < 2) { list.style.display = 'none'; return; }
-    const matches = COUNTRIES.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
+    // Empty query: show the full eligible pool (alphabetical, scrollable).
+    // POOL is the active country set, so practice categories are filtered automatically.
+    const source = [...POOL].sort((a,b) => a.name.localeCompare(b.name));
+    const matches = q.length === 0 ? source : source.filter(c => c.name.toLowerCase().includes(q));
     if (!matches.length) { list.style.display = 'none'; return; }
     list.innerHTML = '';
     matches.forEach(c => {
@@ -918,11 +936,18 @@ function setupAutocomplete() {
     list.style.display = 'block';
   }
   input.addEventListener('input', () => buildList(input.value.toLowerCase().trim()));
+  input.addEventListener('focus', () => buildList(input.value.toLowerCase().trim()));
   input.addEventListener('keydown', e => {
     const items = getItems(), open = list.style.display === 'block' && items.length > 0;
     if (e.key === 'ArrowDown') { e.preventDefault(); highlight(open ? Math.min(activeIdx+1, items.length-1) : 0); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(open ? Math.max(activeIdx-1, 0) : items.length-1); }
-    else if (e.key === 'Tab' && open) { e.preventDefault(); const next = e.shiftKey ? Math.max(activeIdx-1,0) : Math.min(activeIdx+1,items.length-1); highlight(activeIdx===-1?0:next); selectActive(); }
+    else if (e.key === 'Tab' && open) {
+      // Tab behaves exactly like Enter: select the highlighted suggestion
+      // (or the first one if none is highlighted) into the input field.
+      e.preventDefault();
+      if (activeIdx === -1) highlight(0);
+      selectActive();
+    }
     else if (e.key === 'Enter') { if (open && activeIdx >= 0) { e.preventDefault(); selectActive(); } else { list.style.display = 'none'; submitGuess(); } }
     else if (e.key === 'Escape') { list.style.display = 'none'; activeIdx = -1; }
   });
