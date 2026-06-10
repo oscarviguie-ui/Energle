@@ -282,7 +282,7 @@ function modeSwitcherHTML() {
     <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
     <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
     <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
-    <button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button>
+    <button class="mode-btn" onclick="showLeaderboardModal()">Board</button>
   </div>`;
 }
 
@@ -648,7 +648,10 @@ function renderCharts() {
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
 
-  const srcDS = ordered.map(src => ({
+  // Only chart sources the country has actually used (non-zero in at least one year)
+  // — otherwise unused sources render as flat dotted lines along the x-axis
+  const activeSources = ordered.filter(src => years.some(y => (info.years[y]?.[src] ?? 0) > 0));
+  const srcDS = activeSources.map(src => ({
     label: src, data: years.map(y => info.years[y]?.[src] ?? 0),
     borderColor: COLORS[src], backgroundColor: COLORS[src] + '22',
     borderWidth: 1.5, pointRadius: 1.5, pointHoverRadius: 4, fill: false, tension: 0.3,
@@ -674,7 +677,7 @@ function renderCharts() {
 
   barChart = new Chart(document.getElementById('bar-chart').getContext('2d'), {
     type: 'bar',
-    data: { labels: [''], datasets: [...ordered].reverse().map(src => ({ label:src, data:[latestData[src]||0], backgroundColor:COLORS[src], borderWidth:0 })) },
+    data: { labels: [''], datasets: [...activeSources].reverse().map(src => ({ label:src, data:[latestData[src]||0], backgroundColor:COLORS[src], borderWidth:0 })) },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipBar } },
