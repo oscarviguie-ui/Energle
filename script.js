@@ -482,9 +482,9 @@ function renderGameScreen() {
     + '<div id="autocomplete-list"></div></div>'
     + '<button id="submit-btn">Guess</button></div>'
     + '<p id="error"></p>'
+    + '<div id="guesses"></div>'
     + '<div id="banner"></div>'
     + '<button id="new-game-btn" style="display:none">' + (isPractice ? 'Next puzzle ↺' : 'Come back tomorrow 🌙') + '</button>'
-    + '<div id="guesses"></div>'
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
@@ -843,8 +843,9 @@ function submitGuess() {
 
 function addGuessRow(country, isCorrect) {
   const row = document.createElement('div'); row.className = 'guess-row' + (isCorrect ? ' correct' : '');
+  const num = guesses.length; // this guess's number (1-based, set after push in submitGuess)
   const nameEl = document.createElement('span'); nameEl.className = 'guess-name';
-  nameEl.textContent = (isCorrect ? '✓ ' : '✗ ') + country.name;
+  nameEl.innerHTML = '<span class="guess-num">' + num + '</span>' + (isCorrect ? '✓ ' : '✗ ') + country.name;
   row.appendChild(nameEl);
   if (!isCorrect) {
     const dist    = Math.round(haversineKm(country.lat, country.lng, target.lat, target.lng));
@@ -865,7 +866,9 @@ function addGuessRow(country, isCorrect) {
         : '');
     row.appendChild(hint);
   }
-  document.getElementById('guesses').appendChild(row);
+  // Newest guess at the top, directly under the input box
+  const container = document.getElementById('guesses');
+  container.insertBefore(row, container.firstChild);
 }
 
 function showBanner(won) {
