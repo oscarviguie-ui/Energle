@@ -726,7 +726,10 @@ h1 {
 #error {
   font-size: 0.8rem;
   color: #dc2626;
-  min-height: 16px;
+}
+
+#error:empty {
+  display: none;
 }
 
 /* ---------- LOADING ---------- */
@@ -1513,4 +1516,62 @@ footer a:hover { text-decoration: underline; }
   .glossary-btn { margin-left: 0; margin-top: 4px; }
   #autocomplete-list { max-height: 200px; }
   .gl-box { width: 96vw; }
+}
+
+/* ---------- GUESS NUMBER BADGE + TIGHTER SPACING (practice/daily) ---------- */
+
+.guess-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.guess-row.correct .guess-num {
+  background: #2ecc71;
+}
+
+.guess-name {
+  display: flex;
+  align-items: center;
+}
+
+/* Tighten the space between input, error line, and the first guess */
+#error {
+  margin: 0;
+}
+
+#error:not(:empty) {
+  margin-top: 4px;
+}
+
+/* Guesses container takes no space until it has at least one guess */
+#guesses {
+  margin: 0;
+}
+
+#guesses:not(:empty) {
+  margin-top: 8px;
+}
+
+/* Banner collapses entirely when empty, spaced only when shown */
+#banner {
+  margin: 0;
+}
+
+#banner:not(:empty) {
+  margin-top: 10px;
+}
+
+/* Next-game button only exists in the layout when visible (display toggled in JS) */
+#new-game-btn {
+  margin-top: 10px;
 }
