@@ -359,7 +359,7 @@ function renderBrowseScreen() {
       + '</button>';
   }).join('');
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>Energle ⚡</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>Energle</h1>' + modeSwitcherHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">Browse all country energy profiles</p>'
     + '<button id="back-to-cats">← Categories</button></div></header>'
     + '<div class="browse-search-wrap"><input id="browse-search" type="text" placeholder="Search countries…" autocomplete="off" /></div>'
@@ -380,7 +380,7 @@ function browseCountry(iso3) {
   if (barChart)  { barChart.destroy();  barChart  = null; }
   const prevTarget = target; target = country;
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>Energle ⚡</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>Energle</h1>' + modeSwitcherHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + country.name + ' · ' + (country.continent || '') + '</p>'
     + '<button id="back-to-browse">← Browse</button></div></header>'
     + '<div id="stat-bar">'
@@ -430,7 +430,7 @@ function renderPracticePickerScreen() {
       + '</div>';
   }).join('');
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>Energle ⚡</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>Energle</h1>' + modeSwitcherHTML() + '</div>'
     + '<p class="subtitle">Choose a category to practice</p></header>'
     + '<div class="cat-grid">' + cards + '</div>'
     + '<div class="browse-btn-wrap"><button class="browse-all-btn" onclick="tryBrowse()">🔍 Browse all countries</button></div>'
@@ -456,7 +456,7 @@ function renderGameScreen() {
   const backBtn = isPractice ? '<button id="back-to-categories">← Categories</button>' : '';
 
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>Energle ⚡</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>Energle</h1>' + modeSwitcherHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + subtitle + '</p>' + backBtn + '</div></header>'
     + '<div id="lives-container"></div>'
     + '<div id="stat-bar">'
