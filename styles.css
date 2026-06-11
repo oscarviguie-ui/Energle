@@ -1524,19 +1524,22 @@ footer a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
-  border-radius: 50%;
-  background: #1a1a1a;
-  color: #fff;
-  font-size: 0.7rem;
+  margin-right: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #888;
+  font-size: 0.65rem;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .guess-row.correct .guess-num {
-  background: #2ecc71;
+  background: #dcfce7;
+  color: #16a34a;
 }
 
 .guess-name {
