@@ -845,7 +845,7 @@ function addGuessRow(country, isCorrect) {
   const row = document.createElement('div'); row.className = 'guess-row' + (isCorrect ? ' correct' : '');
   const num = guesses.length; // this guess's number (1-based, set after push in submitGuess)
   const nameEl = document.createElement('span'); nameEl.className = 'guess-name';
-  nameEl.innerHTML = '<span class="guess-num">' + num + '</span>' + (isCorrect ? '✓ ' : '✗ ') + country.name;
+  nameEl.innerHTML = '<span class="guess-num">Guess ' + num + '</span>' + (isCorrect ? '✓ ' : '✗ ') + country.name;
   row.appendChild(nameEl);
   if (!isCorrect) {
     const dist    = Math.round(haversineKm(country.lat, country.lng, target.lat, target.lng));
