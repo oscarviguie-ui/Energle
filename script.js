@@ -282,7 +282,7 @@ function modeSwitcherHTML() {
     <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
     <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
     <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
-    <button class="mode-btn" onclick="showLeaderboardModal()">Board</button>
+    <button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button>
   </div>`;
 }
 
@@ -1125,8 +1125,15 @@ function renderLbToday(rows, me) {
     document.getElementById('lb-body').innerHTML = '<div class="lb-empty">No scores yet for Puzzle #' + getDayNumber() + '. Be the first!</div>';
     return;
   }
+  // Sort by effective score: a loss counts as 7 so it always ranks below any win.
+  // Ties broken by submission time (earlier first).
+  const effScore = r => r.won ? r.guesses : 7;
+  const sorted = [...rows].sort((a,b) =>
+    effScore(a) - effScore(b) ||
+    new Date(a.created_at) - new Date(b.created_at)
+  );
   const medals = ['🥇','🥈','🥉'];
-  document.getElementById('lb-body').innerHTML = '<div class="lb-list">' + rows.map((r, i) => {
+  document.getElementById('lb-body').innerHTML = '<div class="lb-list">' + sorted.map((r, i) => {
     const isMe = me && r.username.toLowerCase() === me.toLowerCase();
     const rank = i < 3 ? medals[i] : (i+1) + '.';
     const scoreStr = r.won ? r.guesses + '/6' : 'X/6';
