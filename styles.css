@@ -1578,3 +1578,19 @@ footer a:hover { text-decoration: underline; }
 #new-game-btn {
   margin-top: 10px;
 }
+
+/* ── Leaderboard modal: larger than the shared .st-box, but not full screen ── */
+#lb-modal .st-box.lb-box {
+  width: min(760px, 92vw);     /* ~2x the current width on a monitor, near full width on phones */
+  max-width: none;
+  height: min(820px, 85vh);    /* fixed tall box; the list scrolls inside it */
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+}
+#lb-modal .lb-body {
+  flex: 1 1 auto;              /* list fills the space under the header and tabs */
+  min-height: 0;               /* lets the flex child scroll instead of overflowing */
+  max-height: none;            /* removes the old short cap that caused the early scrollbar */
+  overflow-y: auto;
+}
