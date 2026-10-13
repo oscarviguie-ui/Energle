@@ -1594,3 +1594,36 @@ footer a:hover { text-decoration: underline; }
   max-height: none;            /* removes the old short cap that caused the early scrollbar */
   overflow-y: auto;
 }
+
+/* ── Header right: podium + Leaderboard button ── */
+.header-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.header-right { display: flex; align-items: center; gap: 18px; }
+.header-right .mode-switcher { margin: 0; }
+
+.podium {
+  display: flex; align-items: flex-end; gap: 6px;
+  background: none; border: 0; padding: 4px 6px; margin: 0;
+  border-radius: 6px; cursor: pointer; font: inherit; color: inherit;
+}
+.podium:hover { background: rgba(0, 0, 0, 0.04); }
+.podium-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 72px; }
+.podium-medal { font-size: 1.35rem; line-height: 1; }
+.podium-name {
+  max-width: 100%; font-size: 0.72rem; font-weight: 600; color: #444;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Row under the header line: lives left, mode buttons right ── */
+.nav-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap; margin: 14px 0;
+}
+.nav-row #lives-container { margin: 0; }
+.nav-row .mode-switcher { margin: 0 0 0 auto; flex-shrink: 0; }
+
+/* ── Phones: podium and Leaderboard drop under the title, spread across the width ── */
+@media (max-width: 600px) {
+  .header-right { width: 100%; justify-content: space-between; }
+  .podium-slot { width: 60px; }
+  .podium-medal { font-size: 1.15rem; }
+}
