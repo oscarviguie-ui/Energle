@@ -1616,14 +1616,69 @@ footer a:hover { text-decoration: underline; }
 /* ── Row under the header line: lives left, mode buttons right ── */
 .nav-row {
   display: flex; justify-content: space-between; align-items: center;
-  gap: 12px; flex-wrap: wrap; margin: 14px 0;
+  gap: 12px; flex-wrap: wrap;
+  margin: 0;                   /* #app's 1.25rem gap already spaces this row, as it did the old lives row */
 }
 .nav-row #lives-container { margin: 0; }
 .nav-row .mode-switcher { margin: 0 0 0 auto; flex-shrink: 0; }
 
-/* ── Phones: podium and Leaderboard drop under the title, spread across the width ── */
+/* ============================================================
+   PHONES ONLY (max 600px) — compact header
+   Desktop is unaffected by everything in this block.
+   ============================================================ */
 @media (max-width: 600px) {
-  .header-right { width: 100%; justify-content: space-between; }
-  .podium-slot { width: 60px; }
-  .podium-medal { font-size: 1.15rem; }
+
+  /* The older mobile rule made .mode-switcher a 2x2 grid for 4 buttons.
+     The groups now hold 3 (Daily/Practice/Stats) and 1 (Leaderboard), so use a single row. */
+  .mode-switcher { display: flex; flex-wrap: nowrap; }
+  .mode-btn:nth-child(1),
+  .mode-btn:nth-child(2) { border-bottom: none; }
+
+  /* Row 1: larger title left; medals with the Leaderboard button stacked under them, right */
+  .header-top { flex-wrap: nowrap; gap: 10px; align-items: center; }
+  h1 { font-size: 1.9rem; white-space: nowrap; }
+  .header-right {
+    flex-direction: column; align-items: stretch; gap: 5px;
+    flex-shrink: 1; min-width: 0;
+  }
+  .podium { gap: 0; padding: 2px; justify-content: space-between; }
+  .podium-slot { width: 50px; }
+  .podium-medal { font-size: 1.05rem; }
+  .podium-name { font-size: 0.62rem; }
+  .lb-switcher { width: 100%; }                       /* button spans the width of the medals */
+  .lb-switcher .mode-btn { flex: 1; padding: 5px 8px; font-size: 0.72rem; }
+
+  /* Row 2: subtitle kept to a single line */
+  .subtitle {
+    font-size: 0.72rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    min-width: 0; flex: 1;
+  }
+  .subtitle-row { flex-wrap: nowrap; }
+
+  /* Row 3: Daily / Practice / Stats as a full-width row,
+     Row 4: "Guesses left" as its own full row underneath */
+  .nav-row { flex-direction: column-reverse; align-items: stretch; flex-wrap: nowrap; gap: 0.9rem; }
+  .nav-row > div:empty { display: none; }              /* Practice/Browse screens have no dots */
+  .nav-row .mode-switcher { width: 100%; margin: 0; }
+  .nav-row .mode-btn { flex: 1; padding: 7px 8px; font-size: 0.78rem; }
+  .nav-row #lives-container { justify-content: center; }
+  .lives-label { white-space: nowrap; }
+
+  /* Stat bar: 2x2 grid, centred — generation + its world average on top,
+     demand per capita + its world average below */
+  #stat-bar {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0.7rem 0.75rem; text-align: center;
+  }
+  .stat-item { align-items: center; }
+}
+
+/* Very narrow phones (≤ 380px, e.g. many Androids at 360px): tighten one more step */
+@media (max-width: 380px) {
+  h1 { font-size: 1.65rem; }
+  .podium-slot { width: 46px; }
+  .podium-name { font-size: 0.58rem; }
+  .subtitle { font-size: 0.68rem; }
+  .stat-value { font-size: 0.8rem; }
 }
