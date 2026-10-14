@@ -43,10 +43,10 @@ async function sbFetchToday(day) {
 // All-time stats are aggregated in Postgres by the `leaderboard_alltime` view
 // (one row per player, first attempt per day only). Sorted server-side using the
 // confirmed order: win % desc → games played desc → avg guesses asc.
-async function sbFetchAllTime() {
+async function sbFetchAllTime(limit = 500) {
   try {
     const res = await fetch(
-      SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=win_pct.desc,played.desc,avg_guesses.asc&limit=500',
+      SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=win_pct.desc,played.desc,avg_guesses.asc&limit=' + limit,
       { headers: SB_HEADERS }
     );
     return res.ok ? res.json() : [];
@@ -230,7 +230,23 @@ const ISO3_CONTINENT = {
 // ============================================================
 //  STATE
 // ============================================================
-let ALL_DATA = null, WORLD_DPC = null, COUNTRIES = [], POOL = [];
+let ALL_DATA = null, WORLD_DPC = null, WORLD_GEN = {}, COUNTRIES = [], POOL = [];
+
+// World average total generation per country, by year: the simple mean of every
+// country's Total (TWh) in that year. Built once from the loaded data.
+function buildWorldGen() {
+  const sums = {}, counts = {};
+  for (const info of Object.values(ALL_DATA)) {
+    for (const [year, yd] of Object.entries(info.years)) {
+      const t = yd?.Total;
+      if (t == null || t <= 0) continue;
+      sums[year] = (sums[year] || 0) + t;
+      counts[year] = (counts[year] || 0) + 1;
+    }
+  }
+  WORLD_GEN = {};
+  for (const y of Object.keys(sums)) WORLD_GEN[y] = sums[y] / counts[y];
+}
 let target = null, guesses = [], gameOver = false;
 let lineChart = null, barChart = null;
 let MODE = 'normal', PRACTICE_CAT = null;
@@ -253,6 +269,7 @@ async function loadData() {
     WORLD_DPC = raw['__world_dpc__'];
     delete raw['__world_dpc__'];
     ALL_DATA = raw;
+    buildWorldGen();
     COUNTRIES = Object.entries(ALL_DATA).map(([name, info]) => {
       const latest = info.latestYear, yd = info.years[latest] ?? {}, total = yd.Total ?? 0;
       const renSum = ['Hydro','Wind','Solar','Bioenergy','Other Renewables'].reduce((s,k) => s + (yd[k] ?? 0), 0);
@@ -281,12 +298,53 @@ function modeSwitcherHTML() {
   const pA = MODE === 'practice' ? 'active' : '';
   const lC = locked ? 'locked' : '';
   const lI = locked ? ' 🔒' : '';
-  return `<div class="mode-switcher">
+  return `<div class="mode-switcher" id="mode-nav">
     <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
     <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
     <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
-    <button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button>
   </div>`;
+}
+
+// Row under the header line: lives on the left (game screen only), mode buttons on the right
+function navRowHTML(withLives) {
+  return '<div class="nav-row">'
+    + (withLives ? '<div id="lives-container"></div>' : '<div></div>')
+    + modeSwitcherHTML()
+    + '</div>';
+}
+
+// Top-right of the header: all-time podium + Leaderboard button
+function headerRightHTML() {
+  return '<div class="header-right">'
+    + podiumHTML()
+    + '<div class="mode-switcher lb-switcher">'
+    + '<button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button>'
+    + '</div></div>';
+}
+
+// ============================================================
+//  PODIUM — top 3 of the all-time leaderboard
+// ============================================================
+let PODIUM = null; // null = not loaded yet; [] = no scores
+
+function podiumHTML() {
+  const medals = ['🥇','🥈','🥉'];
+  const slots = medals.map((m, i) => {
+    const r = PODIUM && PODIUM[i];
+    const name = r ? escHtml(r.username) : (PODIUM ? '—' : '…');
+    return '<div class="podium-slot">'
+      + '<span class="podium-medal">' + m + '</span>'
+      + '<span class="podium-name" title="' + name + '">' + name + '</span>'
+      + '</div>';
+  }).join('');
+  return '<button id="podium" class="podium" onclick="showLeaderboardModal(\'alltime\')" title="All-time leaderboard">'
+    + slots + '</button>';
+}
+
+async function loadPodium() {
+  PODIUM = await sbFetchAllTime(3);
+  const el = document.getElementById('podium');
+  if (el) el.outerHTML = podiumHTML();
 }
 
 function switchMode(mode) {
@@ -362,9 +420,10 @@ function renderBrowseScreen() {
       + '</button>';
   }).join('');
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">Browse all country energy profiles</p>'
     + '<button id="back-to-cats">← Categories</button></div></header>'
+    + navRowHTML(false)
     + '<div class="browse-search-wrap"><input id="browse-search" type="text" placeholder="Search countries…" autocomplete="off" /></div>'
     + '<div class="browse-list">' + rows + '</div>'
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
@@ -383,11 +442,13 @@ function browseCountry(iso3) {
   if (barChart)  { barChart.destroy();  barChart  = null; }
   const prevTarget = target; target = country;
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + country.name + ' · ' + (country.continent || '') + '</p>'
     + '<button id="back-to-browse">← Browse</button></div></header>'
+    + navRowHTML(false)
     + '<div id="stat-bar">'
     + '<div class="stat-item"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span></div>'
+    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world-gen">—</span></div>'
     + '<div class="stat-divider"></div>'
     + '<div class="stat-item"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span></div>'
     + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world">—</span></div>'
@@ -433,8 +494,9 @@ function renderPracticePickerScreen() {
       + '</div>';
   }).join('');
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
     + '<p class="subtitle">Choose a category to practice</p></header>'
+    + navRowHTML(false)
     + '<div class="cat-grid">' + cards + '</div>'
     + '<div class="browse-btn-wrap"><button class="browse-all-btn" onclick="tryBrowse()">🔍 Browse all countries</button></div>'
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
@@ -443,7 +505,7 @@ function renderPracticePickerScreen() {
 // ============================================================
 //  INIT
 // ============================================================
-function initApp() { POOL = COUNTRIES; renderGameScreen(); restoreDailyGame(); }
+function initApp() { POOL = COUNTRIES; renderGameScreen(); restoreDailyGame(); loadPodium(); }
 
 function practiceSubtitle() {
   if (MODE !== 'practice' || !PRACTICE_CAT) return '';
@@ -459,11 +521,12 @@ function renderGameScreen() {
   const backBtn = isPractice ? '<button id="back-to-categories">← Categories</button>' : '';
 
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + modeSwitcherHTML() + '</div>'
+    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + subtitle + '</p>' + backBtn + '</div></header>'
-    + '<div id="lives-container"></div>'
+    + navRowHTML(true)
     + '<div id="stat-bar">'
     + '<div class="stat-item"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span></div>'
+    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world-gen">—</span></div>'
     + '<div class="stat-divider"></div>'
     + '<div class="stat-item"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span></div>'
     + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world">—</span></div>'
@@ -542,6 +605,9 @@ function renderStatBar() {
   document.getElementById('stat-total').textContent = fmtTWh(total);
   document.getElementById('stat-dpc').textContent   = dpc != null ? dpc.toFixed(1) + ' MWh / person (' + latest + ')' : '—';
   document.getElementById('stat-world').textContent = worldDpc != null ? worldDpc.toFixed(1) + ' MWh / person' : '—';
+  // Same year as the country's figure; fall back to the latest year available
+  const worldGen = WORLD_GEN[latest] ?? WORLD_GEN[Math.max(...Object.keys(WORLD_GEN).map(Number))];
+  document.getElementById('stat-world-gen').textContent = worldGen != null ? fmtTWh(worldGen) + ' / country' : '—';
 }
 
 function renderFlowBar() {
@@ -891,7 +957,8 @@ function endGame() {
     // If username already set, submit immediately; otherwise prompt after 2.5s
     // so the player can see their result first
     const submitScore = (username) => {
-      sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won }).catch(() => {});
+      // Refresh the podium once the score is stored, in case the top 3 changed
+      sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won }).then(loadPodium).catch(() => {});
     };
     if (getUsername()) {
       submitScore(getUsername());
@@ -902,7 +969,7 @@ function endGame() {
   document.getElementById('input-area').style.display   = 'none';
   document.getElementById('new-game-btn').style.display = 'block';
   if (MODE === 'normal') {
-    const switcher = document.querySelector('.mode-switcher');
+    const switcher = document.getElementById('mode-nav');
     if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
     // 2.5s delay so banner is fully visible before stats modal opens
     setTimeout(() => showStatsModal(true), 2500);
@@ -1086,7 +1153,7 @@ function showStatsModal(afterGame) {
 // ============================================================
 //  LEADERBOARD MODAL
 // ============================================================
-function showLeaderboardModal() {
+function showLeaderboardModal(tab = 'today') {
   const existing = document.getElementById('lb-modal'); if (existing) existing.remove();
   const modal = document.createElement('div'); modal.id = 'lb-modal';
   modal.innerHTML =
@@ -1095,15 +1162,15 @@ function showLeaderboardModal() {
     + '<div class="st-box lb-box">'
     + '<div class="st-header"><span class="st-title">Leaderboard</span><button class="st-close" id="lb-close-btn">×</button></div>'
     + '<div class="lb-tabs">'
-    + '<button class="lb-tab lb-tab--active" id="lb-tab-today" onclick="lbSwitchTab(\'today\')">Today</button>'
-    + '<button class="lb-tab" id="lb-tab-alltime" onclick="lbSwitchTab(\'alltime\')">All Time</button>'
+    + '<button class="lb-tab' + (tab === 'today' ? ' lb-tab--active' : '') + '" id="lb-tab-today" onclick="lbSwitchTab(\'today\')">Today</button>'
+    + '<button class="lb-tab' + (tab === 'alltime' ? ' lb-tab--active' : '') + '" id="lb-tab-alltime" onclick="lbSwitchTab(\'alltime\')">All Time</button>'
     + '</div>'
     + '<div class="lb-body" id="lb-body"><div class="lb-loading">Loading…</div></div>'
     + '</div>';
   modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
   document.body.appendChild(modal);
   document.getElementById('lb-close-btn').addEventListener('click', () => modal.remove());
-  lbLoadTab('today');
+  lbLoadTab(tab);
 }
 
 function lbSwitchTab(tab) {
