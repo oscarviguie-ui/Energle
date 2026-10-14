@@ -970,7 +970,7 @@ footer a:hover { text-decoration: underline; }
 
 /* ---------- STATS / LEADERBOARD MODAL ---------- */
 
-#stats-modal, #lb-modal {
+#stats-modal, #lb-modal, #username-modal {
   position: fixed;
   inset: 0;
   z-index: 600;
@@ -978,6 +978,9 @@ footer a:hover { text-decoration: underline; }
   align-items: center;
   justify-content: center;
 }
+
+/* The name prompt must sit above every other modal */
+#username-modal { z-index: 700; }
 
 .st-backdrop {
   position: absolute;
