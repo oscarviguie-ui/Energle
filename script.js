@@ -42,12 +42,12 @@ async function sbFetchToday(day) {
 }
 
 // All-time stats are aggregated in Postgres by the `leaderboard_alltime` view
-// (one row per player, first attempt per day only). Sorted server-side using the
-// confirmed order: win % desc → games played desc → avg guesses asc.
+// (one row per player, first attempt per day only). Ranked by Weighted Score
+// (lower is better), ties broken by more puzzles played. The podium uses the same order.
 async function sbFetchAllTime(limit = 500) {
   try {
     const res = await fetch(
-      SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=win_pct.desc,played.desc,avg_guesses.asc&limit=' + limit,
+      SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=score.asc,played.desc&limit=' + limit,
       { headers: SB_HEADERS }
     );
     return res.ok ? res.json() : [];
@@ -1239,36 +1239,80 @@ function renderLbToday(rows, me) {
   }).join('') + '</div>';
 }
 
-// Rows arrive already aggregated and sorted by the `leaderboard_alltime` view:
-// { username, played, won, win_pct, avg_guesses } — one row per player.
+// Rows arrive aggregated and sorted by the `leaderboard_alltime` view:
+// { username, played, avg_guesses, score, site_avg } — one row per player, best score first.
 function renderLbAllTime(rows, me) {
   if (!rows.length) {
     document.getElementById('lb-body').innerHTML = '<div class="lb-empty">No scores yet.</div>';
     return;
   }
-  const medals = ['🥇','🥈','🥉'];
-  document.getElementById('lb-body').innerHTML = '<div class="lb-list">'
+  const medals  = ['🥇','🥈','🥉'];
+  const typical = Number(rows[0].site_avg).toFixed(2); // average guesses per game, all players
+
+  // Rough guide to how fast your score becomes your own, without hard-coded numbers.
+  // Your own results make up n/(n+m) of the score, where m = puzzles per player:
+  // exactly half after m puzzles, three-quarters after 3m.
+  const pace = '<li>As a rough guide, once you\'ve played as many puzzles as the average player, your score is halfway to your own Avg. At about three times that, it\'s mostly your own.</li>';
+
+  // Explanation: hidden until the player taps "Weighted Score ⓘ" in the column header
+  const info =
+    '<div class="lb-info-panel" id="lb-info-panel" hidden>'
+    + '<div class="lb-info-head"><span>How the ranking works</span>'
+    + '<button class="lb-info-close" onclick="lbToggleInfo()" aria-label="Close">×</button></div>'
+    + '<ul>'
+    + '<li><strong>Weighted Score decides your rank.</strong> It combines how few guesses you need with how many puzzles you\'ve played. Lower is better.</li>'
+    + '<li>After only a few puzzles, your score stays close to a typical result on Energle (<strong>' + typical + ' guesses</strong>). Every puzzle you play moves it closer to your own Avg.</li>'
+    + pace
+    + '<li>So one lucky puzzle won\'t put you on top, but playing well regularly will, whenever you started.</li>'
+    + '</ul>'
+    + '<div class="lb-info-sub">The other columns</div>'
+    + '<ul>'
+    + '<li><strong>Avg:</strong> your average number of guesses per puzzle. A puzzle you didn\'t solve counts as 7.</li>'
+    + '<li><strong>Played:</strong> how many daily puzzles you\'ve played. Only your first try at each one counts.</li>'
+    + '</ul></div>';
+
+  let dividerShown = false;
+  const body = rows.map((r, i) => {
+    const isMe  = me && r.username.toLowerCase() === me.toLowerCase();
+    const rank  = i < 3 ? medals[i] : (i+1) + '.';
+    const score = Number(r.score);
+    // Reference line where scores pass the typical result
+    let divider = '';
+    if (!dividerShown && score > Number(typical)) {
+      dividerShown = true;
+      divider = '<div class="lb-avg-divider"><span>Typical result · ' + typical + '</span></div>';
+    }
+    return divider
+      + '<div class="lb-row lb-row--alltime' + (isMe ? ' lb-row--me' : '') + '">'
+      + '<span class="lb-rank">' + rank + '</span>'
+      + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
+      + '<span class="lb-score lb-score--main">' + score.toFixed(2) + '</span>'
+      + '<span class="lb-score">' + Number(r.avg_guesses).toFixed(2) + '</span>'
+      + '<span class="lb-score">' + r.played + '</span>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('lb-body').innerHTML = info
+    + '<div class="lb-list">'
     + '<div class="lb-header-row">'
     + '<span class="lb-rank">#</span>'
     + '<span class="lb-name">Player</span>'
-    + '<span class="lb-score lb-score--hdr">Win %</span>'
+    + '<button class="lb-score lb-score--hdr lb-score--main-hdr lb-info-btn" id="lb-info-btn" onclick="lbToggleInfo()" aria-expanded="false" title="How the ranking works">'
+    +   'Weighted Score <span class="lb-info-icon">i</span></button>'
     + '<span class="lb-score lb-score--hdr">Avg</span>'
     + '<span class="lb-score lb-score--hdr">Played</span>'
     + '</div>'
-    + rows.map((r, i) => {
-        const isMe   = me && r.username.toLowerCase() === me.toLowerCase();
-        const rank   = i < 3 ? medals[i] : (i+1) + '.';
-        const winPct = Number(r.win_pct);
-        const avg    = Number(r.avg_guesses).toFixed(2);
-        return '<div class="lb-row lb-row--alltime' + (isMe ? ' lb-row--me' : '') + '">'
-          + '<span class="lb-rank">' + rank + '</span>'
-          + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
-          + '<span class="lb-score' + (winPct >= 50 ? ' lb-score--won' : '') + '">' + winPct + '%</span>'
-          + '<span class="lb-score lb-score--won">' + avg + '</span>'
-          + '<span class="lb-score">' + r.played + '</span>'
-          + '</div>';
-      }).join('')
+    + body
     + '</div>';
+}
+
+function lbToggleInfo() {
+  const panel = document.getElementById('lb-info-panel');
+  const btn   = document.getElementById('lb-info-btn');
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  btn.setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) document.getElementById('lb-body').scrollTop = 0;
 }
 
 // ============================================================
