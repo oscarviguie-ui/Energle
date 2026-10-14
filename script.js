@@ -26,7 +26,8 @@ async function sbInsert(row) {
       headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
       body: JSON.stringify(row),
     });
-    return res.ok;
+    // 409 = this player already has a row for today (if a unique constraint exists) — count as sent
+    return res.ok || res.status === 409;
   } catch { return false; }
 }
 
@@ -127,7 +128,7 @@ function saveDailyState() {
   if (MODE !== 'normal') return;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver,
+      day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver, submitted: scoreSubmitted,
     }));
   } catch {}
 }
@@ -250,6 +251,7 @@ function buildWorldGen() {
 let target = null, guesses = [], gameOver = false;
 let lineChart = null, barChart = null;
 let MODE = 'normal', PRACTICE_CAT = null;
+let scoreSubmitted = false; // has today's daily result reached Supabase?
 
 function practiceUnlocked() {
   if (MODE === 'practice') return true;
@@ -954,16 +956,15 @@ function endGame() {
   if (MODE === 'normal') {
     const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
     recordDailyResult(won, guesses.length);
-    // If username already set, submit immediately; otherwise prompt after 2.5s
-    // so the player can see their result first
-    const submitScore = (username) => {
-      // Refresh the podium once the score is stored, in case the top 3 changed
-      sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won }).then(loadPodium).catch(() => {});
-    };
+    // Returning player: submit now, stats after 2.5s.
+    // First-time player: after 2.5s ask for a name FIRST, then submit, then show stats —
+    // previously both modals opened together and the stats modal covered the name prompt,
+    // so many first-time scores (wins and losses) were never sent.
     if (getUsername()) {
-      submitScore(getUsername());
+      submitDailyScore();
+      setTimeout(() => showStatsModal(true), 2500);
     } else {
-      setTimeout(() => ensureUsername().then(submitScore), 2500);
+      setTimeout(() => ensureUsername().then(() => { submitDailyScore(); showStatsModal(true); }), 2500);
     }
   }
   document.getElementById('input-area').style.display   = 'none';
@@ -971,8 +972,20 @@ function endGame() {
   if (MODE === 'normal') {
     const switcher = document.getElementById('mode-nav');
     if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
-    // 2.5s delay so banner is fully visible before stats modal opens
-    setTimeout(() => showStatsModal(true), 2500);
+  }
+}
+
+// Sends today's result once. `scoreSubmitted` is saved in the daily state, so a score that
+// failed to send (no name yet, tab closed, network error) is retried on the next visit.
+async function submitDailyScore() {
+  const username = getUsername();
+  if (!username || scoreSubmitted || !gameOver || MODE !== 'normal') return;
+  const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
+  const ok = await sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won });
+  if (ok) {
+    scoreSubmitted = true;
+    saveDailyState();
+    loadPodium(); // refresh in case the top 3 changed
   }
 }
 
@@ -1031,7 +1044,7 @@ function setupAutocomplete() {
 //  DAILY GAME
 // ============================================================
 function restoreDailyGame() {
-  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false;
+  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false;
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
@@ -1051,6 +1064,13 @@ function restoreDailyGame() {
       showBanner(won); gameOver = true;
       document.getElementById('input-area').style.display   = 'none';
       document.getElementById('new-game-btn').style.display = 'block';
+      // Saved states from before this fix have no flag — treat them as already sent
+      // so nobody gets a duplicate row today.
+      scoreSubmitted = saved.submitted !== false;
+      if (!scoreSubmitted) {
+        if (getUsername()) submitDailyScore();
+        else setTimeout(() => ensureUsername().then(submitDailyScore), 1000);
+      }
     }
   }
 }
