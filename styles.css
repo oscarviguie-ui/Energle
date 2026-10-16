@@ -1745,9 +1745,12 @@ footer a:hover { text-decoration: underline; }
   .lb-score--main-hdr, .lb-row--alltime .lb-score--main { width: 70px; }
   .lb-info-btn { white-space: normal; line-height: 1.15; }
   .lb-avg-divider { padding: 0.3rem 0.75rem; }
-  /* Narrow numeric columns: keep Avg and Played headers apart */
-  #lb-modal .lb-score { width: 46px; }
+  /* Narrow numeric columns: keep Win %, Avg and Played headers apart */
+  #lb-modal .lb-score { width: 44px; flex-shrink: 0; }
   #lb-modal .lb-header-row .lb-score { font-size: 0.6rem; letter-spacing: 0.02em; }
+  /* Weighted Score (far right) needs room for its two-line header and the info icon */
+  #lb-modal .lb-score.lb-score--main-hdr,
+  #lb-modal .lb-row--alltime .lb-score.lb-score--main { width: 70px; margin-left: 6px; }
 }
 .lb-info-sub {
   margin: 0.55rem 0 0.25rem; padding-top: 0.5rem; border-top: 1px solid #d6e5f2;
