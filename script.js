@@ -1267,6 +1267,7 @@ function renderLbAllTime(rows, me) {
     + '</ul>'
     + '<div class="lb-info-sub">The other columns</div>'
     + '<ul>'
+    + '<li><strong>Win %:</strong> the share of daily puzzles you solved.</li>'
     + '<li><strong>Avg:</strong> your average number of guesses per puzzle. A puzzle you didn\'t solve counts as 7.</li>'
     + '<li><strong>Played:</strong> how many daily puzzles you\'ve played. Only your first try at each one counts.</li>'
     + '</ul></div>';
@@ -1286,9 +1287,10 @@ function renderLbAllTime(rows, me) {
       + '<div class="lb-row lb-row--alltime' + (isMe ? ' lb-row--me' : '') + '">'
       + '<span class="lb-rank">' + rank + '</span>'
       + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
-      + '<span class="lb-score lb-score--main">' + score.toFixed(2) + '</span>'
+      + '<span class="lb-score' + (Number(r.win_pct) >= 50 ? ' lb-score--won' : '') + '">' + Number(r.win_pct) + '%</span>'
       + '<span class="lb-score">' + Number(r.avg_guesses).toFixed(2) + '</span>'
       + '<span class="lb-score">' + r.played + '</span>'
+      + '<span class="lb-score lb-score--main">' + score.toFixed(2) + '</span>'
       + '</div>';
   }).join('');
 
@@ -1297,10 +1299,11 @@ function renderLbAllTime(rows, me) {
     + '<div class="lb-header-row">'
     + '<span class="lb-rank">#</span>'
     + '<span class="lb-name">Player</span>'
-    + '<button class="lb-score lb-score--hdr lb-score--main-hdr lb-info-btn" id="lb-info-btn" onclick="lbToggleInfo()" aria-expanded="false" title="How the ranking works">'
-    +   'Weighted Score <span class="lb-info-icon">i</span></button>'
+    + '<span class="lb-score lb-score--hdr">Win %</span>'
     + '<span class="lb-score lb-score--hdr">Avg</span>'
     + '<span class="lb-score lb-score--hdr">Played</span>'
+    + '<button class="lb-score lb-score--hdr lb-score--main-hdr lb-info-btn" id="lb-info-btn" onclick="lbToggleInfo()" aria-expanded="false" title="How the ranking works">'
+    +   'Weighted Score <span class="lb-info-icon">i</span></button>'
     + '</div>'
     + body
     + '</div>';
