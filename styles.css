@@ -1756,3 +1756,61 @@ footer a:hover { text-decoration: underline; }
   margin: 0.55rem 0 0.25rem; padding-top: 0.5rem; border-top: 1px solid #d6e5f2;
   font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4a90c4;
 }
+
+/* ============================================================
+   MOTION — load animations + ambient pulses
+   ============================================================ */
+header { position: relative; }
+
+.logo-bolt { display: inline-block; transform-origin: 50% 60%; }
+header.intro-play .logo-bolt { animation: boltFlicker .55s steps(1, end) .1s both; }
+@keyframes boltFlicker {
+  0% { opacity: 0 } 15% { opacity: 1 } 25% { opacity: .15 } 40% { opacity: 1 }
+  55% { opacity: .35 } 70%, 100% { opacity: 1 }
+}
+
+/* a short charge every 7–20 s (timed in game.js) */
+.logo-bolt.bolt-pulse { animation: boltPulse .9s ease-out; }
+@keyframes boltPulse {
+  0%   { transform: scale(1); filter: none; }
+  18%  { transform: scale(1.22) rotate(-6deg); filter: drop-shadow(0 0 6px rgba(255, 196, 0, .95)) brightness(1.15); }
+  34%  { transform: scale(.96); filter: drop-shadow(0 0 2px rgba(255, 196, 0, .5)); }
+  48%  { transform: scale(1.07); filter: drop-shadow(0 0 4px rgba(255, 196, 0, .7)); }
+  100% { transform: scale(1); filter: none; }
+}
+
+/* a current runs along the header line on first load */
+.header-current {
+  position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
+  overflow: hidden; pointer-events: none;
+}
+.header-current::before {
+  content: ''; position: absolute; top: 0; left: -18%; width: 16%; height: 100%;
+  background: linear-gradient(90deg, rgba(245, 200, 66, 0), #f5c842 40%, #fff6cf 50%, #f5c842 60%, rgba(245, 200, 66, 0));
+  box-shadow: 0 0 8px 1px rgba(245, 200, 66, .6);
+  animation: headerCurrent 1.1s cubic-bezier(.5, 0, .4, 1) .45s forwards;
+}
+@keyframes headerCurrent { to { left: 102%; } }
+
+/* energy balance fills in: generation first, then imports / exports */
+.flow-segment { transform-origin: left center; animation: flowGrow .7s cubic-bezier(.3, .7, .3, 1) .6s both; }
+.flow-segment.imports,
+.flow-segment.exports { position: relative; animation-delay: 1.25s; animation-duration: .35s; }
+.flow-segment.imports::after,
+.flow-segment.exports::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .4), rgba(255, 255, 255, 0));
+  background-size: 200% 100%;
+  animation: flowShimmer 2.2s linear 1.7s infinite;
+}
+@keyframes flowGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes flowShimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* overlay for the spark that runs along a chart line */
+canvas.line-pulse { position: absolute; left: 0; top: 0; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  header.intro-play .logo-bolt, .logo-bolt.bolt-pulse, .flow-segment,
+  .flow-segment.imports::after, .flow-segment.exports::after, .header-current::before { animation: none !important; }
+  .header-current, canvas.line-pulse { display: none; }
+}
