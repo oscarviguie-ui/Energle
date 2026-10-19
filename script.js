@@ -422,7 +422,7 @@ function renderBrowseScreen() {
       + '</button>';
   }).join('');
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
+    '<header><div class="header-top">' + logoHTML() + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">Browse all country energy profiles</p>'
     + '<button id="back-to-cats">← Categories</button></div></header>'
     + navRowHTML(false)
@@ -444,7 +444,7 @@ function browseCountry(iso3) {
   if (barChart)  { barChart.destroy();  barChart  = null; }
   const prevTarget = target; target = country;
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
+    '<header><div class="header-top">' + logoHTML() + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + country.name + ' · ' + (country.continent || '') + '</p>'
     + '<button id="back-to-browse">← Browse</button></div></header>'
     + navRowHTML(false)
@@ -496,7 +496,7 @@ function renderPracticePickerScreen() {
       + '</div>';
   }).join('');
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
+    '<header><div class="header-top">' + logoHTML() + headerRightHTML() + '</div>'
     + '<p class="subtitle">Choose a category to practice</p></header>'
     + navRowHTML(false)
     + '<div class="cat-grid">' + cards + '</div>'
@@ -507,7 +507,152 @@ function renderPracticePickerScreen() {
 // ============================================================
 //  INIT
 // ============================================================
-function initApp() { POOL = COUNTRIES; renderGameScreen(); restoreDailyGame(); loadPodium(); }
+function initApp() {
+  POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
+  scheduleBoltPulse(); scheduleLinePulse();
+}
+
+// ============================================================
+//  MOTION — load animations + ambient pulses
+//  Everything here is skipped when the visitor asks for reduced motion.
+// ============================================================
+const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function logoHTML() { return '<h1><span class="logo-bolt" aria-hidden="true">⚡</span> Energle</h1>'; }
+
+// First page load only: logo flickers on, a current runs along the header line.
+function playIntro() {
+  if (REDUCED_MOTION) return;
+  const header = document.querySelector('header'); if (!header) return;
+  const line = document.createElement('span'); line.className = 'header-current'; line.setAttribute('aria-hidden', 'true');
+  header.appendChild(line); header.classList.add('intro-play');
+  setTimeout(() => { header.classList.remove('intro-play'); line.remove(); }, 2000);
+}
+
+// Animate a number from 0 to `to`, writing fmt(value) into el.
+function countUp(el, to, fmt, delay = 0, dur = 750) {
+  if (!el) return;
+  if (to == null || REDUCED_MOTION) { el.textContent = to == null ? '—' : fmt(to); return; }
+  const token = (el._countToken || 0) + 1; el._countToken = token;
+  el.textContent = fmt(0);
+  const start = performance.now() + delay;
+  const step = now => {
+    if (el._countToken !== token) return;
+    const x = Math.min(1, Math.max(0, (now - start) / dur));
+    el.textContent = fmt(to * (1 - Math.pow(1 - x, 3)));
+    if (x < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// Chart.js: draw each source line left to right, one after another.
+function lineDrawAnimation(nPoints) {
+  if (REDUCED_MOTION) return {};
+  const per = 900 / Math.max(nPoints, 1);
+  const delay = (ctx, key) => {
+    if (ctx.type !== 'data' || ctx[key]) return 0;
+    ctx[key] = true;
+    return 250 + ctx.datasetIndex * 120 + ctx.index * per;
+  };
+  const prevY = ctx => ctx.index === 0
+    ? ctx.chart.scales.y.getPixelForValue(ctx.raw ?? 0)
+    : ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1].getProps(['y'], true).y;
+  return {
+    x: { type: 'number', easing: 'linear', duration: per, from: NaN, delay: ctx => delay(ctx, 'xStarted') },
+    y: { type: 'number', easing: 'linear', duration: per, from: prevY, delay: ctx => delay(ctx, 'yStarted') },
+  };
+}
+
+// Chart.js: stack the latest-mix bar from the bottom up, segment by segment.
+function barStackAnimation() {
+  if (REDUCED_MOTION) return false;
+  return {
+    duration: 420, easing: 'easeOutCubic',
+    delay: ctx => (ctx.type === 'data' && ctx.mode === 'default' ? 700 + ctx.datasetIndex * 110 : 0),
+  };
+}
+
+// Ambient: the bolt gives a short pulse every 7–20 s.
+function scheduleBoltPulse() {
+  if (REDUCED_MOTION) return;
+  setTimeout(() => {
+    const bolt = document.querySelector('.logo-bolt');
+    if (bolt && !document.hidden && !bolt.closest('.intro-play')) {
+      bolt.classList.remove('bolt-pulse'); void bolt.offsetWidth; bolt.classList.add('bolt-pulse');
+    }
+    scheduleBoltPulse();
+  }, 7000 + Math.random() * 13000);
+}
+
+// Ambient: every 8–20 s a spark of current runs along one of the bigger source lines.
+let lineChartBornAt = 0;
+function scheduleLinePulse() {
+  if (REDUCED_MOTION) return;
+  setTimeout(() => { runLinePulse(); scheduleLinePulse(); }, 8000 + Math.random() * 12000);
+}
+
+function runLinePulse() {
+  const chart = lineChart;
+  if (!chart || document.hidden || performance.now() - lineChartBornAt < 3000) return;
+  const wrap = chart.canvas.parentNode; if (!wrap) return;
+  // Datasets are ordered biggest-first, so pick one of the top 4 real sources
+  const real = chart.data.datasets.map((d, i) => ({ d, i })).filter(o => !o.d.label.startsWith('__') && !o.d.hidden);
+  if (!real.length) return;
+  const pick = real[Math.floor(Math.random() * Math.min(real.length, 4))];
+  const pts = chart.getDatasetMeta(pick.i).data; if (pts.length < 2) return;
+
+  // Sample the drawn curve (Chart.js keeps the bezier control points on each point)
+  const path = [];
+  for (let k = 0; k < pts.length - 1; k++) {
+    const a = pts[k], b = pts[k + 1];
+    const c1x = a.cp2x ?? a.x, c1y = a.cp2y ?? a.y, c2x = b.cp1x ?? b.x, c2y = b.cp1y ?? b.y;
+    for (let s = 0; s < 10; s++) {
+      const t = s / 10, u = 1 - t;
+      path.push([u*u*u*a.x + 3*u*u*t*c1x + 3*u*t*t*c2x + t*t*t*b.x, u*u*u*a.y + 3*u*u*t*c1y + 3*u*t*t*c2y + t*t*t*b.y]);
+    }
+  }
+  path.push([pts[pts.length - 1].x, pts[pts.length - 1].y]);
+  const cum = [0];
+  for (let k = 1; k < path.length; k++) cum.push(cum[k-1] + Math.hypot(path[k][0] - path[k-1][0], path[k][1] - path[k-1][1]));
+  const L = cum[cum.length - 1]; if (!L) return;
+  const at = d => {
+    d = Math.max(0, Math.min(L, d));
+    let k = 1; while (k < cum.length - 1 && cum[k] < d) k++;
+    const seg = cum[k] - cum[k-1] || 1, t = (d - cum[k-1]) / seg;
+    return [path[k-1][0] + (path[k][0] - path[k-1][0]) * t, path[k-1][1] + (path[k][1] - path[k-1][1]) * t];
+  };
+
+  let ov = wrap.querySelector('canvas.line-pulse');
+  if (!ov) { ov = document.createElement('canvas'); ov.className = 'line-pulse'; ov.setAttribute('aria-hidden', 'true'); wrap.appendChild(ov); }
+  const dpr = chart.currentDevicePixelRatio || window.devicePixelRatio || 1;
+  ov.width = chart.width * dpr; ov.height = chart.height * dpr;
+  ov.style.width = chart.width + 'px'; ov.style.height = chart.height + 'px';
+  const g = ov.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const color = pick.d.borderColor, trail = Math.min(70, L * 0.18), dur = 1500, t0 = performance.now();
+
+  const frame = now => {
+    if (lineChart !== chart) { g.clearRect(0, 0, ov.width, ov.height); return; }
+    const x = Math.min(1, (now - t0) / dur);
+    const head = (x < 0.5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2) * (L + trail);
+    g.clearRect(0, 0, chart.width, chart.height);
+    g.lineCap = 'round'; g.strokeStyle = color; g.shadowColor = color;
+    for (let s = 0; s < 14; s++) {               // tail: fades and thins towards the back
+      const d1 = head - trail * (s / 14), d0 = head - trail * ((s + 1) / 14);
+      if (d1 <= 0 || d0 >= L) continue;
+      const p0 = at(d0), p1 = at(d1);
+      g.globalAlpha = 0.85 * (1 - s / 14); g.lineWidth = 3.2 - s * 0.15; g.shadowBlur = 8;
+      g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke();
+    }
+    if (head > 0 && head < L) {                  // bright head
+      const p = at(head);
+      g.globalAlpha = 1; g.shadowBlur = 10; g.fillStyle = '#ffffff';
+      g.beginPath(); g.arc(p[0], p[1], 2.6, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1; g.shadowBlur = 0;
+    if (x < 1) requestAnimationFrame(frame); else g.clearRect(0, 0, chart.width, chart.height);
+  };
+  requestAnimationFrame(frame);
+}
 
 function practiceSubtitle() {
   if (MODE !== 'practice' || !PRACTICE_CAT) return '';
@@ -523,7 +668,7 @@ function renderGameScreen() {
   const backBtn = isPractice ? '<button id="back-to-categories">← Categories</button>' : '';
 
   document.getElementById('app').innerHTML =
-    '<header><div class="header-top"><h1>⚡ Energle</h1>' + headerRightHTML() + '</div>'
+    '<header><div class="header-top">' + logoHTML() + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + subtitle + '</p>' + backBtn + '</div></header>'
     + navRowHTML(true)
     + '<div id="stat-bar">'
@@ -604,12 +749,12 @@ function renderStatBar() {
   const info = ALL_DATA[target.name], latest = info.latestYear;
   const total = info.years[latest]?.Total ?? 0, dpc = info.latestDpc;
   const worldDpc = WORLD_DPC[latest] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
-  document.getElementById('stat-total').textContent = fmtTWh(total);
-  document.getElementById('stat-dpc').textContent   = dpc != null ? dpc.toFixed(1) + ' MWh / person (' + latest + ')' : '—';
-  document.getElementById('stat-world').textContent = worldDpc != null ? worldDpc.toFixed(1) + ' MWh / person' : '—';
   // Same year as the country's figure; fall back to the latest year available
   const worldGen = WORLD_GEN[latest] ?? WORLD_GEN[Math.max(...Object.keys(WORLD_GEN).map(Number))];
-  document.getElementById('stat-world-gen').textContent = worldGen != null ? fmtTWh(worldGen) + ' / country' : '—';
+  countUp(document.getElementById('stat-total'), total, fmtTWh, 300);
+  countUp(document.getElementById('stat-world-gen'), worldGen, v => fmtTWh(v) + ' / country', 380);
+  countUp(document.getElementById('stat-dpc'), dpc, v => v.toFixed(1) + ' MWh / person (' + latest + ')', 460);
+  countUp(document.getElementById('stat-world'), worldDpc, v => v.toFixed(1) + ' MWh / person', 540);
 }
 
 function renderFlowBar() {
@@ -719,6 +864,7 @@ function renderCharts() {
     type: 'line', data: { labels: years, datasets: [...srcDS, ...hidDS] },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animations: lineDrawAnimation(years.length),
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipLine } },
       scales: {
@@ -728,11 +874,14 @@ function renderCharts() {
     },
   });
 
+  lineChartBornAt = performance.now();
+
   barChart = new Chart(document.getElementById('bar-chart').getContext('2d'), {
     type: 'bar',
     data: { labels: [''], datasets: [...activeSources].reverse().map(src => ({ label:src, data:[latestData[src]||0], backgroundColor:COLORS[src], borderWidth:0 })) },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: barStackAnimation(),
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipBar } },
       scales: {
         x: { stacked:true, grid:{display:false}, ticks:{display:false} },
