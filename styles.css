@@ -1791,6 +1791,16 @@ header.intro-play .logo-bolt { animation: boltFlicker .55s steps(1, end) .1s bot
   animation: headerCurrent 1.1s cubic-bezier(.5, 0, .4, 1) .45s forwards;
 }
 @keyframes headerCurrent { to { left: 102%; } }
+/* the same current, fired with every ambient pulse (no start delay, slightly softer) */
+.header-current.is-pulse::before { animation-delay: 0s; animation-duration: 1.2s; opacity: .85; }
+
+/* legend: hover or tap a source to bring its line forward */
+#legend-shared .legend-item { cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: opacity .2s, background .2s; }
+#legend-shared .legend-item:hover,
+#legend-shared .legend-item.is-on { background: #f3f3f1; }
+#legend-shared .legend-item.is-on { font-weight: 600; color: #1a1a1a; }
+#legend-shared .legend-item.is-dim { opacity: .4; }
+#legend-shared .legend-item:focus-visible { outline: 2px solid #f5c842; outline-offset: 1px; }
 
 /* energy balance fills in: generation first, then imports / exports */
 .flow-segment { transform-origin: left center; animation: flowGrow .7s cubic-bezier(.3, .7, .3, 1) .6s both; }
