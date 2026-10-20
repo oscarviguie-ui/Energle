@@ -1444,11 +1444,10 @@ function renderLbAllTime(rows, me) {
   const typical = Number(rows[0].site_avg).toFixed(2); // average guesses per game, all players
 
   // How fast your score becomes your own. Your results make up n/(n+m) of the score,
-  // where m (weight_games) = the puzzles played by the player behind a typical result
-  // = sum(played²) / sum(played). One-off visitors barely move it; regulars raise it.
+  // where m (weight_games) = 2 × the puzzles played by the player behind a typical result
+  // = 2 × sum(played²) / sum(played). One-off visitors barely move it; regulars raise it.
   const weight = Math.round(Number(rows[0].weight_games));
-  const pace = '<li>Your score is halfway to your own Avg once you\'ve played as many puzzles as a typical Energle regular. '
-    + 'Today that\'s about <strong>' + weight + ' puzzles</strong>. '
+  const pace = '<li>Your score is halfway to your own Avg after about <strong>' + weight + ' puzzles</strong>. '
     + 'It isn\'t a fixed number: it\'s recalculated from everyone\'s results, so it rises as regulars keep playing and one-off visits barely change it.</li>';
 
   // Explanation: hidden until the player taps "Weighted Score ⓘ" in the column header
