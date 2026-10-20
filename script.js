@@ -509,7 +509,7 @@ function renderPracticePickerScreen() {
 // ============================================================
 function initApp() {
   POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
-  scheduleBoltPulse(); scheduleLinePulse();
+  scheduleAmbientPulse();
 }
 
 // ============================================================
@@ -572,23 +572,29 @@ function barStackAnimation() {
   };
 }
 
-// Ambient: the bolt gives a short pulse every 7–20 s.
-function scheduleBoltPulse() {
+// Ambient pulse, every 4–9 s: one charge travels through the page.
+// The bolt flashes, a current runs along the header line, then a spark runs along a chart line.
+let lineChartBornAt = 0;
+function scheduleAmbientPulse() {
   if (REDUCED_MOTION) return;
-  setTimeout(() => {
-    const bolt = document.querySelector('.logo-bolt');
-    if (bolt && !document.hidden && !bolt.closest('.intro-play')) {
-      bolt.classList.remove('bolt-pulse'); void bolt.offsetWidth; bolt.classList.add('bolt-pulse');
-    }
-    scheduleBoltPulse();
-  }, 7000 + Math.random() * 13000);
+  setTimeout(() => { runAmbientPulse(); scheduleAmbientPulse(); }, 4000 + Math.random() * 5000);
 }
 
-// Ambient: every 8–20 s a spark of current runs along one of the bigger source lines.
-let lineChartBornAt = 0;
-function scheduleLinePulse() {
-  if (REDUCED_MOTION) return;
-  setTimeout(() => { runLinePulse(); scheduleLinePulse(); }, 8000 + Math.random() * 12000);
+function runAmbientPulse() {
+  const header = document.querySelector('header');
+  if (document.hidden || !header || header.classList.contains('intro-play')) return;
+  // 1. bolt
+  const bolt = header.querySelector('.logo-bolt');
+  if (bolt) { bolt.classList.remove('bolt-pulse'); void bolt.offsetWidth; bolt.classList.add('bolt-pulse'); }
+  // 2. header line
+  if (!header.querySelector('.header-current')) {
+    const line = document.createElement('span');
+    line.className = 'header-current is-pulse'; line.setAttribute('aria-hidden', 'true');
+    header.appendChild(line);
+    setTimeout(() => line.remove(), 1400);
+  }
+  // 3. chart line, as the header current arrives
+  setTimeout(runLinePulse, 450);
 }
 
 function runLinePulse() {
@@ -628,7 +634,7 @@ function runLinePulse() {
   ov.width = chart.width * dpr; ov.height = chart.height * dpr;
   ov.style.width = chart.width + 'px'; ov.style.height = chart.height + 'px';
   const g = ov.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const color = pick.d.borderColor, trail = Math.min(70, L * 0.18), dur = 1500, t0 = performance.now();
+  const color = COLORS[pick.d.label], trail = Math.min(70, L * 0.18), dur = 1500, t0 = performance.now();
 
   const frame = now => {
     if (lineChart !== chart) { g.clearRect(0, 0, ov.width, ov.height); return; }
@@ -851,8 +857,12 @@ function renderCharts() {
   const activeSources = ordered.filter(src => years.some(y => (info.years[y]?.[src] ?? 0) > 0));
   const srcDS = activeSources.map(src => ({
     label: src, data: years.map(y => info.years[y]?.[src] ?? 0),
-    borderColor: COLORS[src], backgroundColor: COLORS[src] + '22',
-    borderWidth: 1.5, pointRadius: 1.5, pointHoverRadius: 4, fill: false, tension: 0.3,
+    // Colours are functions so a legend highlight (FOCUS_SRC) restyles every point on update
+    borderColor: () => focusColor(src, '2e'), backgroundColor: COLORS[src] + '22',
+    pointBorderColor: () => focusColor(src, '2e'), pointBackgroundColor: () => focusColor(src, '2e'),
+    borderWidth: () => (FOCUS_SRC === src ? 2.6 : 1.5),
+    pointRadius: () => (FOCUS_SRC && FOCUS_SRC !== src ? 0 : 1.5),
+    pointHoverRadius: 4, fill: false, tension: 0.3,
   }));
   const hidDS = [
     { label:'__total__',      data: years.map(y => info.years[y]?.Total ?? 0) },
@@ -878,7 +888,7 @@ function renderCharts() {
 
   barChart = new Chart(document.getElementById('bar-chart').getContext('2d'), {
     type: 'bar',
-    data: { labels: [''], datasets: [...activeSources].reverse().map(src => ({ label:src, data:[latestData[src]||0], backgroundColor:COLORS[src], borderWidth:0 })) },
+    data: { labels: [''], datasets: [...activeSources].reverse().map(src => ({ label:src, data:[latestData[src]||0], backgroundColor: () => focusColor(src, '40'), borderWidth:0 })) },
     options: {
       responsive: true, maintainAspectRatio: false,
       animation: barStackAnimation(),
@@ -897,9 +907,44 @@ function renderLegend(ordered) {
   const info = ALL_DATA[target.name], years = Object.keys(info.years).map(Number);
   document.getElementById('legend-shared').innerHTML = ordered
     .filter(src => years.some(y => (info.years[y]?.[src] ?? 0) > 0))
-    .map(src => '<div class="legend-item"><span class="legend-swatch" style="background:' + COLORS[src] + '"></span>' + src + '</div>')
+    .map(src => '<div class="legend-item" data-src="' + src + '" tabindex="0" role="button" aria-pressed="false">'
+      + '<span class="legend-swatch" style="background:' + COLORS[src] + '"></span>' + src + '</div>')
     .join('')
     + '<button class="glossary-btn" onclick="showGlossaryModal()"><span class="glossary-icon">?</span> Resource type details</button>';
+  bindLegendFocus();
+}
+
+// Hover (or tap) a legend item to bring that source forward in both charts.
+// A tap locks the highlight until the same item is tapped again.
+let lockedSource = null;
+function bindLegendFocus() {
+  lockedSource = null; FOCUS_SRC = null;
+  document.querySelectorAll('#legend-shared .legend-item').forEach(el => {
+    const src = el.dataset.src;
+    el.addEventListener('mouseenter', () => focusSource(src));
+    el.addEventListener('mouseleave', () => focusSource(lockedSource));
+    el.addEventListener('focus', () => focusSource(src));
+    el.addEventListener('blur', () => focusSource(lockedSource));
+    el.addEventListener('click', () => { lockedSource = lockedSource === src ? null : src; focusSource(lockedSource); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+  });
+}
+
+// Highlighted source (null = none). Chart colours read it through focusColor().
+let FOCUS_SRC = null;
+function focusColor(src, fadedAlpha) {
+  return FOCUS_SRC && FOCUS_SRC !== src ? COLORS[src] + fadedAlpha : COLORS[src];
+}
+
+function focusSource(src) {
+  FOCUS_SRC = src || null;
+  if (lineChart) lineChart.update('none');
+  if (barChart)  barChart.update('none');
+  document.querySelectorAll('#legend-shared .legend-item').forEach(el => {
+    el.classList.toggle('is-dim', !!src && el.dataset.src !== src);
+    el.classList.toggle('is-on', !!src && el.dataset.src === src);
+    el.setAttribute('aria-pressed', String(lockedSource === el.dataset.src));
+  });
 }
 
 // ============================================================
@@ -1398,10 +1443,13 @@ function renderLbAllTime(rows, me) {
   const medals  = ['🥇','🥈','🥉'];
   const typical = Number(rows[0].site_avg).toFixed(2); // average guesses per game, all players
 
-  // Rough guide to how fast your score becomes your own, without hard-coded numbers.
-  // Your own results make up n/(n+m) of the score, where m = puzzles per player:
-  // exactly half after m puzzles, three-quarters after 3m.
-  const pace = '<li>As a rough guide, once you\'ve played as many puzzles as the average player, your score is halfway to your own Avg. At about three times that, it\'s mostly your own.</li>';
+  // How fast your score becomes your own. Your results make up n/(n+m) of the score,
+  // where m (weight_games) = the puzzles played by the player behind a typical result
+  // = sum(played²) / sum(played). One-off visitors barely move it; regulars raise it.
+  const weight = Math.round(Number(rows[0].weight_games));
+  const pace = '<li>Your score is halfway to your own Avg once you\'ve played as many puzzles as a typical Energle regular. '
+    + 'Today that\'s about <strong>' + weight + ' puzzles</strong>. '
+    + 'It isn\'t a fixed number: it\'s recalculated from everyone\'s results, so it rises as regulars keep playing and one-off visits barely change it.</li>';
 
   // Explanation: hidden until the player taps "Weighted Score ⓘ" in the column header
   const info =
