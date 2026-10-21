@@ -580,8 +580,18 @@ function runAmbientPulse() {
     header.appendChild(line);
     setTimeout(() => line.remove(), 1400);
   }
-  // 3. chart line, as the header current arrives
+  // 3. chart line, as the header current arrives; at the same time a shine sweeps the energy balance flows
   setTimeout(runLinePulse, 450);
+  setTimeout(() => {
+    document.querySelectorAll('#flow-chart .fc-shine-anim').forEach(a => { try { a.beginElement(); } catch (e) {} });
+  }, 300);
+  // 4. and, when there are guesses, along the live wire of one of them
+  setTimeout(() => {
+    const wires = document.querySelectorAll('#guesses .gr-wire-fill');
+    if (!wires.length) return;
+    const w = wires[Math.floor(Math.random() * wires.length)];
+    w.classList.remove('is-pulse'); void w.offsetWidth; w.classList.add('is-pulse');
+  }, 600);
 }
 
 function runLinePulse() {
@@ -671,17 +681,16 @@ function renderGameScreen() {
     + '</div>'
     + '<div id="legend-shared"></div>'
     + '<div id="input-area"><div id="autocomplete-wrapper">'
+    + '<span id="guess-flag" aria-hidden="true"></span>'
     + '<input id="guess-input" type="text" placeholder="Type a country name…" autocomplete="off" />'
     + '<div id="autocomplete-list"></div></div>'
     + '<button id="submit-btn">Guess</button></div>'
     + '<p id="error"></p>'
-    + '<div id="guesses"></div>'
     + '<div id="banner"></div>'
-    + '<button id="new-game-btn" style="display:none">' + (isPractice ? 'Next puzzle ↺' : 'Come back tomorrow 🌙') + '</button>'
+    + '<div id="guesses"></div>'
     + '<footer><p>Data: <a href="https://ember-climate.org" target="_blank">Ember Global Electricity Review</a></p></footer>';
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
-  document.getElementById('new-game-btn').addEventListener('click', () => { if (MODE === 'practice') newGame(); });
   if (isPractice) {
     document.getElementById('back-to-categories').addEventListener('click', () => {
       if (lineChart) { lineChart.destroy(); lineChart = null; }
@@ -738,18 +747,17 @@ function renderStatBar() {
   const yr = document.getElementById('bc-year'); if (yr) yr.textContent = latest;
 }
 
-// One card: the two headline stats on the left, the energy balance flow chart on the right.
+// Two cards side by side: the headline stats (narrow, left) and the energy balance flow chart (wide, right).
+// The world-average pills are tinted with the generation and demand colours of the flow chart.
 function balanceCardHTML() {
   return '<div id="balance-card">'
     + '<div class="bc-stats">'
-    +   '<div class="bc-stat"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span><span class="bc-world" id="stat-world-gen"></span></div>'
-    +   '<div class="bc-divider"></div>'
-    +   '<div class="bc-stat"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span><span class="bc-world" id="stat-world"></span></div>'
+    +   '<div class="bc-stat"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span><span class="bc-world bc-world--gen" id="stat-world-gen"></span></div>'
+    +   '<div class="bc-stat"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span><span class="bc-world bc-world--dem" id="stat-world"></span></div>'
     + '</div>'
     + '<div class="bc-flow">'
     +   '<span class="stat-label">Energy balance — <span id="bc-year"></span></span>'
     +   '<div id="flow-chart"></div>'
-    +   '<span class="bc-caption" id="flow-caption"></span>'
     + '</div>'
     + '</div>';
 }
@@ -780,7 +788,8 @@ function renderFlowBar(animate = true) {
       + ' L' + x1 + ' ' + r(bm) + ' L' + r(xe) + ' ' + r(b1)
       + ' C' + r(xm) + ' ' + r(b1) + ' ' + r(xm) + ' ' + r(a1) + ' ' + x0 + ' ' + r(a1) + ' Z';
   };
-  let boxes = '', tags = '', pMain = '', pTrade = '', tradeFrom = FLOW_COLORS.gen, tradeTo = FLOW_COLORS.gen, H = 0, caption = '';
+  let boxes = '', tags = '', pMain = '', pTrade = '', tradeFrom = FLOW_COLORS.gen, tradeTo = FLOW_COLORS.gen, H = 0;
+  let mainTip = '', tradeTip = '';
   const box = (side, y, h, flowT, color, name, val) => {
     const left = side === 'L' ? 0 : xR;
     boxes += '<div class="fc-box" style="left:' + left + 'px;top:' + r(y) + 'px;width:' + CW + 'px;height:' + r(h) + 'px">'
@@ -805,7 +814,9 @@ function renderFlowBar(animate = true) {
     box('R', yD, hD, tI + tG, FLOW_COLORS.dem, 'DEMAND', use);
     tag(tI >= FIT ? cI : cI - tI / 2 - 9, pct(imp / use * 100), '#b0126b');          // too thin: just above
     tag(tG >= FIT ? cG : cG + tG / 2 + 9, pct(gen / use * 100), '#1f2937');          // too thin: just below
-    H = totL + 2; caption = 'Percentages on the flows: share of demand';
+    H = totL + 2;
+    mainTip  = fmtTWh(gen) + ' generated · ' + pct(gen / use * 100) + ' of demand';
+    tradeTip = fmtTWh(imp) + ' imported · ' + pct(imp / use * 100) + ' of demand';
   } else if (exp > 0) {
     let tU = use / gen * HMAX, tE = exp / gen * HMAX;
     if (tE < MIN) { tE = MIN; tU = HMAX - MIN; }
@@ -821,31 +832,48 @@ function renderFlowBar(animate = true) {
     box('R', yE, hE, tE, FLOW_COLORS.exp, 'EXPORTED', exp);
     tag(tU >= FIT ? s0 + tU / 2 : s0 - 9, pct(use / gen * 100), '#1f2937');
     tag(tE >= FIT ? s0 + tU + tE / 2 : s0 + tU + tE + 9, pct(exp / gen * 100), '#2f2c9a');   // too thin: just below
-    H = Math.max(totR, tE >= FIT ? 0 : s0 + tU + tE + 18) + 2; caption = 'Percentages on the flows: share of generation';
+    H = Math.max(totR, tE >= FIT ? 0 : s0 + tU + tE + 18) + 2;
+    mainTip  = fmtTWh(use) + ' used at home · ' + pct(use / gen * 100) + ' of generation';
+    tradeTip = fmtTWh(exp) + ' exported · ' + pct(exp / gen * 100) + ' of generation';
   } else {
     const t = HMAX * 0.6, h = boxH(t), c = h / 2;
     pMain = link(xL, c - t / 2, c + t / 2, xR, c - t / 2, c + t / 2);
     box('L', 0, h, t, FLOW_COLORS.gen, 'GENERATED', gen);
     box('R', 0, h, t, FLOW_COLORS.dem, 'DEMAND', use);
     tag(c, '100%', '#1f2937');
-    H = h + 2; caption = 'No net trade: generation covers all of demand';
+    H = h + 2;
+    mainTip = fmtTWh(gen) + ' generated and used at home';
   }
   H = Math.round(H);
   host.className = animate && !REDUCED_MOTION ? 'fc-animate' : '';
   host.style.height = H + 'px';
+  // Each ribbon: a soft gradient fill (stronger where it leaves the source, lighter where it lands),
+  // a hairline edge in the same colour for definition, a native tooltip, and a "shine" copy that
+  // a bright band sweeps across whenever the ambient pulse fires.
+  const grad = (id, from, to, a0, a1) => '<linearGradient id="' + id + '" x1="0" x2="1" y1="0" y2="0">'
+    + '<stop offset="0" stop-color="' + from + '" stop-opacity="' + a0 + '"/><stop offset="1" stop-color="' + to + '" stop-opacity="' + a1 + '"/></linearGradient>';
+  const ribbon = (cls, d, fillId, edge, tip) => '<g class="' + cls + '">'
+    + '<path class="fc-fill" d="' + d + '" fill="url(#' + fillId + ')" stroke="' + edge + '" stroke-opacity="0.35" stroke-width="1" stroke-linejoin="round"><title>' + tip + '</title></path>'
+    + '<path class="fc-shine" d="' + d + '" fill="url(#fc-shine)" pointer-events="none"/></g>';
   host.innerHTML =
-    '<svg width="' + w + '" height="' + H + '" viewBox="0 0 ' + w + ' ' + H + '" aria-hidden="true">'
-    + '<defs><linearGradient id="fc-gA" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="' + FLOW_COLORS.gen + '"/><stop offset="1" stop-color="' + FLOW_COLORS.dem + '"/></linearGradient>'
-    + '<linearGradient id="fc-gB" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="' + tradeFrom + '"/><stop offset="1" stop-color="' + tradeTo + '"/></linearGradient></defs>'
-    + '<path class="fc-link" d="' + pMain + '" fill="url(#fc-gA)" fill-opacity="0.3"/>'
-    + (pTrade ? '<path class="fc-link fc-link--trade" d="' + pTrade + '" fill="url(#fc-gB)" fill-opacity="0.4"/>' : '')
-    + '</svg>' + boxes + tags;
+    '<svg width="' + w + '" height="' + H + '" viewBox="0 0 ' + w + ' ' + H + '">'
+    + '<defs>'
+    + grad('fc-gA', FLOW_COLORS.gen, FLOW_COLORS.dem, 0.36, 0.26)
+    + grad('fc-gB', tradeFrom, tradeTo, 0.46, 0.34)
+    + '<linearGradient id="fc-shine" gradientUnits="userSpaceOnUse" x1="-180" x2="0" y1="0" y2="0">'
+    +   '<stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>'
+    +   '<animate class="fc-shine-anim" attributeName="x1" from="-180" to="' + w + '" dur="1.1s" begin="indefinite" fill="freeze"/>'
+    +   '<animate class="fc-shine-anim" attributeName="x2" from="0" to="' + (w + 180) + '" dur="1.1s" begin="indefinite" fill="freeze"/>'
+    + '</linearGradient></defs>'
+    + '<g class="fc-links">'
+    + ribbon('fc-link', pMain, 'fc-gA', FLOW_COLORS.gen, mainTip)
+    + (pTrade ? ribbon('fc-link fc-link--trade', pTrade, 'fc-gB', tradeTo, tradeTip) : '')
+    + '</g></svg>' + boxes + tags;
   host.setAttribute('role', 'img');
   host.setAttribute('aria-label', imp > 0
     ? fmtTWh(gen) + ' generated plus ' + fmtTWh(imp) + ' imported gives ' + fmtTWh(use) + ' of demand'
     : exp > 0 ? fmtTWh(gen) + ' generated: ' + fmtTWh(use) + ' used at home and ' + fmtTWh(exp) + ' exported'
     : fmtTWh(gen) + ' generated, all used at home');
-  const cap = document.getElementById('flow-caption'); if (cap) cap.textContent = caption;
 }
 
 // Redraw the flow chart to the new width when the window is resized (no animation).
@@ -1142,17 +1170,83 @@ document.addEventListener('mousemove', e => {
 });
 
 // ============================================================
-//  LIVES
+//  FLAGS, CLOSENESS, COMPASS
+//  Shared by the guess rows, the result card and the stats screen.
 // ============================================================
-function renderLives() {
-  const container = document.getElementById('lives-container'); container.innerHTML = '';
-  const label = document.createElement('span'); label.className = 'lives-label'; label.textContent = 'Guesses left:';
-  container.appendChild(label);
+// ISO 3166 alpha-3 → alpha-2, for flag images (flagcdn.com, public domain flags)
+const ISO3_TO_ISO2 = {ABW:'aw',AFG:'af',AGO:'ao',AIA:'ai',ALA:'ax',ALB:'al',AND:'ad',ARE:'ae',ARG:'ar',ARM:'am',ASM:'as',ATA:'aq',ATF:'tf',ATG:'ag',AUS:'au',AUT:'at',AZE:'az',BDI:'bi',BEL:'be',BEN:'bj',BES:'bq',BFA:'bf',BGD:'bd',BGR:'bg',BHR:'bh',BHS:'bs',BIH:'ba',BLM:'bl',BLR:'by',BLZ:'bz',BMU:'bm',BOL:'bo',BRA:'br',BRB:'bb',BRN:'bn',BTN:'bt',BVT:'bv',BWA:'bw',CAF:'cf',CAN:'ca',CCK:'cc',CHE:'ch',CHL:'cl',CHN:'cn',CIV:'ci',CMR:'cm',COD:'cd',COG:'cg',COK:'ck',COL:'co',COM:'km',CPV:'cv',CRI:'cr',CUB:'cu',CUW:'cw',CXR:'cx',CYM:'ky',CYP:'cy',CZE:'cz',DEU:'de',DJI:'dj',DMA:'dm',DNK:'dk',DOM:'do',DZA:'dz',ECU:'ec',EGY:'eg',ERI:'er',ESH:'eh',ESP:'es',EST:'ee',ETH:'et',FIN:'fi',FJI:'fj',FLK:'fk',FRA:'fr',FRO:'fo',FSM:'fm',GAB:'ga',GBR:'gb',GEO:'ge',GGY:'gg',GHA:'gh',GIB:'gi',GIN:'gn',GLP:'gp',GMB:'gm',GNB:'gw',GNQ:'gq',GRC:'gr',GRD:'gd',GRL:'gl',GTM:'gt',GUF:'gf',GUM:'gu',GUY:'gy',HKG:'hk',HMD:'hm',HND:'hn',HRV:'hr',HTI:'ht',HUN:'hu',IDN:'id',IMN:'im',IND:'in',IOT:'io',IRL:'ie',IRN:'ir',IRQ:'iq',ISL:'is',ISR:'il',ITA:'it',JAM:'jm',JEY:'je',JOR:'jo',JPN:'jp',KAZ:'kz',KEN:'ke',KGZ:'kg',KHM:'kh',KIR:'ki',KNA:'kn',KOR:'kr',KWT:'kw',LAO:'la',LBN:'lb',LBR:'lr',LBY:'ly',LCA:'lc',LIE:'li',LKA:'lk',LSO:'ls',LTU:'lt',LUX:'lu',LVA:'lv',MAC:'mo',MAF:'mf',MAR:'ma',MCO:'mc',MDA:'md',MDG:'mg',MDV:'mv',MEX:'mx',MHL:'mh',MKD:'mk',MLI:'ml',MLT:'mt',MMR:'mm',MNE:'me',MNG:'mn',MNP:'mp',MOZ:'mz',MRT:'mr',MSR:'ms',MTQ:'mq',MUS:'mu',MWI:'mw',MYS:'my',MYT:'yt',NAM:'na',NCL:'nc',NER:'ne',NFK:'nf',NGA:'ng',NIC:'ni',NIU:'nu',NLD:'nl',NOR:'no',NPL:'np',NRU:'nr',NZL:'nz',OMN:'om',PAK:'pk',PAN:'pa',PCN:'pn',PER:'pe',PHL:'ph',PLW:'pw',PNG:'pg',POL:'pl',PRI:'pr',PRK:'kp',PRT:'pt',PRY:'py',PSE:'ps',PYF:'pf',QAT:'qa',REU:'re',ROU:'ro',RUS:'ru',RWA:'rw',SAU:'sa',SDN:'sd',SEN:'sn',SGP:'sg',SGS:'gs',SHN:'sh',SJM:'sj',SLB:'sb',SLE:'sl',SLV:'sv',SMR:'sm',SOM:'so',SPM:'pm',SRB:'rs',SSD:'ss',STP:'st',SUR:'sr',SVK:'sk',SVN:'si',SWE:'se',SWZ:'sz',SXM:'sx',SYC:'sc',SYR:'sy',TCA:'tc',TCD:'td',TGO:'tg',THA:'th',TJK:'tj',TKL:'tk',TKM:'tm',TLS:'tl',TON:'to',TTO:'tt',TUN:'tn',TUR:'tr',TUV:'tv',TWN:'tw',TZA:'tz',UGA:'ug',UKR:'ua',UMI:'um',URY:'uy',USA:'us',UZB:'uz',VAT:'va',VCT:'vc',VEN:'ve',VGB:'vg',VIR:'vi',VNM:'vn',VUT:'vu',WLF:'wf',WSM:'ws',XKX:'xk',YEM:'ye',ZAF:'za',ZMB:'zm',ZWE:'zw'};
+
+function flagImg(iso3, cls = 'flag') {
+  const a2 = ISO3_TO_ISO2[iso3];
+  if (!a2) return '<span class="' + cls + ' flag--none" aria-hidden="true"></span>';
+  return '<img class="' + cls + '" src="https://flagcdn.com/w40/' + a2 + '.png" srcset="https://flagcdn.com/w80/' + a2 + '.png 2x"'
+    + ' alt="" loading="lazy" decoding="async" onerror="this.style.visibility=\'hidden\'">';
+}
+
+// Closeness: 0 km = 100 %, 10,000 km or more = 0 %
+function closeness(km) { return Math.max(0, Math.round(100 - km / 100)); }
+
+// Closeness colour: muted red (0 %) → muted amber (50 %) → muted green (100 %)
+const CLOSE_STOPS = [[196, 112, 96], [214, 168, 80], [84, 160, 112]];
+const WIN_RGB = [63, 154, 99], MISS_RGB = [196, 112, 96];
+function closeRGB(p) {
+  const t = Math.min(1, Math.max(0, p / 100)), i = t <= 0.5 ? 0 : 1, u = (t - i * 0.5) / 0.5;
+  return CLOSE_STOPS[i].map((v, k) => Math.round(v + (CLOSE_STOPS[i + 1][k] - v) * u));
+}
+function rgbaOf(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+function darker(c) { return rgbaOf(c.map(v => Math.round(v * 0.72)), 1); }
+
+const DIR_NAMES = { N: 'north', NNE: 'north-northeast', NE: 'northeast', ENE: 'east-northeast', E: 'east', ESE: 'east-southeast',
+  SE: 'southeast', SSE: 'south-southeast', S: 'south', SSW: 'south-southwest', SW: 'southwest', WSW: 'west-southwest',
+  W: 'west', WNW: 'west-northwest', NW: 'northwest', NNW: 'north-northwest' };
+
+// Distance, bearing and closeness from a guessed country to today's answer
+function guessInfo(c) {
+  const km = Math.round(haversineKm(c.lat, c.lng, target.lat, target.lng));
+  const deg = bearingDeg(c.lat, c.lng, target.lat, target.lng);
+  return { km, deg, dir: bearingLabel(deg), prox: closeness(km) };
+}
+function fmtKm(km) { return km.toLocaleString('en-US') + ' km'; }
+
+// Compass: four light arcs with gaps at the cardinal points, points at E, S and W, an "N", and a black needle.
+const COMPASS_DIAL = (() => {
+  const P = (a, r) => { const q = a * Math.PI / 180; return (26 + r * Math.sin(q)).toFixed(1) + ' ' + (26 - r * Math.cos(q)).toFixed(1); };
+  const arcs = [14, 104, 194, 284].map(a => 'M' + P(a, 17) + ' A17 17 0 0 1 ' + P(a + 62, 17)).join(' ');
+  const spikes = [90, 180, 270].map(a => 'M' + P(a, 25) + ' L' + P(a - 11, 17) + ' L' + P(a + 11, 17) + ' Z').join(' ');
+  return '<svg viewBox="0 0 52 52" width="26" height="26"><path d="' + arcs + '" fill="none" stroke="#c4c9d0" stroke-width="2.5"/>'
+    + '<path d="' + spikes + '" fill="#c4c9d0"/>'
+    + '<text x="26" y="12.5" text-anchor="middle" font-size="13" font-weight="800" fill="#1a1a1a" font-family="inherit">N</text></svg>';
+})();
+function compassHTML(deg) {
+  return '<span class="gr-compass" aria-hidden="true">' + COMPASS_DIAL
+    + '<span class="gr-needle" style="--deg:' + deg.toFixed(1) + 'deg"><svg viewBox="0 0 52 52" width="26" height="26">'
+    + '<polygon points="26,12 26,30 17.5,35" fill="#1a1a1a"/><polygon points="26,12 34.5,35 26,30" fill="#4b4b4b"/></svg></span></span>';
+}
+
+// ============================================================
+//  GUESSES LEFT: a six-cell battery
+//  Green with 4-6 left, amber with 2-3, red with the last one. A wrong guess makes the
+//  cell it uses flicker out; on a win the cells left glow one after another.
+// ============================================================
+function renderLives(drain = false) {
+  const container = document.getElementById('lives-container'); if (!container) return;
+  const left = MAX_GUESSES - guesses.length;
+  const color = left >= 4 ? 'is-high' : left >= 2 ? 'is-mid' : 'is-low';
+  let cells = '';
   for (let i = 0; i < MAX_GUESSES; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'life' + (i < MAX_GUESSES - guesses.length ? ' active' : '');
-    container.appendChild(dot);
+    const on = i < left, justUsed = drain && i === left;
+    cells += '<span class="battery-cell' + (on ? ' is-on ' + color : '') + (justUsed ? ' is-drain' : '') + '"></span>';
   }
+  container.innerHTML = '<span class="lives-label">Guesses left</span>'
+    + '<span class="battery" role="img" aria-label="' + left + ' of ' + MAX_GUESSES + ' guesses left">'
+    +   '<span class="battery-body">' + cells + '</span><span class="battery-cap"></span></span>'
+    + '<span class="battery-count">' + left + '/' + MAX_GUESSES + '</span>';
+}
+function glowBattery(delay) {
+  if (REDUCED_MOTION) return;
+  document.querySelectorAll('#lives-container .battery-cell.is-on').forEach((c, i) => {
+    c.style.animationDelay = (delay + i * 0.1).toFixed(2) + 's'; c.classList.add('is-glow');
+  });
 }
 
 // ============================================================
@@ -1167,51 +1261,148 @@ function submitGuess() {
   if (!match) { error.textContent = '"' + val + '" not found — check spelling.'; return; }
   if (guesses.find(g => g.iso3 === match.iso3)) { error.textContent = 'Already guessed!'; return; }
   error.textContent = '';
-  guesses.push(match); renderLives();
+  guesses.push(match);
   const isCorrect = match.iso3 === target.iso3;
+  renderLives(!isCorrect);
   addGuessRow(match, isCorrect);
-  input.value = ''; document.getElementById('autocomplete-list').style.display = 'none';
+  input.value = ''; syncInputFlag(); document.getElementById('autocomplete-list').style.display = 'none';
   saveDailyState();
-  if (isCorrect)                          { showBanner(true);  endGame(); }
-  else if (guesses.length >= MAX_GUESSES) { showBanner(false); endGame(); }
+  if (isCorrect)                          { renderResultCard(true);  endGame(); }
+  else if (guesses.length >= MAX_GUESSES) { renderResultCard(false); endGame(); }
 }
 
-function addGuessRow(country, isCorrect) {
-  const row = document.createElement('div'); row.className = 'guess-row' + (isCorrect ? ' correct' : '');
-  const num = guesses.length; // this guess's number (1-based, set after push in submitGuess)
-  const nameEl = document.createElement('span'); nameEl.className = 'guess-name';
-  nameEl.innerHTML = '<span class="guess-num">Guess ' + num + '</span>' + (isCorrect ? '✓ ' : '✗ ') + country.name;
-  row.appendChild(nameEl);
-  if (!isCorrect) {
-    const dist    = Math.round(haversineKm(country.lat, country.lng, target.lat, target.lng));
-    const bearing = bearingDeg(country.lat, country.lng, target.lat, target.lng);
-    const worldDpc = WORLD_DPC[country.latestYear] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
-    const hint = document.createElement('span'); hint.className = 'guess-hint';
-    hint.innerHTML =
-      '<span class="guess-arrow">' + bearingArrowSVG(bearing) + '</span>'
-      + '<span class="guess-direction">' + bearingLabel(bearing) + '</span>'
-      + '<span class="hint-divider">·</span>'
-      + '<span>' + dist.toLocaleString() + ' km</span>'
-      + '<span class="hint-divider">·</span>'
-      + '<span>' + fmtTWh(country.latestTotal) + ' generated</span>'
-      + (country.latestDpc != null
-        ? '<span class="hint-divider">·</span>'
-          + '<span>' + country.latestDpc.toFixed(1) + ' MWh/person</span>'
-          + '<span style="color:#bbb"> (world avg: ' + (worldDpc?.toFixed(1) ?? '—') + ')</span>'
-        : '');
-    row.appendChild(hint);
+// One slim row per guess, newest on top.
+//   left:  closeness ring around the guess number · flag · country · that country's own figures
+//   right: the hint toward the answer (compass, direction, distance) in a pill tinted with the closeness colour
+//   under: a thin "live wire" energised up to the closeness level; the ambient pulse sometimes runs along one
+function addGuessRow(country, isCorrect, animate = true) {
+  const num = guesses.length; // this guess's number (1-based, set after the push)
+  const row = document.createElement('div');
+  row.className = 'gr-row' + (isCorrect ? ' gr-row--win' : '') + (animate && !REDUCED_MOTION ? ' gr-anim' : '');
+  const name = escHtml(country.name);
+  if (isCorrect) {
+    row.innerHTML = '<span class="gr-sweep" aria-hidden="true"></span><span class="gr-current" aria-hidden="true"></span>'
+      + '<div class="gr-winline"><span class="gr-badge">' + num + '</span>'
+      + '<span class="gr-name">' + flagImg(country.iso3) + '<span>' + name + '</span></span>'
+      + '<span class="gr-wintxt">Puzzle solved in ' + num + '</span>'
+      + '<span class="gr-check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>';
+  } else {
+    const h = guessInfo(country), col = closeRGB(h.prox);
+    const L = 2 * Math.PI * 13, filled = L * h.prox / 100;
+    row.style.setProperty('--cl', col.join(','));
+    const facts = fmtTWh(country.latestTotal) + ' generated'
+      + (country.latestDpc != null ? '<span class="gr-dot">·</span>' + country.latestDpc.toFixed(1) + ' MWh/person' : '');
+    row.innerHTML = '<div class="gr-main">'
+      + '<button type="button" class="gr-num" aria-label="Guess ' + num + ', closeness ' + h.prox + '%">'
+      +   '<svg viewBox="0 0 30 30" width="30" height="30" aria-hidden="true"><circle class="gr-ring-bg" cx="15" cy="15" r="13"/>'
+      +   '<circle class="gr-ring" cx="15" cy="15" r="13" stroke-dasharray="' + filled.toFixed(1) + ' ' + L.toFixed(1) + '" style="--c:' + filled.toFixed(1) + '" transform="rotate(-90 15 15)"/></svg>'
+      +   '<span class="gr-n">' + num + '</span>'
+      +   '<span class="gr-tip" role="tooltip">Closeness ' + h.prox + '% (' + fmtKm(h.km) + ' away). The fuller and greener the ring, the closer this guess is to the answer.</span>'
+      + '</button>'
+      + '<span class="gr-who"><span class="gr-name">' + flagImg(country.iso3) + '<span title="' + name + '">' + name + '</span></span>'
+      +   '<span class="gr-facts">' + facts + '</span></span>'
+      + '<button type="button" class="gr-hint" aria-label="Hint: the answer is ' + fmtKm(h.km) + ' ' + DIR_NAMES[h.dir] + ' of ' + name + '">'
+      +   '<span class="gr-pill">' + compassHTML(h.deg) + '<span class="gr-dir">' + h.dir + '</span>'
+      +   '<span class="gr-km" style="color:' + darker(col) + '">' + fmtKm(h.km) + '</span></span>'
+      +   '<span class="gr-htip" role="tooltip">Hint toward the answer: it lies about ' + fmtKm(h.km) + ' to the ' + DIR_NAMES[h.dir] + ' of ' + name
+      +   '. The figures on the left are ' + name + '’s own.</span>'
+      + '</button></div>'
+      + '<span class="gr-wire" aria-hidden="true"><span class="gr-wire-fill" style="width:' + h.prox + '%"></span></span>';
   }
-  // Newest guess at the top, directly under the input box
   const container = document.getElementById('guesses');
   container.insertBefore(row, container.firstChild);
 }
 
-function showBanner(won) {
-  const div = document.createElement('div'); div.className = won ? 'win' : 'lose';
-  div.textContent = won
-    ? '🎉 Correct in ' + guesses.length + (guesses.length === 1 ? ' guess!' : ' guesses!')
-    : '❌ The answer was ' + target.name + (MODE === 'practice' ? '. Keep practising!' : '. Better luck tomorrow!');
-  const banner = document.getElementById('banner'); banner.innerHTML = ''; banner.appendChild(div);
+// Tap to open a row's tooltip on touch screens (hover does it on desktop); a tap anywhere else closes it
+document.addEventListener('click', e => {
+  const t = e.target.closest('.gr-num, .gr-hint');
+  document.querySelectorAll('.gr-num.is-open, .gr-hint.is-open').forEach(el => { if (el !== t) el.classList.remove('is-open'); });
+  if (t) t.classList.toggle('is-open');
+});
+
+// ------------------------------------------------------------
+//  RESULT CARD (replaces the old emoji banner, sits where the input was)
+//  The guesses are stops on a line, in order, each the country's flag in its closeness colour.
+//  Win: a current runs along the line to the answer, which lights green.
+//  Loss: the current stops at the last guess; a dashed gap leads to the answer, revealed greyed out.
+// ------------------------------------------------------------
+function pathModel(won) {
+  const path = won ? guesses.slice() : guesses.concat([target]);
+  const n = path.length, last = n - 1;
+  const frac = i => (last ? i / last : 0);
+  const liveEnd = won ? 1 : (last > 1 ? frac(last - 1) : 0);
+  const nodes = path.map((c, i) => {
+    const isAns = c.iso3 === target.iso3, h = isAns ? null : guessInfo(c);
+    return { c, isAns, h, frac: frac(i), col: isAns ? (won ? WIN_RGB : MISS_RGB) : closeRGB(h.prox) };
+  });
+  const live = nodes.filter((nd, i) => won || i < last);
+  const stops = live.map(nd => rgbaOf(nd.col, 0.85) + ' ' + (liveEnd ? nd.frac / liveEnd * 100 : 0).toFixed(1) + '%').join(', ');
+  return { nodes, n, liveEnd, stops };
+}
+
+function pathHTML(won, mini, animate) {
+  const m = pathModel(won), RUN = Math.min(1.6, 0.4 + 0.3 * (m.n - 1)), START = 0.35;
+  const at = nd => (!won && nd.isAns ? START + RUN * m.liveEnd + 0.35 : START + RUN * nd.frac);
+  const lineW = (m.liveEnd * 100).toFixed(2) + '%';
+  let line = '';
+  if (m.n > 1) {
+    line = '<span class="go-linebox">'
+      + '<span class="go-line" style="width:' + lineW + ';background:linear-gradient(90deg,' + m.stops + ');--dur:' + (RUN * m.liveEnd).toFixed(2) + 's;--at:' + START + 's"></span>'
+      + (won ? '' : '<span class="go-gap" style="left:' + lineW + ';--at:' + (START + RUN * m.liveEnd).toFixed(2) + 's"></span>')
+      + (mini ? '' : '<span class="go-spark" style="--to:' + lineW + ';--dur:' + (RUN * m.liveEnd).toFixed(2) + 's;--at:' + START + 's"></span>')
+      + '</span>';
+  }
+  const nodes = m.nodes.map(nd => {
+    const title = nd.isAns ? nd.c.name + (won ? ', the answer' : ', the answer you missed')
+      : nd.c.name + ', ' + fmtKm(nd.h.km) + ' away (' + nd.h.prox + '% close)';
+    const cls = 'go-node' + (nd.isAns ? ' go-node--answer' : '') + (!won && nd.isAns ? ' go-node--miss' : '');
+    return '<span class="' + cls + '" style="--cl:' + nd.col.join(',') + ';--at:' + at(nd).toFixed(2) + 's" title="' + escHtml(title) + '">'
+      + '<span class="go-ring">' + flagImg(nd.c.iso3, 'go-flag') + '</span>'
+      + (nd.isAns && !mini ? '<span class="go-badge" aria-hidden="true">' + (won ? '✓' : '?') + '</span>' : '')
+      + (nd.isAns && won && !mini ? '<span class="go-burst" aria-hidden="true"></span>' : '')
+      + '</span>';
+  }).join('');
+  const labels = mini ? '' : '<div class="go-labels">' + m.nodes.map(nd =>
+      '<span class="go-label' + (nd.isAns ? ' go-label--answer' : '') + '" style="--at:' + at(nd).toFixed(2) + 's;color:'
+      + (nd.isAns ? (won ? '#2f7a4d' : '#a85a4a') : darker(nd.col)) + '">' + (nd.isAns ? escHtml(nd.c.name) : fmtKm(nd.h.km)) + '</span>').join('') + '</div>';
+  return { html: '<div class="go-path' + (mini ? ' go-path--mini' : '') + (m.n === 1 ? ' go-path--one' : '') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
+      + '<div class="go-track">' + line + '<div class="go-nodes">' + nodes + '</div></div>' + labels + '</div>',
+    doneAt: START + RUN + 0.2 };
+}
+
+let resultTicker = null;
+function renderResultCard(won, animate = true) {
+  const host = document.getElementById('banner'); if (!host) return;
+  const p = pathHTML(won, false, animate);
+  let summary;
+  if (won) {
+    summary = guesses.length > 1
+      ? 'Your guesses closed in from ' + fmtKm(guessInfo(guesses[0]).km) + ' to ' + escHtml(target.name) + '.'
+      : 'First guess, straight to ' + escHtml(target.name) + '.';
+  } else {
+    const best = guesses.map(c => [c, guessInfo(c)]).sort((a, b) => a[1].km - b[1].km)[0];
+    summary = 'Closest guess: ' + escHtml(best[0].name) + ', ' + fmtKm(best[1].km) + ' away. '
+      + escHtml(target.name) + ' lay to its ' + DIR_NAMES[best[1].dir] + '.';
+  }
+  const tagline = MODE === 'practice' ? escHtml(practiceSubtitle().replace(/ · \d+ countries$/, '') || 'Practice') : 'Puzzle #' + getDayNumber();
+  const foot = MODE === 'practice'
+    ? '<span class="go-next">Practice round</span>'
+      + '<div class="go-actions"><button type="button" class="go-btn go-btn--dark" onclick="newGame()">Next puzzle ↺</button></div>'
+    : '<span class="go-next">Next puzzle in <strong id="go-countdown">' + getCountdown() + '</strong></span>'
+      + '<div class="go-actions"><button type="button" class="go-btn" onclick="showStatsModal(true)">Stats</button>'
+      + '<button type="button" class="go-btn go-btn--dark" onclick="copyShare(this)">Share</button></div>';
+  host.innerHTML = '<div class="go-card ' + (won ? 'go-card--won' : 'go-card--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
+    + '<div class="go-head"><span class="go-title">' + (won ? 'Your path to ' + escHtml(target.name) : 'Out of guesses. It was ' + escHtml(target.name) + '.') + '</span>'
+    + '<span class="go-tag">' + tagline + '</span></div>'
+    + p.html
+    + '<p class="go-summary">' + summary + '</p>'
+    + '<div class="go-foot">' + foot + '</div></div>';
+  if (won && animate) glowBattery(p.doneAt);
+  clearInterval(resultTicker);
+  if (MODE !== 'practice') resultTicker = setInterval(() => {
+    const el = document.getElementById('go-countdown'); if (!el) { clearInterval(resultTicker); return; }
+    el.textContent = getCountdown();
+  }, 1000);
 }
 
 function endGame() {
@@ -1232,7 +1423,6 @@ function endGame() {
     }
   }
   document.getElementById('input-area').style.display   = 'none';
-  document.getElementById('new-game-btn').style.display = 'block';
   if (MODE === 'normal') {
     const switcher = document.getElementById('mode-nav');
     if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
@@ -1267,7 +1457,7 @@ function setupAutocomplete() {
   }
   function selectActive() {
     const items = getItems();
-    if (activeIdx >= 0 && activeIdx < items.length) { input.value = items[activeIdx].textContent; list.style.display = 'none'; activeIdx = -1; return true; }
+    if (activeIdx >= 0 && activeIdx < items.length) { input.value = items[activeIdx].textContent; syncInputFlag(); list.style.display = 'none'; activeIdx = -1; return true; }
     return false;
   }
   function buildList(q) {
@@ -1279,13 +1469,14 @@ function setupAutocomplete() {
     if (!matches.length) { list.style.display = 'none'; return; }
     list.innerHTML = '';
     matches.forEach(c => {
-      const item = document.createElement('div'); item.className = 'ac-item'; item.textContent = c.name;
-      item.addEventListener('mousedown', e => { e.preventDefault(); input.value = c.name; list.style.display = 'none'; activeIdx = -1; });
+      const item = document.createElement('div'); item.className = 'ac-item';
+      item.innerHTML = flagImg(c.iso3, 'ac-flag') + '<span>' + escHtml(c.name) + '</span>';
+      item.addEventListener('mousedown', e => { e.preventDefault(); input.value = c.name; syncInputFlag(); list.style.display = 'none'; activeIdx = -1; });
       list.appendChild(item);
     });
     list.style.display = 'block';
   }
-  input.addEventListener('input', () => buildList(input.value.toLowerCase().trim()));
+  input.addEventListener('input', () => { syncInputFlag(); buildList(input.value.toLowerCase().trim()); });
   input.addEventListener('focus', () => buildList(input.value.toLowerCase().trim()));
   input.addEventListener('keydown', e => {
     const items = getItems(), open = list.style.display === 'block' && items.length > 0;
@@ -1304,6 +1495,19 @@ function setupAutocomplete() {
   document.addEventListener('click', e => { if (!e.target.closest('#autocomplete-wrapper')) { list.style.display = 'none'; activeIdx = -1; } });
 }
 
+// Show the flag inside the input once the text matches a country exactly
+function syncInputFlag() {
+  const input = document.getElementById('guess-input'), slot = document.getElementById('guess-flag');
+  if (!input || !slot) return;
+  const val = input.value.trim().toLowerCase();
+  const match = val ? COUNTRIES.find(c => c.name.toLowerCase() === val) : null;
+  const key = match ? match.iso3 : '';
+  if (slot.dataset.iso3 === key) return;
+  slot.dataset.iso3 = key;
+  slot.innerHTML = match ? flagImg(match.iso3, 'ac-flag') : '';
+  slot.parentNode.classList.toggle('has-flag', !!match);
+}
+
 // ============================================================
 //  DAILY GAME
 // ============================================================
@@ -1313,21 +1517,19 @@ function restoreDailyGame() {
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
   document.getElementById('input-area').style.display   = 'flex';
-  document.getElementById('new-game-btn').style.display = 'none';
-  document.getElementById('guess-input').value      = '';
+  document.getElementById('guess-input').value      = ''; syncInputFlag();
   renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
   const saved = loadDailyState();
   if (saved && saved.guesses.length > 0) {
     for (const iso3 of saved.guesses) {
       const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) continue;
-      guesses.push(country); addGuessRow(country, country.iso3 === target.iso3);
+      guesses.push(country); addGuessRow(country, country.iso3 === target.iso3, false);
     }
     renderLives();
     if (saved.gameOver) {
       const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
-      showBanner(won); gameOver = true;
+      gameOver = true; renderResultCard(won, false);
       document.getElementById('input-area').style.display   = 'none';
-      document.getElementById('new-game-btn').style.display = 'block';
       // Saved states from before this fix have no flag — treat them as already sent
       // so nobody gets a duplicate row today.
       scoreSubmitted = saved.submitted !== false;
@@ -1348,28 +1550,33 @@ function newGame() {
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
   document.getElementById('input-area').style.display   = 'flex';
-  document.getElementById('new-game-btn').style.display = 'none';
-  document.getElementById('guess-input').value      = '';
+  document.getElementById('guess-input').value      = ''; syncInputFlag();
   renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
 }
 
 // ============================================================
 //  SHARE + COUNTDOWN
 // ============================================================
+// Each wrong guess becomes a square by closeness: 🟥 under 40 %, 🟧 40-74 %, 🟨 75 % and up; the answer is 🟩.
+function shareSquare(c) {
+  if (c.iso3 === target.iso3) return '🟩';
+  const p = guessInfo(c).prox;
+  return p >= 75 ? '🟨' : p >= 40 ? '🟧' : '🟥';
+}
+
 function buildShareText() {
   const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
   const score = won ? guesses.length : 'X';
-  let grid = '';
-  for (let i = 0; i < guesses.length; i++) grid += guesses[i].iso3 === target.iso3 ? '🟩' : '🟥';
-  if (!won) for (let i = guesses.length; i < MAX_GUESSES; i++) grid += '⬛';
-  return 'Energle ⚡ #' + getDayNumber() + '  ' + score + '/' + MAX_GUESSES + '\n' + grid + '\nhttps://oscarviguie-ui.github.io/Energle/';
+  return 'Energle ⚡ #' + getDayNumber() + '  ' + score + '/' + MAX_GUESSES + '\n' + guesses.map(shareSquare).join('') + '\nhttps://energle.org';
 }
 
-function copyShare() {
-  navigator.clipboard.writeText(buildShareText()).then(() => {
-    const btn = document.getElementById('share-btn');
-    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Share 📋'; }, 2000); }
-  }).catch(() => { const btn = document.getElementById('share-btn'); if (btn) btn.textContent = 'Copy failed'; });
+function copyShare(btn) {
+  btn = btn || document.getElementById('share-btn');
+  const label = btn ? btn.textContent : 'Share';
+  const reset = () => { if (btn) setTimeout(() => { btn.textContent = label; }, 2000); };
+  navigator.clipboard.writeText(buildShareText())
+    .then(() => { if (btn) btn.textContent = 'Copied!'; reset(); })
+    .catch(() => { if (btn) btn.textContent = 'Copy failed'; reset(); });
 }
 
 function getCountdown() {
@@ -1382,48 +1589,85 @@ function getCountdown() {
 // ============================================================
 //  STATS MODAL
 // ============================================================
+// ============================================================
+//  STATS MODAL
+//  Personal header (avatar, name, all-time rank), today's result,
+//  a row of four numbers, and the guess distribution as shares of games played.
+//  Stats live in this browser; the name and rank come from the leaderboard.
+// ============================================================
+const AVATAR_COLORS = ['#4a90c4', '#5ab88a', '#e8925a', '#9b6dbd', '#2ab5a0', '#c0654a'];
+
+function avatarColor(name) {
+  let h = 0;
+  for (const ch of name) h = (h + ch.charCodeAt(0)) % 997;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
 function showStatsModal(afterGame) {
   const existing = document.getElementById('stats-modal'); if (existing) existing.remove();
-  const stats = loadStats(), winPct = stats.played > 0 ? Math.round(stats.won/stats.played*100) : 0;
-  const maxDist = Math.max(1, ...Object.values(stats.dist));
-  const won = afterGame && gameOver && MODE === 'normal' && guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
+  const stats = loadStats();
+  const name = getUsername();
+  const winPct = stats.played > 0 ? Math.round(stats.won / stats.played * 100) : 0;
+  const solvedGuesses = [1, 2, 3, 4, 5, 6].reduce((s, k) => s + k * (stats.dist[k] || 0), 0);
+  const avg = stats.won > 0 ? (solvedGuesses / stats.won).toFixed(1) : '–';
+  const won = afterGame && gameOver && MODE === 'normal' && guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
   const currentKey = afterGame && gameOver && MODE === 'normal' ? (won ? guesses.length : 'X') : null;
 
-  const distRows = [1,2,3,4,5,6,'X'].map(k => {
-    const val = stats.dist[k] || 0, pct = Math.round(val/maxDist*100), isCurrent = k === currentKey;
-    return '<div class="st-dist-row"><span class="st-dist-label">' + k + '</span>'
-      + '<div class="st-dist-bar-wrap"><div class="st-dist-bar' + (isCurrent ? ' st-dist-bar--current' : '') + '" style="width:max(' + pct + '%,24px)">' + val + '</div></div></div>';
-  }).join('');
+  // Header: who these stats belong to
+  const header = '<div class="sx-head">'
+    + '<span class="sx-avatar" aria-hidden="true" style="background:' + (name ? avatarColor(name) : '#c9c9c6') + '">'
+    +   (name ? escHtml(name.charAt(0).toUpperCase()) : '?') + '</span>'
+    + '<div class="sx-who"><span class="sx-name">' + (name ? escHtml(name) : 'Guest') + '</span>'
+    +   '<span class="sx-sub" id="sx-rank">' + (name ? 'Looking up your rank…' : 'Not on the leaderboard yet. You pick a name after your first daily.') + '</span></div>'
+    + '<button class="sx-close" id="st-close-btn" aria-label="Close">×</button></div>';
 
-  // Today's result banner shown at top of modal when opened after a game
-  const todayResult = (afterGame && MODE === 'normal' && gameOver)
-    ? ('<div class="st-today ' + (won ? 'st-today--won' : 'st-today--lost') + '">'
-      + (won
-        ? '🎉 Puzzle #' + getDayNumber() + ' solved in ' + guesses.length + (guesses.length === 1 ? ' guess' : ' guesses') + '!'
-        : '❌ Puzzle #' + getDayNumber() + ' — the answer was <strong>' + target.name + '</strong>')
-      + '</div>')
-    : '';
+  // Today's result, only right after the daily
+  let today = '';
+  if (afterGame && MODE === 'normal' && gameOver) {
+    const streakLine = won
+      ? (stats.streak > 1 ? stats.streak + ' days in a row.' + (stats.streak >= stats.bestStreak ? ' Your best run yet.' : '') : 'Streak started. See you tomorrow.')
+      : 'Streak reset.';
+    // Today's result with the same guess path as the result card, in miniature
+    today = '<div class="sx-today ' + (won ? 'sx-today--won' : 'sx-today--lost') + '">'
+      + '<div class="sx-today-top"><span class="sx-today-title">' + (won
+          ? 'Puzzle #' + getDayNumber() + ' solved in ' + guesses.length
+          : 'Puzzle #' + getDayNumber() + ': it was ' + escHtml(target.name)) + '</span>'
+      + '<span class="sx-today-sub">' + streakLine + '</span></div>'
+      + pathHTML(won, true, false).html + '</div>';
+  }
+
+  const tiles = [[stats.played, 'Played'], [winPct + '%', 'Win rate'], [stats.streak, 'Streak'], [stats.bestStreak, 'Best streak']]
+    .map(([v, l]) => '<div class="sx-tile"><span class="sx-tile-num">' + v + '</span><span class="sx-tile-lbl">' + l + '</span></div>').join('');
+
+  const rows = [1, 2, 3, 4, 5, 6, 'X'].map((k, i) => {
+    const n = stats.dist[k] || 0, share = stats.played ? n / stats.played : 0, isToday = k === currentKey;
+    const cls = isToday ? (k === 'X' ? ' sx-fill--lost' : ' sx-fill--today') : (k === 'X' ? ' sx-fill--x' : '');
+    return '<div class="sx-row"><span class="sx-key">' + k + '</span>'
+      + '<span class="sx-track"><span class="sx-fill' + cls + '" style="width:' + (share * 100).toFixed(1) + '%;animation-delay:' + (0.12 + i * 0.06).toFixed(2) + 's">'
+      +   (isToday ? '<span class="sx-pulse"></span>' : '') + '</span></span>'
+      + '<span class="sx-count' + (n ? '' : ' sx-count--zero') + (isToday ? ' sx-count--today' : '') + '">'
+      + (n ? n + ' · ' + Math.round(share * 100) + '%' : '–') + '</span></div>';
+  }).join('');
 
   const cdId = 'stcd' + Date.now();
   const modal = document.createElement('div'); modal.id = 'stats-modal';
   modal.innerHTML =
     '<div class="st-backdrop"></div>'
-    + '<div class="st-box">'
-    + '<div class="st-header"><span class="st-title">Statistics</span><button class="st-close" id="st-close-btn">×</button></div>'
-    + todayResult
-    + '<div class="st-grid">'
-    + '<div class="st-stat"><span class="st-num">' + stats.played + '</span><span class="st-lbl">Played</span></div>'
-    + '<div class="st-stat"><span class="st-num">' + winPct + '</span><span class="st-lbl">Win %</span></div>'
-    + '<div class="st-stat"><span class="st-num">' + stats.streak + '</span><span class="st-lbl">Streak</span></div>'
-    + '<div class="st-stat"><span class="st-num">' + stats.bestStreak + '</span><span class="st-lbl">Best</span></div>'
+    + '<div class="sx-box" role="dialog" aria-label="Statistics">'
+    + header + today
+    + '<div class="sx-tiles">' + tiles + '</div>'
+    + '<div class="sx-dist-head"><span>Guesses to solve</span><span>avg ' + avg + '</span></div>'
+    + '<div class="sx-dist">' + rows + '</div>'
+    + '<div class="sx-foot">'
+    +   '<div class="sx-next"><span class="sx-next-lbl">Next puzzle</span><span class="sx-next-time" id="' + cdId + '">' + getCountdown() + '</span></div>'
+    +   '<div class="sx-actions">'
+    +     (afterGame && MODE === 'normal' ? '<button class="sx-btn sx-btn--dark" id="share-btn" onclick="copyShare(this)">Share</button>' : '')
+    +     (afterGame ? '<button class="sx-btn" onclick="document.getElementById(\'stats-modal\').remove();switchMode(\'practice\')">Practice</button>' : '')
+    +   '</div>'
     + '</div>'
-    + '<div class="st-section-title">Guess distribution</div>'
-    + '<div class="st-dist">' + distRows + '</div>'
-    + '<div class="st-footer">'
-    + '<div class="st-countdown-wrap"><span class="st-countdown-lbl">Next puzzle</span><span class="st-countdown" id="' + cdId + '">' + getCountdown() + '</span></div>'
-    + (afterGame && MODE === 'normal' ? '<button class="st-share-btn" id="share-btn" onclick="copyShare()">Share 📋</button>' : '')
-    + (afterGame ? '<button class="st-practice-btn" onclick="document.getElementById(\'stats-modal\').remove();switchMode(\'practice\')">Practice →</button>' : '')
-    + '</div></div>';
+    + (afterGame && MODE === 'normal' && gameOver
+        ? '<div class="sx-share"><span class="sx-share-lbl">Share copies</span><pre class="sx-share-txt">' + escHtml(buildShareText()) + '</pre></div>' : '')
+    + '</div>';
 
   modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
   document.body.appendChild(modal);
@@ -1432,6 +1676,17 @@ function showStatsModal(afterGame) {
     const el = document.getElementById(cdId); if (!el) { clearInterval(ticker); return; }
     el.textContent = getCountdown();
   }, 1000);
+
+  // All-time rank and Weighted Score, from the same view as the leaderboard
+  if (name) {
+    sbFetchAllTime().then(rows => {
+      const el = document.getElementById('sx-rank'); if (!el) return;
+      const i = rows.findIndex(r => (r.username || '').toLowerCase() === name.toLowerCase());
+      el.textContent = i >= 0
+        ? 'All-time rank #' + (i + 1) + ' of ' + rows.length + ' · Weighted score ' + Number(rows[i].score).toFixed(2)
+        : 'Not ranked yet. Finish a daily puzzle to appear on the leaderboard.';
+    }).catch(() => { const el = document.getElementById('sx-rank'); if (el) el.textContent = 'Playing on the leaderboard as ' + name; });
+  }
 }
 
 // ============================================================
