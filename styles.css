@@ -1824,3 +1824,82 @@ canvas.line-pulse { position: absolute; left: 0; top: 0; pointer-events: none; }
   .flow-segment.imports::after, .flow-segment.exports::after, .header-current::before { animation: none !important; }
   .header-current, canvas.line-pulse { display: none; }
 }
+
+/* ============================================================
+   BALANCE CARD — headline stats (left) + energy balance flow chart (right)
+   ============================================================ */
+#balance-card {
+  display: grid; grid-template-columns: 220px minmax(0, 1fr);
+  background: #fff; border: 1px solid #e0e0e0; border-radius: 4px;
+}
+.bc-stats {
+  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+  gap: 14px; padding: 18px 20px; border-right: 1px solid #ececec;
+}
+.bc-stat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#balance-card .stat-value { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.bc-world { font-size: 0.8rem; color: #888; font-variant-numeric: tabular-nums; }
+.bc-divider { height: 1px; width: 100%; background: #ececec; }
+.bc-flow { padding: 14px 20px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bc-caption { text-align: center; font-size: 0.75rem; color: #888; }
+
+#flow-chart { position: relative; width: 100%; }
+#flow-chart svg { position: absolute; left: 0; top: 0; overflow: visible; }
+.fc-box {
+  position: absolute; box-sizing: border-box; background: #fff; border: 1px solid #e2e4e8; border-radius: 6px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 1px; padding: 0 8px;
+}
+.fc-accent { position: absolute; width: 4px; }
+.fc-accent--L { right: -1px; }
+.fc-accent--R { left: -1px; }
+.fc-name { font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.fc-val  { font-size: 17px; font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
+.fc-tag  { position: absolute; transform: translateY(-50%); line-height: 1; font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* load animation: boxes appear, flows grow left to right, then the shares */
+.fc-animate .fc-box { opacity: 0; animation: fcIn .35s ease-out .15s forwards; }
+.fc-animate .fc-link { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: fcGrow .8s cubic-bezier(.3,.7,.3,1) .4s forwards; }
+.fc-animate .fc-link--trade { animation-delay: .6s; }
+.fc-animate .fc-tag { opacity: 0; animation: fcIn .35s ease-out 1.25s forwards; }
+@keyframes fcGrow { to { transform: scaleX(1); } }
+@keyframes fcIn { to { opacity: 1; } }
+
+@media (max-width: 600px) {
+  #balance-card { grid-template-columns: minmax(0, 1fr); }
+  .bc-stats { flex-direction: row; align-items: flex-start; gap: 12px; padding: 14px; border-right: 0; border-bottom: 1px solid #ececec; }
+  .bc-stats .bc-divider { display: none; }
+  .bc-stat { flex: 1; min-width: 0; }
+  #balance-card .stat-value { font-size: 1.05rem; }
+  .bc-world { font-size: 0.7rem; }
+  .bc-flow { padding: 12px 12px 14px; gap: 10px; }
+  .fc-name { font-size: 9.5px; }
+  .fc-val  { font-size: 13.5px; }
+  .fc-tag  { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fc-animate .fc-box, .fc-animate .fc-link, .fc-animate .fc-tag { animation: none !important; opacity: 1; transform: none; }
+}
+
+/* ---------- flow chart polish ---------- */
+.fc-box { box-shadow: 0 1px 2px rgba(17, 24, 39, .05); }
+.fc-accent--L { border-radius: 0 2px 2px 0; }
+.fc-accent--R { border-radius: 2px 0 0 2px; }
+.fc-tag { text-shadow: 0 0 3px rgba(255, 255, 255, .9), 0 0 1px rgba(255, 255, 255, .9); }
+#flow-chart .fc-link { transition: opacity .2s ease; cursor: default; }
+#flow-chart .fc-links:hover .fc-link { opacity: .45; }          /* hovering one flow quiets the other */
+#flow-chart .fc-links .fc-link:hover { opacity: 1; }
+
+/* ---------- stats: whose stats these are ---------- */
+.st-player {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 12px; padding: 8px 12px; background: #f6f6f4; border-radius: 6px;
+  font-size: .85rem; color: #333; line-height: 1.3;
+}
+.st-player strong { font-weight: 700; color: #1a1a1a; }
+.st-player-note { display: block; font-size: .72rem; color: #888; }
+.st-player-avatar {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #1a1a1a; color: #fff; font-size: .8rem; font-weight: 700;
+}
+.st-player-avatar--empty { background: #d4d4d4; color: #fff; }
