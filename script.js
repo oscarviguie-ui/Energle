@@ -448,20 +448,7 @@ function browseCountry(iso3) {
     + '<div class="subtitle-row"><p class="subtitle">' + country.name + ' · ' + (country.continent || '') + '</p>'
     + '<button id="back-to-browse">← Browse</button></div></header>'
     + navRowHTML(false)
-    + '<div id="stat-bar">'
-    + '<div class="stat-item"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span></div>'
-    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world-gen">—</span></div>'
-    + '<div class="stat-divider"></div>'
-    + '<div class="stat-item"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span></div>'
-    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world">—</span></div>'
-    + '</div>'
-    + '<div id="flow-bar"><div class="flow-label">Energy balance — latest year</div>'
-    + '<div class="flow-track" id="flow-track"></div>'
-    + '<div class="flow-legend">'
-    + '<span class="flow-legend-item"><span class="flow-swatch generation"></span>Generation</span>'
-    + '<span class="flow-legend-item"><span class="flow-swatch exports"></span>Net exports</span>'
-    + '<span class="flow-legend-item"><span class="flow-swatch imports"></span>Net imports</span>'
-    + '</div></div>'
+    + balanceCardHTML()
     + '<div id="charts-section">'
     + '<div id="chart-left"><p class="chart-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
     + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
@@ -677,20 +664,7 @@ function renderGameScreen() {
     '<header><div class="header-top">' + logoHTML() + headerRightHTML() + '</div>'
     + '<div class="subtitle-row"><p class="subtitle">' + subtitle + '</p>' + backBtn + '</div></header>'
     + navRowHTML(true)
-    + '<div id="stat-bar">'
-    + '<div class="stat-item"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span></div>'
-    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world-gen">—</span></div>'
-    + '<div class="stat-divider"></div>'
-    + '<div class="stat-item"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span></div>'
-    + '<div class="stat-item stat-world"><span class="stat-label">World average</span><span class="stat-value" id="stat-world">—</span></div>'
-    + '</div>'
-    + '<div id="flow-bar"><div class="flow-label">Energy balance — latest year</div>'
-    + '<div class="flow-track" id="flow-track"></div>'
-    + '<div class="flow-legend">'
-    + '<span class="flow-legend-item"><span class="flow-swatch generation"></span>Generation</span>'
-    + '<span class="flow-legend-item"><span class="flow-swatch exports"></span>Net exports</span>'
-    + '<span class="flow-legend-item"><span class="flow-swatch imports"></span>Net imports</span>'
-    + '</div></div>'
+    + balanceCardHTML()
     + '<div id="charts-section">'
     + '<div id="chart-left"><p class="chart-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
     + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
@@ -758,32 +732,128 @@ function renderStatBar() {
   // Same year as the country's figure; fall back to the latest year available
   const worldGen = WORLD_GEN[latest] ?? WORLD_GEN[Math.max(...Object.keys(WORLD_GEN).map(Number))];
   countUp(document.getElementById('stat-total'), total, fmtTWh, 300);
-  countUp(document.getElementById('stat-world-gen'), worldGen, v => fmtTWh(v) + ' / country', 380);
-  countUp(document.getElementById('stat-dpc'), dpc, v => v.toFixed(1) + ' MWh / person (' + latest + ')', 460);
-  countUp(document.getElementById('stat-world'), worldDpc, v => v.toFixed(1) + ' MWh / person', 540);
+  countUp(document.getElementById('stat-world-gen'), worldGen, v => 'World Avg: ' + fmtTWh(v), 380);
+  countUp(document.getElementById('stat-dpc'), dpc, v => v.toFixed(1) + ' MWh', 460);
+  countUp(document.getElementById('stat-world'), worldDpc, v => 'World Avg: ' + v.toFixed(1) + ' MWh', 540);
+  const yr = document.getElementById('bc-year'); if (yr) yr.textContent = latest;
 }
 
-function renderFlowBar() {
-  const info = ALL_DATA[target.name], latest = info.latestYear, d = info.years[latest];
-  const gen = d.Total ?? 0, netImp = d.NetImports ?? 0, demand = d.Demand ?? 0;
-  const track = document.getElementById('flow-track'); track.innerHTML = '';
-  if (netImp < 0) {
-    const gp = (demand/gen*100).toFixed(1), ep = (Math.abs(netImp)/gen*100).toFixed(1);
-    track.innerHTML = seg('generation', gp, fmtFlowLabel(demand, 'demand'), fmtFlowLabel(demand, 'demand') + ' (' + gp + '% of generation)')
-      + seg('exports', ep, fmtFlowLabel(Math.abs(netImp), 'exported'), fmtFlowLabel(Math.abs(netImp), 'exported') + ' (' + ep + '% of generation)');
+// One card: the two headline stats on the left, the energy balance flow chart on the right.
+function balanceCardHTML() {
+  return '<div id="balance-card">'
+    + '<div class="bc-stats">'
+    +   '<div class="bc-stat"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span><span class="bc-world" id="stat-world-gen"></span></div>'
+    +   '<div class="bc-divider"></div>'
+    +   '<div class="bc-stat"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span><span class="bc-world" id="stat-world"></span></div>'
+    + '</div>'
+    + '<div class="bc-flow">'
+    +   '<span class="stat-label">Energy balance — <span id="bc-year"></span></span>'
+    +   '<div id="flow-chart"></div>'
+    +   '<span class="bc-caption" id="flow-caption"></span>'
+    + '</div>'
+    + '</div>';
+}
+
+// ------------------------------------------------------------
+//  ENERGY BALANCE FLOW CHART
+//  Boxes at both ends (TWh), ribbons between them (true scale, a trade
+//  flow is never thinner than 10 px), each flow's share written inside
+//  it next to the left box — or just outside it when the flow is too thin.
+// ------------------------------------------------------------
+const FLOW_COLORS = { imp: '#e0218a', exp: '#3f3cbb', gen: '#64748b', dem: '#1f2937' };
+
+function renderFlowBar(animate = true) {
+  const host = document.getElementById('flow-chart'); if (!host) return;
+  const info = ALL_DATA[target.name], latest = info.latestYear, d = info.years[latest] ?? {};
+  const gen = d.Total ?? 0, net = d.NetImports ?? 0;
+  const imp = Math.max(net, 0), exp = Math.max(-net, 0), use = gen + net;   // demand = generation + net imports
+  const w = Math.max(260, Math.round(host.clientWidth || 600)), narrow = w < 420;
+  const HMAX = narrow ? 90 : 116, MIN = 10, GAP = 12, FIT = narrow ? 17 : 19;
+  const CW = narrow ? 104 : 142, BH = narrow ? 46 : 52;
+  const xL = CW, xR = w - CW;
+  const r = v => Math.round(v * 10) / 10;
+  const pct = v => (v > 0 && v < 10 ? v.toFixed(1) : String(Math.round(v))) + '%';
+  const boxH = t => Math.max(BH, t + 12);
+  const link = (x0, a0, a1, x1, b0, b1) => {
+    const tip = 7, xe = x1 - tip, xm = (x0 + xe) / 2, bm = (b0 + b1) / 2;
+    return 'M' + x0 + ' ' + r(a0) + ' C' + r(xm) + ' ' + r(a0) + ' ' + r(xm) + ' ' + r(b0) + ' ' + r(xe) + ' ' + r(b0)
+      + ' L' + x1 + ' ' + r(bm) + ' L' + r(xe) + ' ' + r(b1)
+      + ' C' + r(xm) + ' ' + r(b1) + ' ' + r(xm) + ' ' + r(a1) + ' ' + x0 + ' ' + r(a1) + ' Z';
+  };
+  let boxes = '', tags = '', pMain = '', pTrade = '', tradeFrom = FLOW_COLORS.gen, tradeTo = FLOW_COLORS.gen, H = 0, caption = '';
+  const box = (side, y, h, flowT, color, name, val) => {
+    const left = side === 'L' ? 0 : xR;
+    boxes += '<div class="fc-box" style="left:' + left + 'px;top:' + r(y) + 'px;width:' + CW + 'px;height:' + r(h) + 'px">'
+      + '<span class="fc-accent fc-accent--' + side + '" style="top:' + r(h / 2 - flowT / 2 - 1) + 'px;height:' + r(flowT) + 'px;background:' + color + '"></span>'
+      + '<span class="fc-name" style="color:' + (color === FLOW_COLORS.dem ? '#374151' : color) + '">' + name + '</span>'
+      + '<span class="fc-val">' + fmtTWh(val) + '</span></div>';
+  };
+  const tag = (y, text, color) => { tags += '<span class="fc-tag" style="left:' + (xL + 10) + 'px;top:' + r(y) + 'px;color:' + color + '">' + text + '</span>'; };
+
+  if (imp > 0) {
+    let tI = imp / use * HMAX, tG = gen / use * HMAX;
+    if (tI < MIN) { tI = MIN; tG = HMAX - MIN; }
+    if (tG < MIN) { tG = MIN; tI = HMAX - MIN; }
+    const hI = boxH(tI), hG = boxH(tG), yG = hI + GAP, totL = yG + hG;
+    const hD = boxH(tI + tG), yD = (totL - hD) / 2, d0 = yD + hD / 2 - (tI + tG) / 2;
+    const cI = hI / 2, cG = yG + hG / 2;
+    pTrade = link(xL, cI - tI / 2, cI + tI / 2, xR, d0, d0 + tI);
+    pMain  = link(xL, cG - tG / 2, cG + tG / 2, xR, d0 + tI, d0 + tI + tG);
+    tradeFrom = tradeTo = FLOW_COLORS.imp;
+    box('L', 0, hI, tI, FLOW_COLORS.imp, 'IMPORTED', imp);
+    box('L', yG, hG, tG, FLOW_COLORS.gen, 'GENERATED', gen);
+    box('R', yD, hD, tI + tG, FLOW_COLORS.dem, 'DEMAND', use);
+    tag(tI >= FIT ? cI : cI - tI / 2 - 9, pct(imp / use * 100), '#b0126b');          // too thin: just above
+    tag(tG >= FIT ? cG : cG + tG / 2 + 9, pct(gen / use * 100), '#1f2937');          // too thin: just below
+    H = totL + 2; caption = 'Percentages on the flows: share of demand';
+  } else if (exp > 0) {
+    let tU = use / gen * HMAX, tE = exp / gen * HMAX;
+    if (tE < MIN) { tE = MIN; tU = HMAX - MIN; }
+    if (tU < MIN) { tU = MIN; tE = HMAX - MIN; }
+    const hU = boxH(tU), hE = boxH(tE), yE = hU + GAP, totR = yE + hE;
+    const hG = boxH(tU + tE), yG = (totR - hG) / 2, s0 = yG + hG / 2 - (tU + tE) / 2;
+    const cU = hU / 2, cE = yE + hE / 2;
+    pMain  = link(xL, s0, s0 + tU, xR, cU - tU / 2, cU + tU / 2);
+    pTrade = link(xL, s0 + tU, s0 + tU + tE, xR, cE - tE / 2, cE + tE / 2);
+    tradeFrom = FLOW_COLORS.gen; tradeTo = FLOW_COLORS.exp;
+    box('L', yG, hG, tU + tE, FLOW_COLORS.gen, 'GENERATED', gen);
+    box('R', 0, hU, tU, FLOW_COLORS.dem, 'DEMAND', use);
+    box('R', yE, hE, tE, FLOW_COLORS.exp, 'EXPORTED', exp);
+    tag(tU >= FIT ? s0 + tU / 2 : s0 - 9, pct(use / gen * 100), '#1f2937');
+    tag(tE >= FIT ? s0 + tU + tE / 2 : s0 + tU + tE + 9, pct(exp / gen * 100), '#2f2c9a');   // too thin: just below
+    H = Math.max(totR, tE >= FIT ? 0 : s0 + tU + tE + 18) + 2; caption = 'Percentages on the flows: share of generation';
   } else {
-    const tot = demand > 0 ? demand : gen + netImp;
-    const gp = (gen/tot*100).toFixed(1), ip = (netImp/tot*100).toFixed(1);
-    track.innerHTML = seg('generation', gp, fmtFlowLabel(gen, 'generated'), fmtFlowLabel(gen, 'generated') + ' (' + gp + '% of demand)')
-      + seg('imports', Math.max(ip, 0), fmtFlowLabel(netImp, 'imported'), fmtFlowLabel(netImp, 'imported') + ' (' + ip + '% of demand)');
+    const t = HMAX * 0.6, h = boxH(t), c = h / 2;
+    pMain = link(xL, c - t / 2, c + t / 2, xR, c - t / 2, c + t / 2);
+    box('L', 0, h, t, FLOW_COLORS.gen, 'GENERATED', gen);
+    box('R', 0, h, t, FLOW_COLORS.dem, 'DEMAND', use);
+    tag(c, '100%', '#1f2937');
+    H = h + 2; caption = 'No net trade: generation covers all of demand';
   }
+  H = Math.round(H);
+  host.className = animate && !REDUCED_MOTION ? 'fc-animate' : '';
+  host.style.height = H + 'px';
+  host.innerHTML =
+    '<svg width="' + w + '" height="' + H + '" viewBox="0 0 ' + w + ' ' + H + '" aria-hidden="true">'
+    + '<defs><linearGradient id="fc-gA" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="' + FLOW_COLORS.gen + '"/><stop offset="1" stop-color="' + FLOW_COLORS.dem + '"/></linearGradient>'
+    + '<linearGradient id="fc-gB" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="' + tradeFrom + '"/><stop offset="1" stop-color="' + tradeTo + '"/></linearGradient></defs>'
+    + '<path class="fc-link" d="' + pMain + '" fill="url(#fc-gA)" fill-opacity="0.3"/>'
+    + (pTrade ? '<path class="fc-link fc-link--trade" d="' + pTrade + '" fill="url(#fc-gB)" fill-opacity="0.4"/>' : '')
+    + '</svg>' + boxes + tags;
+  host.setAttribute('role', 'img');
+  host.setAttribute('aria-label', imp > 0
+    ? fmtTWh(gen) + ' generated plus ' + fmtTWh(imp) + ' imported gives ' + fmtTWh(use) + ' of demand'
+    : exp > 0 ? fmtTWh(gen) + ' generated: ' + fmtTWh(use) + ' used at home and ' + fmtTWh(exp) + ' exported'
+    : fmtTWh(gen) + ' generated, all used at home');
+  const cap = document.getElementById('flow-caption'); if (cap) cap.textContent = caption;
 }
 
-function seg(cls, pct, il, tl) {
-  const p = Math.max(0, Math.min(100, parseFloat(pct)));
-  if (p < 0.1) return '';
-  return '<div class="flow-segment ' + cls + '" style="width:' + p + '%" title="' + tl + '"><span>' + (p > 10 ? il : '') + '</span></div>';
-}
+// Redraw the flow chart to the new width when the window is resized (no animation).
+let flowResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(flowResizeTimer);
+  flowResizeTimer = setTimeout(() => { if (target && document.getElementById('flow-chart')) renderFlowBar(false); }, 150);
+});
 
 // ============================================================
 //  CHART HELPERS
@@ -1045,7 +1115,7 @@ function externalTooltipLine(context) {
   let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Year: ' + year + '</div>';
   html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
   if (demand !== null && demand > 0) html += tooltipRow('#1a1a1a', 'Demand', demand, total, true);
-  if (netImp !== null && netImp !== 0) html += tooltipRow(netImp<0?'#2ab5a0':'#e8925a', netImp<0?'Net exports':'Net imports', Math.abs(netImp), total, true);
+  if (netImp !== null && netImp !== 0) html += tooltipRow(netImp<0?'#3f3cbb':'#e0218a', netImp<0?'Net exports':'Net imports', Math.abs(netImp), total, true);
   html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
   model.dataPoints.filter(dp => !dp.dataset.label.startsWith('__') && (dp.parsed?.y ?? 0) > 0)
     .sort((a,b) => (b.parsed?.y??0) - (a.parsed?.y??0))
@@ -1059,7 +1129,7 @@ function externalTooltipBar(context) {
   let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Mix (' + latest + ')</div>';
   html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
   if (data.Demand && data.Demand > 0) html += tooltipRow('#1a1a1a', 'Demand', data.Demand, total, true);
-  if (data.NetImports && data.NetImports !== 0) html += tooltipRow(data.NetImports<0?'#2ab5a0':'#e8925a', data.NetImports<0?'Net exports':'Net imports', Math.abs(data.NetImports), total, true);
+  if (data.NetImports && data.NetImports !== 0) html += tooltipRow(data.NetImports<0?'#3f3cbb':'#e0218a', data.NetImports<0?'Net exports':'Net imports', Math.abs(data.NetImports), total, true);
   html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
   sortedSources(target.name).filter(src => (data[src]||0) > 0)
     .forEach(src => { html += tooltipRow(COLORS[src], src, data[src], total, false); });
