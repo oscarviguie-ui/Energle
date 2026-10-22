@@ -2670,3 +2670,64 @@ footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10p
 #dot-tip { position: fixed; z-index: 999; max-width: 220px; padding: 6px 9px; border-radius: 8px; background: #1a1a1a; color: #fff;
   font-size: 11.5px; line-height: 1.35; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 @media (hover: none) { .dc [title], .dc [data-tip] { cursor: pointer; } }
+
+/* header: a small byline under the title */
+.hd-brand { grid-area: title; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.hd-by { font-size: .8rem; color: #888; letter-spacing: .01em; white-space: nowrap; }
+.hd-by a { color: #555; text-decoration: none; }
+.hd-by a:hover { text-decoration: underline; text-underline-offset: 2px; }
+@media (max-width: 600px) { .hd-brand { gap: 4px; } .hd-by { font-size: .72rem; } }
+
+/* distance chart: y-axis with km ticks */
+.dc-yl { color: #9a9a96; font-weight: 400; }
+.dc-grid--base .dc-yl { color: #3f9a63; font-weight: 600; }
+.dc-yt { position: absolute; right: calc(100% + 10px); top: -22px; font-size: 10.5px; font-weight: 600; color: #9a9a96; }
+@media (max-width: 600px) { .dc-yt { right: calc(100% + 6px); font-size: 10px; } }
+
+/* header: the byline sits on the title's line, much smaller */
+.hd-brand { flex-direction: row; align-items: baseline; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; }
+.hd-by { font-size: .78rem; }
+
+/* lost game: a straight drop from the final guess to the 0 km line, its distance beside it in bold */
+.dc-drop { stroke: #c47060; stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.dc-droplbl { position: absolute; translate: calc(-100% - 6px) -50%; padding: 1px 4px; border-radius: 4px; background: #fff; font-size: 11.5px; line-height: 1.2; font-weight: 700; color: #a85a4a; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
+.go-anim .dc-dropsvg, .go-anim .dc-droplbl { opacity: 0; animation: grFade .35s ease-out var(--at) forwards; }
+
+/* most guessed: a label in the axis column, like a y-axis label for the flag row */
+.dc-common-lbl { position: absolute; right: calc(100% + 26px); top: 50%; translate: 0 -50%; font-size: 9.5px; line-height: 1.1; font-weight: 600; color: #9a9a96; text-align: right; white-space: nowrap; }
+.dc-legend { margin-top: 4px; }
+@media (max-width: 600px) { .dc-common-lbl { right: calc(100% + 20px); font-size: 9px; } .dc-droplbl { font-size: 11px; } }
+
+/* path section: key and closing line centred, with air between them and the most-guessed row */
+.dc-legend { justify-content: center; margin-top: 16px; }
+.dc-legend .dc-key--avg:first-child { margin-left: 0; }
+.dc + .dc-legend + .go-summary, .dc + .go-summary { text-align: center; margin-top: 10px; }
+@media (max-width: 600px) {
+  /* phones: the share sits under each flag, centred */
+  .dc.dc--common { height: 194px; }
+  .dc--common .dc-plot { bottom: 74px; }
+  .dc--common .dc-x { bottom: 38px; }
+  .dc-common { height: 28px; }
+  .dc-common-item { flex-direction: column; gap: 3px; line-height: 1; }
+  .dc-common-item span { display: block; font-size: 10px; }
+  .dc-legend { margin-top: 14px; }
+}
+
+/* distances are always black */
+.dc-lbl { color: #1a1a1a; }
+.dc-droplbl { color: #1a1a1a; }
+/* key: a sample of the average line itself (dashed, with its hollow dot), and room before the closing line */
+.dc-legend { color: #555; font-size: 12px; gap: 8px; }
+.dc-key-avg { position: relative; display: inline-block; width: 32px; height: 0; border-top: 2px dashed #a9a7a1; }
+.dc-key-avgdot { position: absolute; left: 50%; top: -1px; width: 7px; height: 7px; translate: -50% -50%; border-radius: 50%; background: #fff; border: 1.5px solid #a9a7a1; box-sizing: border-box; }
+.dc + .dc-legend + .go-summary { margin-top: 16px; }
+@media (max-width: 600px) { .dc-legend { font-size: 11.5px; } }
+
+/* most guessed: the share sits centred under its flag, and the flag is centred on its guess number (all screen sizes) */
+.dc-common-item { flex-direction: column; align-items: center; gap: 3px; line-height: 1; }
+.dc-common-item span { display: block; font-size: 10px; text-align: center; }
+.dc-common { height: 28px; }
+.dc.dc--common { height: 212px; }
+.dc--common .dc-plot { bottom: 74px; }
+.dc--common .dc-x { bottom: 38px; }
+@media (max-width: 600px) { .dc.dc--common { height: 194px; } }
