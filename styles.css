@@ -2076,9 +2076,11 @@ canvas.line-pulse { position: absolute; left: 0; top: 0; pointer-events: none; }
   opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s;
 }
 .gr-tip { left: calc(100% + 10px); top: 50%; width: 200px; transform: translate(-4px, -50%); }
-.gr-num:hover .gr-tip, .gr-num:focus-visible .gr-tip { opacity: 1; transform: translate(0, -50%); }
+@media (hover: hover) { .gr-num:hover .gr-tip { opacity: 1; transform: translate(0, -50%); } }
+.gr-num:focus-visible .gr-tip { opacity: 1; transform: translate(0, -50%); }
 .gr-htip { right: 0; bottom: calc(100% + 8px); width: 230px; transform: translateY(4px); }
-.gr-hint:hover .gr-htip, .gr-hint:focus-visible .gr-htip { opacity: 1; transform: none; }
+@media (hover: hover) { .gr-hint:hover .gr-htip { opacity: 1; transform: none; } }
+.gr-hint:focus-visible .gr-htip { opacity: 1; transform: none; }
 
 /* live wire under each row, energised up to the closeness level */
 .gr-wire { position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: #efeeea; overflow: hidden; pointer-events: none; }
@@ -2535,3 +2537,136 @@ footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10p
   .gr-facts { font-size: .7rem; }
   .gr-main { column-gap: 7px; }
 }
+
+/* ============================================================
+   DISTANCE CHART — result card and stats screen
+   ============================================================ */
+.dc { position: relative; height: 158px; margin: 16px 0 4px; }
+.dc-plot { position: absolute; left: 66px; right: 26px; top: 26px; bottom: 22px; }
+.dc-grid { position: absolute; left: 0; right: 0; height: 0; border-top: 1px dashed #ecebe7; }
+.dc-grid--base { border-top: 1px solid #dedcd7; }
+.dc-yl { position: absolute; right: calc(100% + 10px); top: -7px; font-size: 10.5px; color: #9a9a96; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dc-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.dc-reveal { position: absolute; inset: 0; }
+.dc-line { fill: none; stroke-width: 2.2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.dc-gap { stroke: #cfcac2; stroke-width: 2; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.dc-node { position: absolute; width: 0; height: 0; }
+.dc-node .go-node { position: absolute; left: 0; top: 0; translate: -50% -50%; }
+.dc-lbl { position: absolute; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; translate: -50% calc(-100% - 15px); }
+.dc-lbl--l { translate: -13px calc(-100% - 15px); }
+.dc-lbl--a { translate: calc(-100% - 22px) -50%; font-weight: 700; }
+.dc-x { position: absolute; left: 66px; right: 26px; bottom: 0; height: 14px; }
+.dc-x span { position: absolute; translate: -50% 0; font-size: 10.5px; color: #aaa; font-variant-numeric: tabular-nums; }
+.dc--one .dc-lbl--a { translate: -50% calc(-100% - 18px); }
+/* animation: the line is revealed left to right while the flags pop in turn */
+.go-anim .dc-reveal { clip-path: inset(-10px 100% -10px -10px); animation: dcReveal var(--dur) linear var(--at) forwards; }
+@keyframes dcReveal { to { clip-path: inset(-10px calc(100% - var(--end)) -10px -10px); } }
+.go-anim .dc-gapsvg { opacity: 0; animation: grFade .3s ease-out var(--at) forwards; }
+.go-anim .dc-lbl { opacity: 0; animation: grFade .35s ease-out var(--at) forwards; }
+/* small version in the stats screen */
+.dc--mini { height: 62px; margin: 10px 0 0; }
+.dc--mini .dc-plot { left: 10px; right: 12px; top: 10px; bottom: 10px; }
+.dc--mini .go-node { width: 18px; height: 18px; }
+.dc--mini .go-node--answer { width: 22px; height: 22px; }
+.dc--mini .go-ring { padding: 1.5px; border-width: 1.5px; }
+.dc--mini .dc-grid:not(.dc-grid--base) { display: none; }
+@media (max-width: 600px) {
+  .dc { height: 140px; }
+  .dc-plot, .dc-x { left: 52px; right: 18px; }
+  .dc-yl { font-size: 10px; right: calc(100% + 6px); }
+  .dc-lbl { font-size: 10.5px; }
+  .dc .go-node { width: 22px; height: 22px; }
+  .dc .go-node--answer { width: 26px; height: 26px; }
+  .dc--mini .go-node { width: 16px; height: 16px; }
+  .dc--mini .go-node--answer { width: 20px; height: 20px; }
+  .go-label:not(.go-label--answer) { visibility: visible; }
+}
+@media (prefers-reduced-motion: reduce) { .go-anim .dc-reveal, .go-anim .dc-gapsvg, .go-anim .dc-lbl { animation: none !important; clip-path: none; opacity: 1; } }
+
+/* ============================================================
+   CHART TOOLTIP — lighter card, aligned columns
+   ============================================================ */
+#tooltip { border: 0; border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.35;
+  box-shadow: 0 10px 30px rgba(0,0,0,.14), 0 0 0 1px rgba(0,0,0,.05); }
+.tt-h { font-weight: 700; font-size: 12.5px; margin-bottom: 6px; color: #1a1a1a; }
+.tt-row { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto 38px; column-gap: 8px; align-items: center; padding: 1.5px 0; }
+.tt-sw { width: 8px; height: 8px; border-radius: 2px; }
+.tt-l { color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-row--b .tt-l { font-weight: 600; color: #1a1a1a; }
+.tt-v { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.tt-p { color: #9a9a96; font-size: 11px; text-align: right; font-variant-numeric: tabular-nums; }
+.tt-sep { height: 1px; background: #efeeea; margin: 6px 0; }
+@media (max-width: 600px) {
+  #tooltip { font-size: 11px; padding: 8px 10px; }
+  .tt-h { font-size: 11.5px; margin-bottom: 4px; }
+  .tt-row { column-gap: 6px; grid-template-columns: 7px minmax(0, 1fr) auto 34px; padding: 1px 0; }
+  .tt-sw { width: 7px; height: 7px; }
+}
+
+/* distance chart: points inset from the plot edges; the answer's name in the axis row */
+.dc-in { position: absolute; top: 0; bottom: 0; left: 16px; right: 16px; }
+.dc-x { left: 82px; right: 42px; height: 16px; }
+.dc-x .dc-x-ans { font-weight: 700; font-size: 11px; white-space: nowrap; }
+.dc-x span:last-child.dc-x-ans { translate: calc(-100% + 16px) 0; text-align: right; }
+.dc--one .dc-x .dc-x-ans { translate: -50% 0; }
+@media (max-width: 600px) {
+  .dc-in { left: 14px; right: 14px; }
+  .dc-x { left: 66px; right: 32px; }
+}
+.dc--mini .dc-in { left: 8px; right: 8px; }
+.dc { height: 172px; margin: 8px 0 4px; }
+.dc-plot { bottom: 36px; }
+@media (max-width: 600px) { .dc { height: 152px; } .dc-plot { bottom: 34px; } }
+.dc.dc--mini { height: 62px; margin: 10px 0 0; }
+.dc.dc--mini .dc-plot { left: 10px; right: 12px; top: 10px; bottom: 10px; }
+
+/* distance chart: no km axis (the scale is fitted to the guesses; each point carries its distance) */
+.dc-plot { left: 44px; }
+.dc-x { left: 60px; }
+@media (max-width: 600px) { .dc-plot { left: 38px; } .dc-x { left: 52px; } }
+
+/* distance chart: neutral line, green answer line, today's average for comparison */
+.dc-line { stroke: #4a4a48; stroke-width: 2; }
+.dc-grid--base { border-top: 2px solid #58b07a; }
+.dc-yl { color: #3f9a63; font-weight: 600; }
+.dc-avg { position: absolute; inset: 0; animation: grFade .5s ease-out both; pointer-events: none; }
+.dc-avgline { fill: none; stroke: #a9a7a1; stroke-width: 1.6; stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.dc-avgdot { position: absolute; width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; border: 1.5px solid #a9a7a1; pointer-events: auto; }
+.dc-legend { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 2px 0 0; font-size: 11.5px; color: #888; }
+.dc-key { display: inline-block; width: 18px; height: 0; border-top: 2px solid #4a4a48; }
+.dc-key--avg { border-top: 2px dashed #a9a7a1; margin-left: 10px; }
+/* distance chart: plain round flags (no closeness rings), a white edge separates them from the line */
+.dc .go-ring { padding: 0; border: 0; background: none; box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(0,0,0,.12); }
+.dc .go-node--miss .go-ring { box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(196,112,96,.45); }
+.dc .go-node { width: 22px; height: 22px; }
+.dc .go-node--answer { width: 26px; height: 26px; }
+.dc.dc--mini .go-node { width: 16px; height: 16px; }
+.dc.dc--mini .go-node--answer { width: 19px; height: 19px; }
+.dc.dc--mini .go-ring { box-shadow: 0 0 0 1.5px #fff, 0 0 0 2.5px rgba(0,0,0,.12); }
+
+/* most common guess at each step, under the guess numbers */
+.dc.dc--common { height: 200px; }
+.dc-common { position: absolute; left: 60px; right: 42px; bottom: 0; height: 18px; }
+.dc-common-item { position: absolute; translate: -50% 0; display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; color: #8a8a86; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dc-common-flag { width: 14px; height: 10.5px; border-radius: 1.5px; box-shadow: 0 0 0 1px rgba(0,0,0,.1); display: block; object-fit: cover; }
+.dc--common .dc-plot { bottom: 60px; }
+.dc--common .dc-x { bottom: 24px; }
+.dc-key-flag { display: inline-block; width: 14px; height: 10px; margin-left: 10px; border-radius: 1.5px; background: linear-gradient(90deg, #c9d3e6 33%, #fff 33% 66%, #e6c9c9 66%); box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+@media (max-width: 600px) {
+  .dc.dc--common { height: 180px; }
+  .dc-common { left: 52px; right: 32px; }
+  .dc-common-item span { display: none; }       /* phones: just the flag (tap/hover for the share) */
+}
+
+@media (max-width: 600px) {
+  .dc .go-node { width: 19px; height: 19px; }
+  .dc .go-node--answer { width: 23px; height: 23px; }
+  .dc-legend { font-size: 11px; gap: 5px; }
+}
+
+/* touch: a tapped guess-row tooltip, and the small bubble for distance-chart points */
+.gr-num.is-open .gr-tip { opacity: 1; transform: translate(0, -50%); }
+.gr-hint.is-open .gr-htip { opacity: 1; transform: none; }
+#dot-tip { position: fixed; z-index: 999; max-width: 220px; padding: 6px 9px; border-radius: 8px; background: #1a1a1a; color: #fff;
+  font-size: 11.5px; line-height: 1.35; pointer-events: none; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+@media (hover: none) { .dc [title], .dc [data-tip] { cursor: pointer; } }
