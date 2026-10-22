@@ -1,2537 +1,2016 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: #f7f7f5;
-  color: #1a1a1a;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  padding: 2rem 1rem 3rem;
-}
-
-#app {
-  width: 100%;
-  max-width: 900px;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-/* ---------- HEADER ---------- */
-
-header {
-  border-bottom: 2px solid #1a1a1a;
-  padding-bottom: 0.6rem;
-}
-
-.header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: 1px;
-  color: #1a1a1a;
-}
-
-.subtitle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: 0.2rem;
-  flex-wrap: wrap;
-}
-
-.subtitle {
-  font-size: 0.85rem;
-  color: #666;
-}
-
-/* ---------- MODE SWITCHER ---------- */
-
-.mode-switcher {
-  display: flex;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.mode-btn {
-  padding: 6px 18px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  background: #fff;
-  color: #888;
-  transition: background 0.15s, color 0.15s;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-.mode-btn + .mode-btn {
-  border-left: 1px solid #d0d0d0;
-}
-
-.mode-btn:hover:not(.locked) {
-  background: #f5f5f5;
-  color: #444;
-}
-
-.mode-btn.active {
-  background: #1a1a1a;
-  color: #fff;
-}
-
-.mode-btn.locked {
-  color: #bbb;
-  cursor: not-allowed;
-  background: #fafafa;
-}
-
-@keyframes flash-locked {
-  0%   { background: #fafafa; }
-  40%  { background: #fee2e2; color: #dc2626; }
-  100% { background: #fafafa; color: #bbb; }
-}
-
-.mode-btn.locked-flash {
-  animation: flash-locked 0.45s ease forwards;
-}
-
-/* ---------- PRACTICE BACK BUTTON ---------- */
-
-#back-to-categories {
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #666;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-#back-to-categories:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
-}
-
-/* ---------- PRACTICE CATEGORY GRID ---------- */
-
-.cat-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 0.75rem;
-}
-
-.cat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 1.2rem 0.75rem;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
-  text-align: center;
-}
-
-.cat-card:hover {
-  border-color: #1a1a1a;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-  transform: translateY(-2px);
-}
-
-.cat-card:active {
-  transform: translateY(0);
-}
-
-.cat-emoji {
-  font-size: 1.9rem;
-  line-height: 1;
-}
-
-.cat-label {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
-.cat-desc {
-  font-size: 0.7rem;
-  color: #aaa;
-}
-
-/* ---------- LIVES ---------- */
-
-#lives-container {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.lives-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #999;
-  margin-right: 4px;
-}
-
-.life {
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  background: #ddd;
-  transition: background 0.3s;
-}
-
-.life.active {
-  background: #2ecc71;
-}
-
-/* ---------- STAT BAR ---------- */
-
-#stat-bar {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 0.75rem 1.25rem;
-  flex-wrap: wrap;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #999;
-}
-
-.stat-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.stat-world .stat-value {
-  color: #888;
-  font-weight: 400;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: #e8e8e8;
-}
-
-/* ---------- ENERGY FLOW BAR ---------- */
-
-#flow-bar {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 0.75rem 1.25rem 0.65rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.flow-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #999;
-}
-
-.flow-track {
-  display: flex;
-  height: 28px;
-  border-radius: 4px;
-  overflow: hidden;
-  width: 100%;
-  background: #f5f5f5;
-  cursor: default;
-}
-
-.flow-segment {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  white-space: nowrap;
-  overflow: hidden;
-  transition: width 0.5s ease, filter 0.15s;
-  min-width: 0;
-  cursor: pointer;
-}
-
-.flow-segment:hover { filter: brightness(1.1); }
-
-.flow-segment span {
-  padding: 0 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  pointer-events: none;
-}
-
-.flow-segment.generation { background: #4a90c4; }
-.flow-segment.exports    { background: #2ab5a0; }
-.flow-segment.imports    { background: #e8925a; }
-
-.flow-legend {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.flow-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.flow-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.flow-swatch.generation { background: #4a90c4; }
-.flow-swatch.exports    { background: #2ab5a0; }
-.flow-swatch.imports    { background: #e8925a; }
-
-/* ---------- CHARTS SECTION ---------- */
-
-#charts-section {
-  display: grid;
-  grid-template-columns: 1fr 180px;
-  gap: 1rem;
-  background: #ffffff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 1.25rem 1.25rem 1rem;
-}
-
-.chart-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #888;
-  margin-bottom: 0.5rem;
-}
-
-#chart-left {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-#line-wrapper {
-  position: relative;
-  width: 100%;
-  height: 300px;
-}
-
-#chart-right {
-  display: flex;
-  flex-direction: column;
-  border-left: 1px solid #e8e8e8;
-  padding-left: 1rem;
-}
-
-#bar-wrapper {
-  position: relative;
-  flex: 1;
-  width: 100%;
-  min-height: 300px;
-}
-
-/* ---------- SHARED LEGEND ---------- */
-
-#legend-shared {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 5px 16px;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 0.65rem 1rem;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.78rem;
-  color: #444;
-}
-
-.legend-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-/* ---------- GLOSSARY ---------- */
-
-#glossary {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-#glossary-trigger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.7rem 1rem;
-  cursor: pointer;
-  list-style: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #555;
-  user-select: none;
-  transition: background 0.15s;
-}
-
-#glossary-trigger::-webkit-details-marker { display: none; }
-#glossary-trigger:hover { background: #f9f9f9; }
-
-.glossary-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #e8e8e8;
-  color: #666;
-  font-size: 0.72rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.glossary-arrow {
-  margin-left: auto;
-  font-size: 1rem;
-  color: #bbb;
-  transition: transform 0.2s;
-}
-
-#glossary[open] .glossary-arrow { transform: rotate(90deg); }
-
-#glossary-body {
-  padding: 1rem 1.25rem 1.25rem;
-  border-top: 1px solid #f0f0f0;
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-}
-
-.glossary-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.glossary-heading {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.glossary-heading.fossil     { color: #8a4a2a; }
-.glossary-heading.low-carbon { color: #6a4a9a; }
-.glossary-heading.renewables { color: #2a7a4a; }
-
-.glossary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.6rem 1.5rem;
-}
-
-.glossary-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.glossary-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  flex-shrink: 0;
-  margin-top: 3px;
-}
-
-.glossary-item strong {
-  font-size: 0.82rem;
-  color: #1a1a1a;
-  display: block;
-  margin-bottom: 2px;
-}
-
-.glossary-item p {
-  font-size: 0.75rem;
-  color: #666;
-  line-height: 1.45;
-}
-
-.glossary-source {
-  font-size: 0.72rem;
-  color: #aaa;
-  border-top: 1px solid #f0f0f0;
-  padding-top: 0.75rem;
-}
-
-.glossary-source a { color: #888; text-decoration: none; }
-.glossary-source a:hover { text-decoration: underline; }
-
-/* ---------- TOOLTIP ---------- */
-
-#tooltip {
-  position: fixed;
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 8px 11px;
-  font-size: 0.78rem;
-  color: #1a1a1a;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
-  z-index: 999;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  line-height: 1.6;
-  max-width: 270px;
-  width: max-content;
-  word-break: break-word;
-}
-
-/* ---------- GUESS HISTORY ---------- */
-
-#guesses {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.guess-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 14px;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  border: 1px solid #e0e0e0;
-  background: #fff;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.guess-row.correct {
-  border-color: #2ecc71;
-  background: #f0fdf4;
-}
-
-.guess-name {
-  font-weight: 600;
-  min-width: 140px;
-}
-
-.guess-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: #888;
-  font-size: 0.8rem;
-  flex-wrap: wrap;
-}
-
-.guess-arrow {
-  display: flex;
-  align-items: center;
-  color: #1a1a1a;
-  line-height: 1;
-}
-
-.guess-direction {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #555;
-  letter-spacing: 0.03em;
-  min-width: 28px;
-}
-
-.hint-divider {
-  color: #ccc;
-  margin: 0 2px;
-}
-
-/* ---------- BANNER ---------- */
-
-#banner .win {
-  background: #f0fdf4;
-  border: 1px solid #2ecc71;
-  color: #166534;
-  border-radius: 4px;
-  padding: 0.9rem 1.1rem;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-#banner .lose {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
-  border-radius: 4px;
-  padding: 0.9rem 1.1rem;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-/* ---------- INPUT ---------- */
-
-#input-area {
-  display: flex;
-  gap: 8px;
-}
-
-#autocomplete-wrapper {
-  flex: 1;
-  position: relative;
-}
-
-#guess-input {
-  width: 100%;
-  padding: 9px 13px;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  color: #1a1a1a;
-  font-size: 0.92rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-#guess-input:focus { border-color: #888; }
-
-#autocomplete-list {
-  display: none;
-  position: absolute;
-  top: calc(100% + 3px);
-  left: 0;
-  right: 0;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  max-height: 200px;
-  overflow-y: auto;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.ac-item {
-  padding: 8px 13px;
-  font-size: 0.88rem;
-  cursor: pointer;
-  color: #333;
-  transition: background 0.1s;
-}
-
-.ac-item:hover  { background: #f5f5f5; }
-.ac-item.ac-active { background: #f0f0f0; font-weight: 600; }
-
-#submit-btn {
-  padding: 9px 22px;
-  background: #1a1a1a;
-  border: none;
-  border-radius: 3px;
-  color: #fff;
-  font-size: 0.92rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-
-#submit-btn:hover  { background: #333; }
-#submit-btn:active { transform: scale(0.97); }
-
-/* ---------- NEW GAME / COME BACK ---------- */
-
-#new-game-btn {
-  width: 100%;
-  padding: 10px;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  color: #666;
-  font-size: 0.92rem;
-  cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
-}
-
-#new-game-btn:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
-}
-
-/* ---------- ERROR ---------- */
-
-#error {
-  font-size: 0.8rem;
-  color: #dc2626;
-}
-
-#error:empty {
-  display: none;
-}
-
-/* ---------- LOADING ---------- */
-
-#loading {
-  text-align: center;
-  padding: 3rem;
-  color: #888;
-  font-size: 0.9rem;
-}
-
-/* ---------- FOOTER ---------- */
-
-footer {
-  text-align: center;
-  font-size: 0.72rem;
-  color: #aaa;
-  border-top: 1px solid #e8e8e8;
-  padding-top: 0.75rem;
-}
-
-footer a { color: #888; text-decoration: none; }
-footer a:hover { text-decoration: underline; }
-
-/* ---------- CAT CARD WRAP (list button) ---------- */
-
-.cat-card-wrap {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.cat-list-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 22px;
-  height: 22px;
-  border: 1px solid #e0e0e0;
-  border-radius: 3px;
-  background: #fff;
-  color: #aaa;
-  font-size: 0.7rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color 0.15s, color 0.15s;
-  z-index: 1;
-}
-
-.cat-list-btn:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
-}
-
-/* ---------- COUNTRY LIST MODAL ---------- */
-
-#cl-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cl-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-}
-
-.cl-box {
-  position: relative;
-  background: #fff;
-  border-radius: 6px;
-  width: min(480px, 92vw);
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-  overflow: hidden;
-}
-
-.cl-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1rem;
-  font-weight: 700;
-  font-size: 0.9rem;
-  border-bottom: 1px solid #e8e8e8;
-}
-
-.cl-count {
-  font-weight: 400;
-  color: #888;
-  font-size: 0.8rem;
-}
-
-.cl-close {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  color: #888;
-  line-height: 1;
-  padding: 2px 4px;
-}
-.cl-close:hover { color: #1a1a1a; }
-
-.cl-body {
-  overflow-y: auto;
-  padding: 0.4rem 0;
-}
-
-.cl-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.45rem 1rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid #f5f5f5;
-}
-
-.cl-row:last-child { border-bottom: none; }
-
-.cl-name { font-weight: 500; }
-
-.cl-meta {
-  font-size: 0.75rem;
-  color: #aaa;
-}
-
-/* ---------- BROWSE BUTTON ---------- */
-
-.browse-btn-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 0.25rem 0 0.5rem;
-}
-
-.browse-all-btn {
-  padding: 8px 22px;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #555;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.browse-all-btn:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
-}
-
-/* ---------- BROWSE SCREEN ---------- */
-
-.browse-search-wrap {
-  position: sticky;
-  top: 0;
-  background: #f7f7f5;
-  padding: 0.5rem 0;
-  z-index: 10;
-}
-
-#browse-search {
-  width: 100%;
-  padding: 9px 13px;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  font-size: 0.92rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-#browse-search:focus { border-color: #888; }
-
-.browse-list {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.browse-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  background: #fff;
-  border: 1px solid #e8e8e8;
-  border-radius: 3px;
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
-  width: 100%;
-}
-
-.browse-row:hover {
-  border-color: #1a1a1a;
-  background: #fafafa;
-}
-
-.browse-name {
-  font-weight: 600;
-  font-size: 0.88rem;
-  color: #1a1a1a;
-}
-
-.browse-meta {
-  font-size: 0.75rem;
-  color: #aaa;
-}
-
-#back-to-browse, #back-to-cats {
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #666;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 3px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s;
-  flex-shrink: 0;
-}
-
-#back-to-browse:hover, #back-to-cats:hover {
-  border-color: #1a1a1a;
-  color: #1a1a1a;
-}
-
-/* ---------- STATS / LEADERBOARD MODAL ---------- */
-
-#stats-modal, #lb-modal, #username-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* The name prompt must sit above every other modal */
-#username-modal { z-index: 700; }
-
-.st-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-}
-
-.st-box {
-  position: relative;
-  background: #fff;
-  border-radius: 8px;
-  width: min(420px, 94vw);
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.18);
-  overflow: hidden;
-}
-
-.st-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.2rem 0.8rem;
-  border-bottom: 1px solid #efefef;
-}
-
-.st-title {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #1a1a1a;
-}
-
-.st-close {
-  background: none;
-  border: none;
-  font-size: 1.3rem;
-  cursor: pointer;
-  color: #888;
-  line-height: 1;
-  padding: 2px 4px;
-}
-.st-close:hover { color: #1a1a1a; }
-
-/* stat grid */
-.st-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
-  padding: 1rem 1.2rem;
-  text-align: center;
-}
-
-.st-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.st-num {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  line-height: 1;
-}
-
-.st-lbl {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #999;
-}
-
-/* distribution */
-.st-section-title {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #999;
-  padding: 0 1.2rem 0.5rem;
-}
-
-.st-dist {
-  padding: 0 1.2rem 0.8rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.st-dist-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.st-dist-label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #555;
-  width: 14px;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-.st-dist-bar-wrap {
-  flex: 1;
-}
-
-.st-dist-bar {
-  background: #d0d0d0;
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 2px;
-  min-width: 24px;
-  text-align: right;
-  transition: width 0.4s ease;
-}
-
-.st-dist-bar--current {
-  background: #2ecc71;
-}
-
-/* footer */
-.st-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.9rem 1.2rem;
-  border-top: 1px solid #efefef;
-  flex-wrap: wrap;
-}
-
-.st-countdown-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.st-countdown-lbl {
-  font-size: 0.62rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #999;
-}
-
-.st-countdown {
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #1a1a1a;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
-}
-
-.st-share-btn {
-  padding: 8px 16px;
-  background: #1a1a1a;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.st-share-btn:hover { background: #333; }
-
-.st-practice-btn {
-  padding: 8px 16px;
-  background: #fff;
-  color: #1a1a1a;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.st-practice-btn:hover { border-color: #1a1a1a; }
-
-/* leaderboard coming soon */
-.lb-coming-soon {
-  padding: 2.5rem 1.2rem;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.lb-coming-soon p {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #1a1a1a;
-}
-
-.lb-sub {
-  font-size: 0.82rem !important;
-  font-weight: 400 !important;
-  color: #888 !important;
-}
-
-/* mode-switcher 4-button layout */
-.mode-switcher {
-  flex-wrap: wrap;
-}
-
-/* ---------- LEADERBOARD MODAL ---------- */
-
-.lb-tabs {
-  display: flex;
-  border-bottom: 1px solid #efefef;
-}
-
-.lb-tab {
-  flex: 1;
-  padding: 0.65rem;
-  background: none;
-  border: none;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #999;
-  cursor: pointer;
-  transition: color 0.15s;
-}
-
-.lb-tab:hover { color: #1a1a1a; }
-
-.lb-tab--active {
-  color: #1a1a1a;
-  border-bottom: 2px solid #1a1a1a;
-  margin-bottom: -1px;
-}
-
-.lb-body {
-  overflow-y: auto;
-  max-height: 340px;
-  padding: 0.5rem 0;
-}
-
-.lb-loading, .lb-empty {
-  text-align: center;
-  padding: 2rem 1rem;
-  font-size: 0.85rem;
-  color: #888;
-}
-
-.lb-list { display: flex; flex-direction: column; }
-
-.lb-header-row {
-  display: flex;
-  align-items: center;
-  padding: 0.3rem 1rem;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #bbb;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.lb-row {
-  display: flex;
-  align-items: center;
-  padding: 0.55rem 1rem;
-  font-size: 0.85rem;
-  border-bottom: 1px solid #f8f8f8;
-  transition: background 0.1s;
-}
-
-.lb-row:last-child { border-bottom: none; }
-.lb-row:hover { background: #fafafa; }
-.lb-row--me { background: #f0fdf4; font-weight: 600; }
-.lb-row--me:hover { background: #e8faf0; }
-
-.lb-rank {
-  width: 32px;
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  color: #888;
-}
-
-.lb-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #1a1a1a;
-}
-
-.lb-score {
-  width: 72px;
-  text-align: right;
-  flex-shrink: 0;
-  font-size: 0.82rem;
-  color: #888;
-  font-variant-numeric: tabular-nums;
-}
-
-.lb-score--won  { color: #16a34a; font-weight: 700; }
-.lb-score--lost { color: #dc2626; }
-
-/* ============================================================
-   MOBILE — iPhone and small screens (max 600px)
-   ============================================================ */
-
-@media (max-width: 600px) {
-
-  body {
-    padding: 1rem 0.75rem 2rem;
+// ============================================================
+//  CONFIG
+// ============================================================
+const MAX_GUESSES = 6;
+const SOURCES = ['Coal','Gas','Other Fossil','Nuclear','Hydro','Wind','Solar','Bioenergy','Other Renewables'];
+const COLORS = {
+  'Coal':'#4a4a4a','Gas':'#e8925a','Other Fossil':'#c0654a','Nuclear':'#9b6dbd',
+  'Hydro':'#4a90c4','Wind':'#5ab88a','Solar':'#f5c842','Bioenergy':'#a0724a','Other Renewables':'#2ab5a0',
+};
+
+// ============================================================
+//  SUPABASE
+// ============================================================
+const SUPABASE_URL = 'https://chjipjiaemwfvwgdhccn.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoamlwamlhZW13ZnZ3Z2RoY2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTU4MTAsImV4cCI6MjA5NjQ5MTgxMH0.j8QiHY5VhU70kPn_4zqsFaQPVBcipGMEXXgG_3tHKxU';
+const SB_HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': 'Bearer ' + SUPABASE_KEY,
+};
+
+async function sbInsert(row) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/scores', {
+      method: 'POST',
+      headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(row),
+    });
+    // 409 = this player already has a row for today (if a unique constraint exists) — count as sent
+    return res.ok || res.status === 409;
+  } catch { return false; }
+}
+
+async function sbFetchToday(day) {
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/scores?day=eq.' + day + '&order=guesses.asc,created_at.asc&limit=100',
+      { headers: SB_HEADERS }
+    );
+    return res.ok ? res.json() : [];
+  } catch { return []; }
+}
+
+// All-time stats are aggregated in Postgres by the `leaderboard_alltime` view
+// (one row per player, first attempt per day only). Ranked by Weighted Score
+// (lower is better), ties broken by more puzzles played. The podium uses the same order.
+async function sbFetchAllTime(limit = 500) {
+  try {
+    const res = await fetch(
+      SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=score.asc,played.desc&limit=' + limit,
+      { headers: SB_HEADERS }
+    );
+    return res.ok ? res.json() : [];
+  } catch { return []; }
+}
+
+// ============================================================
+//  PRACTICE CATEGORIES
+// ============================================================
+const PRACTICE_CATEGORIES = [
+  { id:'all',      label:'All Countries',  filter: c => true },
+  { id:'europe',   label:'Europe',         filter: c => c.continent === 'Europe' },
+  { id:'africa',   label:'Africa',         filter: c => c.continent === 'Africa' },
+  { id:'asia',     label:'Asia & Pacific', filter: c => c.continent === 'Asia' || c.continent === 'Oceania' },
+  { id:'americas', label:'Americas',       filter: c => c.continent === 'North America' || c.continent === 'South America' },
+  { id:'major',    label:'Major Producers',filter: c => c.latestTotal >= 100 },
+  { id:'highcap',  label:'High Per-Capita',filter: c => (c.latestDpc ?? 0) >= 7 },
+  { id:'green',    label:'Green Leaders',  filter: c => (c.renewablePct ?? 0) >= 70 },
+  { id:'fossil',   label:'Fossil Heavy',   filter: c => (c.fossilPct ?? 0) >= 90 },
+  { id:'lowcap',   label:'Low Per-Capita', filter: c => (c.latestDpc ?? 0) > 0 && (c.latestDpc ?? 0) < 0.5 },
+];
+
+const CAT_EMOJIS = {
+  all: '🌐', europe: '🇪🇺', africa: '🌍', asia: '🌏',
+  americas: '🌎', major: '⚡', highcap: '💡', green: '🌱',
+  fossil: '🔥', lowcap: '🏚️',
+};
+function catEmoji(id) { return CAT_EMOJIS[id] || ''; }
+
+// ============================================================
+//  DAILY PUZZLE
+// ============================================================
+const EPOCH_DATE = new Date(Date.UTC(2026, 5, 2));
+
+function getDayNumber() {
+  const now = new Date();
+  return Math.floor(
+    (Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - EPOCH_DATE.getTime()) / 86400000
+  ) + 1;
+}
+
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function getDailyTarget(countries) {
+  const rng = mulberry32(getDayNumber() * 2654435761);
+  const arr = [...countries];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr[0];
+}
+
+// ============================================================
+//  LOCALSTORAGE — daily, stats, username
+// ============================================================
+const LS_KEY          = 'energle_daily_v1';
+const LS_STATS_KEY    = 'energle_stats_v1';
+const LS_USERNAME_KEY = 'energle_username_v1';
+
+function loadDailyState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    return s.day === getDayNumber() ? s : null;
+  } catch { return null; }
+}
+
+function saveDailyState() {
+  if (MODE !== 'normal') return;
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+      day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver, submitted: scoreSubmitted,
+    }));
+  } catch {}
+}
+
+function loadStats() {
+  try {
+    const raw = localStorage.getItem(LS_STATS_KEY);
+    return raw ? JSON.parse(raw) : { played:0, won:0, streak:0, bestStreak:0, dist:{1:0,2:0,3:0,4:0,5:0,6:0,X:0} };
+  } catch { return { played:0, won:0, streak:0, bestStreak:0, dist:{1:0,2:0,3:0,4:0,5:0,6:0,X:0} }; }
+}
+
+function saveStats(s) {
+  try { localStorage.setItem(LS_STATS_KEY, JSON.stringify(s)); } catch {}
+}
+
+function recordDailyResult(won, n) {
+  const s = loadStats(); s.played++;
+  if (won) { s.won++; s.streak++; s.bestStreak = Math.max(s.bestStreak, s.streak); s.dist[n] = (s.dist[n] || 0) + 1; }
+  else { s.streak = 0; s.dist['X'] = (s.dist['X'] || 0) + 1; }
+  saveStats(s);
+}
+
+function getUsername() { return localStorage.getItem(LS_USERNAME_KEY) || null; }
+function setUsername(name) { localStorage.setItem(LS_USERNAME_KEY, name.trim()); }
+
+function ensureUsername() {
+  return new Promise(resolve => {
+    const existing = getUsername();
+    if (existing) { resolve(existing); return; }
+
+    const modal = document.createElement('div');
+    modal.id = 'username-modal';
+    modal.innerHTML =
+      '<div class="st-backdrop"></div>'
+      + '<div class="st-box" style="max-width:340px">'
+      + '<div class="st-header"><span class="st-title">Choose a display name</span></div>'
+      + '<div style="padding:1.2rem">'
+      + '<p style="font-size:0.82rem;color:#666;margin-bottom:0.75rem">How you appear on the leaderboard. Cannot be changed later.</p>'
+      + '<input id="username-input" type="text" maxlength="20" placeholder="e.g. OscarV" style="width:100%;padding:8px 12px;border:1px solid #d0d0d0;border-radius:3px;font-size:0.92rem;outline:none;box-sizing:border-box" />'
+      + '<p id="username-error" style="color:#dc2626;font-size:0.78rem;min-height:16px;margin-top:4px"></p>'
+      + '<button id="username-confirm" style="width:100%;margin-top:0.5rem;padding:9px;background:#1a1a1a;color:#fff;border:none;border-radius:3px;font-size:0.92rem;font-weight:600;cursor:pointer">Confirm</button>'
+      + '</div></div>';
+    document.body.appendChild(modal);
+
+    const input  = document.getElementById('username-input');
+    const errEl  = document.getElementById('username-error');
+    const btn    = document.getElementById('username-confirm');
+    input.focus();
+
+    function confirm() {
+      const val = input.value.trim();
+      if (val.length < 2)  { errEl.textContent = 'At least 2 characters.'; return; }
+      if (val.length > 20) { errEl.textContent = 'Max 20 characters.'; return; }
+      if (!/^[a-zA-Z0-9_ .\-]+$/.test(val)) { errEl.textContent = 'Letters, numbers, spaces, _ - . only.'; return; }
+      setUsername(val); modal.remove(); resolve(val);
+    }
+    btn.addEventListener('click', confirm);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') confirm(); });
+  });
+}
+
+// ============================================================
+//  ISO3 CONTINENT FALLBACK
+// ============================================================
+const ISO3_CONTINENT = {
+  'ALB':'Europe','ARM':'Europe','AUT':'Europe','AZE':'Europe','BLR':'Europe','BEL':'Europe',
+  'BIH':'Europe','BGR':'Europe','HRV':'Europe','CYP':'Europe','CZE':'Europe','DNK':'Europe',
+  'EST':'Europe','FIN':'Europe','FRA':'Europe','GEO':'Europe','DEU':'Europe','GRC':'Europe',
+  'HUN':'Europe','ISL':'Europe','IRL':'Europe','ITA':'Europe','XKX':'Europe','LVA':'Europe',
+  'LTU':'Europe','LUX':'Europe','MLT':'Europe','MDA':'Europe','MNE':'Europe','NLD':'Europe',
+  'MKD':'Europe','NOR':'Europe','POL':'Europe','PRT':'Europe','ROU':'Europe','RUS':'Europe',
+  'SRB':'Europe','SVK':'Europe','SVN':'Europe','ESP':'Europe','SWE':'Europe','CHE':'Europe',
+  'UKR':'Europe','GBR':'Europe',
+  'DZA':'Africa','AGO':'Africa','BEN':'Africa','BWA':'Africa','BFA':'Africa','BDI':'Africa',
+  'CPV':'Africa','CMR':'Africa','CAF':'Africa','TCD':'Africa','COM':'Africa','COD':'Africa',
+  'COG':'Africa','CIV':'Africa','DJI':'Africa','EGY':'Africa','GNQ':'Africa','ERI':'Africa',
+  'SWZ':'Africa','ETH':'Africa','GAB':'Africa','GMB':'Africa','GHA':'Africa','GIN':'Africa',
+  'GNB':'Africa','KEN':'Africa','LSO':'Africa','LBR':'Africa','LBY':'Africa','MDG':'Africa',
+  'MWI':'Africa','MLI':'Africa','MRT':'Africa','MUS':'Africa','MAR':'Africa','MOZ':'Africa',
+  'NAM':'Africa','NER':'Africa','NGA':'Africa','RWA':'Africa','SEN':'Africa','SLE':'Africa',
+  'SOM':'Africa','ZAF':'Africa','SSD':'Africa','SDN':'Africa','TZA':'Africa','TGO':'Africa',
+  'TUN':'Africa','UGA':'Africa','ZMB':'Africa','ZWE':'Africa',
+  'AFG':'Asia','BHR':'Asia','BGD':'Asia','BTN':'Asia','BRN':'Asia','KHM':'Asia','CHN':'Asia',
+  'IND':'Asia','IDN':'Asia','IRN':'Asia','IRQ':'Asia','ISR':'Asia','JPN':'Asia','JOR':'Asia',
+  'KAZ':'Asia','PRK':'Asia','KOR':'Asia','KWT':'Asia','KGZ':'Asia','LAO':'Asia','LBN':'Asia',
+  'MYS':'Asia','MDV':'Asia','MNG':'Asia','MMR':'Asia','NPL':'Asia','OMN':'Asia','PAK':'Asia',
+  'PHL':'Asia','QAT':'Asia','SAU':'Asia','SGP':'Asia','LKA':'Asia','SYR':'Asia','TWN':'Asia',
+  'TJK':'Asia','THA':'Asia','TLS':'Asia','TKM':'Asia','ARE':'Asia','UZB':'Asia','VNM':'Asia',
+  'YEM':'Asia','PSE':'Asia',
+  'AUS':'Oceania','NZL':'Oceania','FJI':'Oceania','PNG':'Oceania',
+  'BHS':'North America','BLZ':'North America','CAN':'North America','CRI':'North America',
+  'CUB':'North America','DOM':'North America','SLV':'North America','GTM':'North America',
+  'HTI':'North America','HND':'North America','JAM':'North America','MEX':'North America',
+  'NIC':'North America','PAN':'North America','PRI':'North America','TTO':'North America','USA':'North America',
+  'ARG':'South America','BOL':'South America','BRA':'South America','CHL':'South America',
+  'COL':'South America','ECU':'South America','GUY':'South America','PRY':'South America',
+  'PER':'South America','SUR':'South America','URY':'South America','VEN':'South America',
+};
+
+// ============================================================
+//  STATE
+// ============================================================
+let ALL_DATA = null, WORLD_DPC = null, WORLD_GEN = {}, COUNTRIES = [], POOL = [];
+
+// World average total generation per country, by year: the simple mean of every
+// country's Total (TWh) in that year. Built once from the loaded data.
+function buildWorldGen() {
+  const sums = {}, counts = {};
+  for (const info of Object.values(ALL_DATA)) {
+    for (const [year, yd] of Object.entries(info.years)) {
+      const t = yd?.Total;
+      if (t == null || t <= 0) continue;
+      sums[year] = (sums[year] || 0) + t;
+      counts[year] = (counts[year] || 0) + 1;
+    }
+  }
+  WORLD_GEN = {};
+  for (const y of Object.keys(sums)) WORLD_GEN[y] = sums[y] / counts[y];
+}
+let target = null, guesses = [], gameOver = false;
+let lineChart = null, barChart = null;
+let MODE = 'normal', PRACTICE_CAT = null;
+let scoreSubmitted = false; // has today's daily result reached Supabase?
+
+function practiceUnlocked() {
+  if (MODE === 'practice') return true;
+  if (gameOver) return true;
+  const s = loadDailyState();
+  return s ? s.gameOver === true : false;
+}
+
+// ============================================================
+//  LOAD DATA
+// ============================================================
+async function loadData() {
+  document.getElementById('app').innerHTML = '<div id="loading">Loading data…</div>';
+  try {
+    const res = await fetch('energle_data.json');
+    const raw = await res.json();
+    WORLD_DPC = raw['__world_dpc__'];
+    delete raw['__world_dpc__'];
+    ALL_DATA = raw;
+    buildWorldGen();
+    COUNTRIES = Object.entries(ALL_DATA).map(([name, info]) => {
+      const latest = info.latestYear, yd = info.years[latest] ?? {}, total = yd.Total ?? 0;
+      const renSum = ['Hydro','Wind','Solar','Bioenergy','Other Renewables'].reduce((s,k) => s + (yd[k] ?? 0), 0);
+      const fosSum = ['Coal','Gas','Other Fossil'].reduce((s,k) => s + (yd[k] ?? 0), 0);
+      return {
+        name, iso3: info.iso3, lat: info.lat, lng: info.lng,
+        continent:    info.continent ?? ISO3_CONTINENT[info.iso3] ?? null,
+        latestYear:   latest, latestDpc: info.latestDpc, latestTotal: total,
+        renewablePct: total > 0 ? renSum / total * 100 : 0,
+        fossilPct:    total > 0 ? fosSum / total * 100 : 0,
+      };
+    });
+    POOL = COUNTRIES;
+    initApp();
+  } catch(err) {
+    document.getElementById('app').innerHTML = '<div id="loading">Error loading data: ' + err.message + '</div>';
+  }
+}
+
+// ============================================================
+//  MODE SWITCHER
+// ============================================================
+function modeSwitcherHTML() {
+  const locked = !practiceUnlocked();
+  const dA = MODE === 'normal'   ? 'active' : '';
+  const pA = MODE === 'practice' ? 'active' : '';
+  const lC = locked ? 'locked' : '';
+  const lI = locked ? ' 🔒' : '';
+  return `<div class="mode-switcher" id="mode-nav">
+    <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
+    <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
+    <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
+  </div>`;
+}
+
+// Page header, above the line: title, podium, Daily / Practice / Stats and Leaderboard (the parts that never change).
+// Below the line: the puzzle number and task, which change every day (pageSubtitleHTML).
+function pageHeaderHTML() {
+  return '<header><div class="hd-grid">' + logoHTML() + podiumHTML() + modeSwitcherHTML()
+    + '<div class="mode-switcher lb-switcher"><button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button></div>'
+    + '</div></header>';
+}
+function pageSubtitleHTML(lead, rest = '', extra = '') {
+  return '<div class="subtitle-row"><p class="subtitle"><span class="sub-lead">' + lead + '</span>'
+    + (rest ? '<span class="sub-sep"> · </span><span class="sub-rest">' + rest + '</span>' : '') + '</p>' + extra + '</div>';
+}
+// Footer: who made it, and where the data comes from
+function footerHTML() {
+  return '<footer><p><span class="ft-credit">Energle by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span>'
+    + '<span class="ft-sep" aria-hidden="true">·</span>'
+    + '<span>Data: <a href="https://ember-climate.org" target="_blank" rel="noopener">Ember Global Electricity Review</a></span></p></footer>';
+}
+function todayLabel() {
+  return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+// ============================================================
+//  PODIUM — top 3 of the all-time leaderboard
+// ============================================================
+let PODIUM = null; // null = not loaded yet; [] = no scores
+
+function podiumHTML() {
+  const medals = ['🥇','🥈','🥉'];
+  const slots = medals.map((m, i) => {
+    const r = PODIUM && PODIUM[i];
+    const name = r ? escHtml(r.username) : (PODIUM ? '—' : '…');
+    return '<div class="podium-slot">'
+      + '<span class="podium-medal">' + m + '</span>'
+      + '<span class="podium-name" title="' + name + '">' + name + '</span>'
+      + '</div>';
+  }).join('');
+  return '<button id="podium" class="podium" onclick="showLeaderboardModal(\'alltime\')" title="All-time leaderboard">'
+    + slots + '</button>';
+}
+
+async function loadPodium() {
+  PODIUM = await sbFetchAllTime(3);
+  const el = document.getElementById('podium');
+  if (el) el.outerHTML = podiumHTML();
+}
+
+function switchMode(mode) {
+  if (mode === 'practice' && !practiceUnlocked()) {
+    const btn = document.querySelector('.mode-btn.locked');
+    if (btn) { btn.classList.add('locked-flash'); setTimeout(() => btn.classList.remove('locked-flash'), 500); }
+    return;
+  }
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  MODE = mode;
+  if (mode === 'normal') { POOL = COUNTRIES; PRACTICE_CAT = null; renderGameScreen(); restoreDailyGame(); }
+  else { renderPracticePickerScreen(); }
+}
+
+function startPractice(catId) {
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === catId); if (!cat) return;
+  PRACTICE_CAT = catId;
+  POOL = COUNTRIES.filter(cat.filter);
+  if (POOL.length === 0) { alert('No countries match this category.'); return; }
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  resetPracticeQueue(); renderGameScreen(); newGame();
+}
+
+// ============================================================
+//  COUNTRY LIST MODAL
+// ============================================================
+function showCountryList(catId) {
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === catId); if (!cat) return;
+  const countries = COUNTRIES.filter(cat.filter).sort((a,b) => a.name.localeCompare(b.name));
+  const existing = document.getElementById('cl-modal'); if (existing) existing.remove();
+  const modal = document.createElement('div'); modal.id = 'cl-modal';
+  modal.innerHTML =
+    '<div class="cl-backdrop"></div>'
+    + '<div class="cl-box">'
+    + '<div class="cl-header"><span>' + catEmoji(catId) + ' ' + cat.label
+    + ' <span class="cl-count">(' + countries.length + ' countries)</span></span>'
+    + '<button class="cl-close" id="cl-close-btn">×</button></div>'
+    + '<div class="cl-body">'
+    + countries.map(c => '<div class="cl-row"><span class="cl-name">' + c.name + '</span><span class="cl-meta">' + (c.continent || '') + '</span></div>').join('')
+    + '</div></div>';
+  modal.querySelector('.cl-backdrop').addEventListener('click', () => modal.remove());
+  document.body.appendChild(modal);
+  document.getElementById('cl-close-btn').addEventListener('click', () => modal.remove());
+}
+
+// ============================================================
+//  BROWSE GATE + BROWSE MODE
+// ============================================================
+function tryBrowse() {
+  if (!practiceUnlocked()) {
+    const existing = document.getElementById('browse-gate-msg'); if (existing) return;
+    const msg = document.createElement('p'); msg.id = 'browse-gate-msg';
+    msg.style.cssText = 'text-align:center;color:#dc2626;font-size:0.82rem;margin-top:0.5rem;';
+    msg.textContent = 'Complete today\'s daily puzzle to unlock Browse.';
+    const wrap = document.querySelector('.browse-btn-wrap'); if (wrap) wrap.after(msg);
+    setTimeout(() => msg.remove(), 3000);
+    return;
+  }
+  renderBrowseScreen();
+}
+
+function renderBrowseScreen() {
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  const sorted = [...COUNTRIES].sort((a,b) => a.name.localeCompare(b.name));
+  const rows = sorted.map(c => {
+    const fn = "browseCountry('" + c.iso3 + "')";
+    return '<button class="browse-row" onclick="' + fn + '">'
+      + '<span class="browse-name">' + c.name + '</span>'
+      + '<span class="browse-meta">' + (c.continent || '') + ' · ' + c.latestTotal.toFixed(1) + ' TWh</span>'
+      + '</button>';
+  }).join('');
+  document.getElementById('app').innerHTML =
+    pageHeaderHTML()
+    + pageSubtitleHTML('Browse', 'every country\u2019s electricity profile', '<button id="back-to-cats">← Categories</button>')
+    + '<div class="browse-search-wrap"><input id="browse-search" type="text" placeholder="Search countries…" autocomplete="off" /></div>'
+    + '<div class="browse-list">' + rows + '</div>'
+    + footerHTML();
+  document.getElementById('back-to-cats').addEventListener('click', renderPracticePickerScreen);
+  document.getElementById('browse-search').addEventListener('input', function () {
+    const q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.browse-row').forEach(b => {
+      b.style.display = b.querySelector('.browse-name').textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+}
+
+function browseCountry(iso3) {
+  const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) return;
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  const prevTarget = target; target = country;
+  document.getElementById('app').innerHTML =
+    pageHeaderHTML()
+    + pageSubtitleHTML(escHtml(country.name), country.continent || '', '<button id="back-to-browse">← Browse</button>')
+    + balanceCardHTML()
+    + '<div id="charts-section">'
+    + '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
+    + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
+    + '</div>'
+    + '<div id="legend-shared"></div>'
+    + footerHTML();
+  document.getElementById('back-to-browse').addEventListener('click', () => {
+    if (lineChart) { lineChart.destroy(); lineChart = null; }
+    if (barChart)  { barChart.destroy();  barChart  = null; }
+    target = prevTarget; renderBrowseScreen();
+  });
+  renderStatBar(); renderFlowBar(); renderCharts();
+}
+
+// ============================================================
+//  PRACTICE PICKER
+// ============================================================
+function renderPracticePickerScreen() {
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  const cards = PRACTICE_CATEGORIES.map(cat => {
+    const count    = COUNTRIES.filter(cat.filter).length;
+    const startFn  = "startPractice('" + cat.id + "')";
+    const listFn   = "showCountryList('" + cat.id + "')";
+    return '<div class="cat-card-wrap">'
+      + '<button class="cat-card" onclick="' + startFn + '">'
+      + '<span class="cat-emoji">' + catEmoji(cat.id) + '</span>'
+      + '<span class="cat-label">' + cat.label + '</span>'
+      + '<span class="cat-desc">' + count + ' countries</span>'
+      + '</button>'
+      + '<button class="cat-list-btn" onclick="' + listFn + '" title="See country list">☰</button>'
+      + '</div>';
+  }).join('');
+  document.getElementById('app').innerHTML =
+    pageHeaderHTML()
+    + pageSubtitleHTML('Practice', 'choose a category of countries to train on')
+    + '<div class="cat-grid">' + cards + '</div>'
+    + '<div class="browse-btn-wrap"><button class="browse-all-btn" onclick="tryBrowse()">🔍 Browse all countries</button></div>'
+    + footerHTML();
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+function initApp() {
+  POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
+  scheduleAmbientPulse();
+}
+
+// ============================================================
+//  MOTION — load animations + ambient pulses
+//  Everything here is skipped when the visitor asks for reduced motion.
+// ============================================================
+const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function logoHTML() { return '<h1><span class="logo-bolt" aria-hidden="true">⚡</span> Energle</h1>'; }
+
+// First page load only: logo flickers on, a current runs along the header line.
+function playIntro() {
+  if (REDUCED_MOTION) return;
+  const header = document.querySelector('header'); if (!header) return;
+  const line = document.createElement('span'); line.className = 'header-current'; line.setAttribute('aria-hidden', 'true');
+  header.appendChild(line); header.classList.add('intro-play');
+  setTimeout(() => { header.classList.remove('intro-play'); line.remove(); }, 2000);
+}
+
+// Animate a number from 0 to `to`, writing fmt(value) into el.
+function countUp(el, to, fmt, delay = 0, dur = 750) {
+  if (!el) return;
+  if (to == null || REDUCED_MOTION) { el.textContent = to == null ? '—' : fmt(to); return; }
+  const token = (el._countToken || 0) + 1; el._countToken = token;
+  el.textContent = fmt(0);
+  const start = performance.now() + delay;
+  const step = now => {
+    if (el._countToken !== token) return;
+    const x = Math.min(1, Math.max(0, (now - start) / dur));
+    el.textContent = fmt(to * (1 - Math.pow(1 - x, 3)));
+    if (x < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+// Chart.js: draw each source line left to right, one after another.
+function lineDrawAnimation(nPoints) {
+  if (REDUCED_MOTION) return {};
+  const per = 900 / Math.max(nPoints, 1);
+  const delay = (ctx, key) => {
+    if (ctx.type !== 'data' || ctx[key]) return 0;
+    ctx[key] = true;
+    return 250 + ctx.datasetIndex * 120 + ctx.index * per;
+  };
+  const prevY = ctx => ctx.index === 0
+    ? ctx.chart.scales.y.getPixelForValue(ctx.raw ?? 0)
+    : ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1].getProps(['y'], true).y;
+  return {
+    x: { type: 'number', easing: 'linear', duration: per, from: NaN, delay: ctx => delay(ctx, 'xStarted') },
+    y: { type: 'number', easing: 'linear', duration: per, from: prevY, delay: ctx => delay(ctx, 'yStarted') },
+  };
+}
+
+// Chart.js: stack the latest-mix bar from the bottom up, segment by segment.
+function barStackAnimation() {
+  if (REDUCED_MOTION) return false;
+  return {
+    duration: 420, easing: 'easeOutCubic',
+    delay: ctx => (ctx.type === 'data' && ctx.mode === 'default' ? 700 + ctx.datasetIndex * 110 : 0),
+  };
+}
+
+// Ambient pulse, every 4–9 s: one charge travels through the page.
+// The bolt flashes, a current runs along the header line, then a spark runs along a chart line.
+let lineChartBornAt = 0;
+function scheduleAmbientPulse() {
+  if (REDUCED_MOTION) return;
+  setTimeout(() => { runAmbientPulse(); scheduleAmbientPulse(); }, 4000 + Math.random() * 5000);
+}
+
+function runAmbientPulse() {
+  const header = document.querySelector('header');
+  if (document.hidden || !header || header.classList.contains('intro-play')) return;
+  // 1. bolt
+  const bolt = header.querySelector('.logo-bolt');
+  if (bolt) { bolt.classList.remove('bolt-pulse'); void bolt.offsetWidth; bolt.classList.add('bolt-pulse'); }
+  // 2. header line
+  if (!header.querySelector('.header-current')) {
+    const line = document.createElement('span');
+    line.className = 'header-current is-pulse'; line.setAttribute('aria-hidden', 'true');
+    header.appendChild(line);
+    setTimeout(() => line.remove(), 1400);
+  }
+  // 3. chart line, as the header current arrives; at the same time a shine sweeps the energy balance flows
+  setTimeout(runLinePulse, 450);
+  setTimeout(() => {
+    document.querySelectorAll('#flow-chart .fc-shine-anim').forEach(a => { try { a.beginElement(); } catch (e) {} });
+  }, 300);
+  // 4. and, when there are guesses, along the live wire of one of them
+  setTimeout(() => {
+    const wires = document.querySelectorAll('#guesses .gr-wire-fill');
+    if (!wires.length) return;
+    const w = wires[Math.floor(Math.random() * wires.length)];
+    w.classList.remove('is-pulse'); void w.offsetWidth; w.classList.add('is-pulse');
+  }, 600);
+}
+
+function runLinePulse() {
+  const chart = lineChart;
+  if (!chart || document.hidden || performance.now() - lineChartBornAt < 3000) return;
+  const wrap = chart.canvas.parentNode; if (!wrap) return;
+  // Datasets are ordered biggest-first, so pick one of the top 4 real sources
+  const real = chart.data.datasets.map((d, i) => ({ d, i })).filter(o => !o.d.label.startsWith('__') && !o.d.hidden);
+  if (!real.length) return;
+  const pick = real[Math.floor(Math.random() * Math.min(real.length, 4))];
+  const pts = chart.getDatasetMeta(pick.i).data; if (pts.length < 2) return;
+
+  // Sample the drawn curve (Chart.js keeps the bezier control points on each point)
+  const path = [];
+  for (let k = 0; k < pts.length - 1; k++) {
+    const a = pts[k], b = pts[k + 1];
+    const c1x = a.cp2x ?? a.x, c1y = a.cp2y ?? a.y, c2x = b.cp1x ?? b.x, c2y = b.cp1y ?? b.y;
+    for (let s = 0; s < 10; s++) {
+      const t = s / 10, u = 1 - t;
+      path.push([u*u*u*a.x + 3*u*u*t*c1x + 3*u*t*t*c2x + t*t*t*b.x, u*u*u*a.y + 3*u*u*t*c1y + 3*u*t*t*c2y + t*t*t*b.y]);
+    }
+  }
+  path.push([pts[pts.length - 1].x, pts[pts.length - 1].y]);
+  const cum = [0];
+  for (let k = 1; k < path.length; k++) cum.push(cum[k-1] + Math.hypot(path[k][0] - path[k-1][0], path[k][1] - path[k-1][1]));
+  const L = cum[cum.length - 1]; if (!L) return;
+  const at = d => {
+    d = Math.max(0, Math.min(L, d));
+    let k = 1; while (k < cum.length - 1 && cum[k] < d) k++;
+    const seg = cum[k] - cum[k-1] || 1, t = (d - cum[k-1]) / seg;
+    return [path[k-1][0] + (path[k][0] - path[k-1][0]) * t, path[k-1][1] + (path[k][1] - path[k-1][1]) * t];
+  };
+
+  let ov = wrap.querySelector('canvas.line-pulse');
+  if (!ov) { ov = document.createElement('canvas'); ov.className = 'line-pulse'; ov.setAttribute('aria-hidden', 'true'); wrap.appendChild(ov); }
+  const dpr = chart.currentDevicePixelRatio || window.devicePixelRatio || 1;
+  ov.width = chart.width * dpr; ov.height = chart.height * dpr;
+  ov.style.width = chart.width + 'px'; ov.style.height = chart.height + 'px';
+  const g = ov.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const color = colorOf(pick.d.label), trail = Math.min(70, L * 0.18), dur = 1500, t0 = performance.now();
+
+  const frame = now => {
+    if (lineChart !== chart) { g.clearRect(0, 0, ov.width, ov.height); return; }
+    const x = Math.min(1, (now - t0) / dur);
+    const head = (x < 0.5 ? 2*x*x : 1 - Math.pow(-2*x + 2, 2) / 2) * (L + trail);
+    g.clearRect(0, 0, chart.width, chart.height);
+    g.lineCap = 'round'; g.strokeStyle = color; g.shadowColor = color;
+    for (let s = 0; s < 14; s++) {               // tail: fades and thins towards the back
+      const d1 = head - trail * (s / 14), d0 = head - trail * ((s + 1) / 14);
+      if (d1 <= 0 || d0 >= L) continue;
+      const p0 = at(d0), p1 = at(d1);
+      g.globalAlpha = 0.85 * (1 - s / 14); g.lineWidth = 3.2 - s * 0.15; g.shadowBlur = 8;
+      g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]); g.stroke();
+    }
+    if (head > 0 && head < L) {                  // bright head
+      const p = at(head);
+      g.globalAlpha = 1; g.shadowBlur = 10; g.fillStyle = '#ffffff';
+      g.beginPath(); g.arc(p[0], p[1], 2.6, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1; g.shadowBlur = 0;
+    if (x < 1) requestAnimationFrame(frame); else g.clearRect(0, 0, chart.width, chart.height);
+  };
+  requestAnimationFrame(frame);
+}
+
+function practiceSubtitle() {
+  if (MODE !== 'practice' || !PRACTICE_CAT) return '';
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === PRACTICE_CAT);
+  return cat ? catEmoji(cat.id) + ' ' + cat.label + ' · ' + POOL.length + ' countries' : '';
+}
+
+function renderGameScreen() {
+  const isPractice = MODE === 'practice';
+  const cat = isPractice ? PRACTICE_CATEGORIES.find(c => c.id === PRACTICE_CAT) : null;
+  const lead = isPractice ? (cat ? catEmoji(cat.id) + ' ' + cat.label : 'Practice') : 'Puzzle #' + getDayNumber();
+  const rest = 'Guess the country from its electricity generation mix';
+  const backBtn = isPractice ? '<button id="back-to-categories">← Categories</button>' : '';
+
+  document.getElementById('app').innerHTML =
+    pageHeaderHTML()
+    + pageSubtitleHTML(lead, rest, isPractice ? backBtn : '<span class="sub-date">' + todayLabel() + '</span>')
+    + balanceCardHTML()
+    + '<div id="charts-section">'
+    + '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
+    + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
+    + '</div>'
+    + '<div id="legend-shared"></div>'
+    + '<div id="guess-head"><span class="section-title">Guesses</span><span id="lives-count"></span><span id="lives-container"></span></div>'
+    + '<div id="input-area"><div id="autocomplete-wrapper">'
+    + '<span id="guess-flag" aria-hidden="true"></span>'
+    + '<input id="guess-input" type="text" placeholder="Type a country name…" autocomplete="off" />'
+    + '<div id="autocomplete-list"></div></div>'
+    + '<button id="submit-btn">Guess</button></div>'
+    + '<p id="error"></p>'
+    + '<div id="banner"></div>'
+    + '<div id="guesses"></div>'
+    + footerHTML();
+
+  document.getElementById('submit-btn').addEventListener('click', submitGuess);
+  if (isPractice) {
+    document.getElementById('back-to-categories').addEventListener('click', () => {
+      if (lineChart) { lineChart.destroy(); lineChart = null; }
+      if (barChart)  { barChart.destroy();  barChart  = null; }
+      renderPracticePickerScreen();
+    });
+  }
+  setupAutocomplete();
+}
+
+// ============================================================
+//  GEOGRAPHY
+// ============================================================
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function bearingDeg(lat1, lng1, lat2, lng2) {
+  return (Math.atan2(lng2-lng1, lat2-lat1) * 180/Math.PI + 360) % 360;
+}
+function bearingArrowSVG(deg) {
+  return '<svg width="18" height="18" viewBox="0 0 20 20" style="transform:rotate(' + deg + 'deg);display:inline-block;vertical-align:middle;flex-shrink:0"><polygon points="10,2 14,16 10,13 6,16" fill="currentColor"/></svg>';
+}
+function bearingLabel(deg) {
+  return ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(deg/22.5)%16];
+}
+
+// ============================================================
+//  FORMAT HELPERS
+// ============================================================
+function fmtTWh(v) {
+  if (v == null) return '—';
+  return Math.abs(v) >= 1000 ? (v/1000).toFixed(2) + ' PWh' : v.toFixed(1) + ' TWh';
+}
+function fmtFlowLabel(v, label) {
+  const num = Math.abs(v) >= 1000 ? (v/1000).toFixed(1) + ' PWh' : v.toFixed(1) + ' TWh';
+  return num + (label ? ' ' + label : '');
+}
+
+// ============================================================
+//  STAT BAR / FLOW BAR
+// ============================================================
+function renderStatBar() {
+  const info = ALL_DATA[target.name], latest = info.latestYear;
+  const total = info.years[latest]?.Total ?? 0, dpc = info.latestDpc;
+  const worldDpc = WORLD_DPC[latest] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
+  // Same year as the country's figure; fall back to the latest year available
+  const worldGen = WORLD_GEN[latest] ?? WORLD_GEN[Math.max(...Object.keys(WORLD_GEN).map(Number))];
+  countUp(document.getElementById('stat-total'), total, fmtTWh, 300);
+  countUp(document.getElementById('stat-world-gen'), worldGen, v => 'World Avg: ' + fmtTWh(v), 380);
+  countUp(document.getElementById('stat-dpc'), dpc, v => v.toFixed(1) + ' MWh', 460);
+  countUp(document.getElementById('stat-world'), worldDpc, v => 'World Avg: ' + v.toFixed(1) + ' MWh', 540);
+  const yr = document.getElementById('bc-year'); if (yr) yr.textContent = latest;
+}
+
+// Two cards side by side: the headline stats (narrow, left) and the energy balance flow chart (wide, right).
+// The world-average pills are tinted with the generation and demand colours of the flow chart.
+function balanceCardHTML() {
+  return '<div id="balance-card">'
+    + '<div class="bc-stats">'
+    +   '<div class="bc-stat"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span><span class="bc-world bc-world--gen" id="stat-world-gen"></span></div>'
+    +   '<div class="bc-stat"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span><span class="bc-world bc-world--dem" id="stat-world"></span></div>'
+    + '</div>'
+    + '<div class="bc-flow">'
+    +   '<span class="stat-label">Energy balance — <span id="bc-year"></span></span>'
+    +   '<div id="flow-chart"></div>'
+    + '</div>'
+    + '</div>';
+}
+
+// ------------------------------------------------------------
+//  ENERGY BALANCE FLOW CHART
+//  Boxes at both ends (TWh), ribbons between them (true scale, a trade
+//  flow is never thinner than 10 px), each flow's share written inside
+//  it next to the left box — or just outside it when the flow is too thin.
+// ------------------------------------------------------------
+const FLOW_COLORS = { imp: '#e0218a', exp: '#3f3cbb', gen: '#64748b', dem: '#1f2937' };
+
+function renderFlowBar(animate = true) {
+  const host = document.getElementById('flow-chart'); if (!host) return;
+  const info = ALL_DATA[target.name], latest = info.latestYear, d = info.years[latest] ?? {};
+  const gen = d.Total ?? 0, net = d.NetImports ?? 0;
+  const imp = Math.max(net, 0), exp = Math.max(-net, 0), use = gen + net;   // demand = generation + net imports
+  const w = Math.max(260, Math.round(host.clientWidth || 600)), narrow = w < 420;
+  const HMAX = narrow ? 90 : 116, MIN = 10, GAP = 12, FIT = narrow ? 17 : 19;
+  const CW = narrow ? 104 : 142, BH = narrow ? 46 : 52;
+  const xL = CW, xR = w - CW;
+  const r = v => Math.round(v * 10) / 10;
+  const pct = v => (v > 0 && v < 10 ? v.toFixed(1) : String(Math.round(v))) + '%';
+  const boxH = t => Math.max(BH, t + 12);
+  const link = (x0, a0, a1, x1, b0, b1) => {
+    const tip = 7, xe = x1 - tip, xm = (x0 + xe) / 2, bm = (b0 + b1) / 2;
+    return 'M' + x0 + ' ' + r(a0) + ' C' + r(xm) + ' ' + r(a0) + ' ' + r(xm) + ' ' + r(b0) + ' ' + r(xe) + ' ' + r(b0)
+      + ' L' + x1 + ' ' + r(bm) + ' L' + r(xe) + ' ' + r(b1)
+      + ' C' + r(xm) + ' ' + r(b1) + ' ' + r(xm) + ' ' + r(a1) + ' ' + x0 + ' ' + r(a1) + ' Z';
+  };
+  let boxes = '', tags = '', pMain = '', pTrade = '', tradeFrom = FLOW_COLORS.gen, tradeTo = FLOW_COLORS.gen, H = 0;
+  let mainTip = '', tradeTip = '';
+  const box = (side, y, h, flowT, color, name, val) => {
+    const left = side === 'L' ? 0 : xR;
+    boxes += '<div class="fc-box" style="left:' + left + 'px;top:' + r(y) + 'px;width:' + CW + 'px;height:' + r(h) + 'px">'
+      + '<span class="fc-accent fc-accent--' + side + '" style="top:' + r(h / 2 - flowT / 2 - 1) + 'px;height:' + r(flowT) + 'px;background:' + color + '"></span>'
+      + '<span class="fc-name" style="color:' + (color === FLOW_COLORS.dem ? '#374151' : color) + '">' + name + '</span>'
+      + '<span class="fc-val">' + fmtTWh(val) + '</span></div>';
+  };
+  const tag = (y, text, color) => { tags += '<span class="fc-tag" style="left:' + (xL + 10) + 'px;top:' + r(y) + 'px;color:' + color + '">' + text + '</span>'; };
+
+  if (imp > 0) {
+    let tI = imp / use * HMAX, tG = gen / use * HMAX;
+    if (tI < MIN) { tI = MIN; tG = HMAX - MIN; }
+    if (tG < MIN) { tG = MIN; tI = HMAX - MIN; }
+    const hI = boxH(tI), hG = boxH(tG), yG = hI + GAP, totL = yG + hG;
+    const hD = boxH(tI + tG), yD = (totL - hD) / 2, d0 = yD + hD / 2 - (tI + tG) / 2;
+    const cI = hI / 2, cG = yG + hG / 2;
+    pTrade = link(xL, cI - tI / 2, cI + tI / 2, xR, d0, d0 + tI);
+    pMain  = link(xL, cG - tG / 2, cG + tG / 2, xR, d0 + tI, d0 + tI + tG);
+    tradeFrom = tradeTo = FLOW_COLORS.imp;
+    box('L', 0, hI, tI, FLOW_COLORS.imp, 'IMPORTED', imp);
+    box('L', yG, hG, tG, FLOW_COLORS.gen, 'GENERATED', gen);
+    box('R', yD, hD, tI + tG, FLOW_COLORS.dem, 'DEMAND', use);
+    tag(tI >= FIT ? cI : cI - tI / 2 - 9, pct(imp / use * 100), '#b0126b');          // too thin: just above
+    tag(tG >= FIT ? cG : cG + tG / 2 + 9, pct(gen / use * 100), '#1f2937');          // too thin: just below
+    H = totL + 2;
+    mainTip  = fmtTWh(gen) + ' generated · ' + pct(gen / use * 100) + ' of demand';
+    tradeTip = fmtTWh(imp) + ' imported · ' + pct(imp / use * 100) + ' of demand';
+  } else if (exp > 0) {
+    let tU = use / gen * HMAX, tE = exp / gen * HMAX;
+    if (tE < MIN) { tE = MIN; tU = HMAX - MIN; }
+    if (tU < MIN) { tU = MIN; tE = HMAX - MIN; }
+    const hU = boxH(tU), hE = boxH(tE), yE = hU + GAP, totR = yE + hE;
+    const hG = boxH(tU + tE), yG = (totR - hG) / 2, s0 = yG + hG / 2 - (tU + tE) / 2;
+    const cU = hU / 2, cE = yE + hE / 2;
+    pMain  = link(xL, s0, s0 + tU, xR, cU - tU / 2, cU + tU / 2);
+    pTrade = link(xL, s0 + tU, s0 + tU + tE, xR, cE - tE / 2, cE + tE / 2);
+    tradeFrom = FLOW_COLORS.gen; tradeTo = FLOW_COLORS.exp;
+    box('L', yG, hG, tU + tE, FLOW_COLORS.gen, 'GENERATED', gen);
+    box('R', 0, hU, tU, FLOW_COLORS.dem, 'DEMAND', use);
+    box('R', yE, hE, tE, FLOW_COLORS.exp, 'EXPORTED', exp);
+    tag(tU >= FIT ? s0 + tU / 2 : s0 - 9, pct(use / gen * 100), '#1f2937');
+    tag(tE >= FIT ? s0 + tU + tE / 2 : s0 + tU + tE + 9, pct(exp / gen * 100), '#2f2c9a');   // too thin: just below
+    H = Math.max(totR, tE >= FIT ? 0 : s0 + tU + tE + 18) + 2;
+    mainTip  = fmtTWh(use) + ' used at home · ' + pct(use / gen * 100) + ' of generation';
+    tradeTip = fmtTWh(exp) + ' exported · ' + pct(exp / gen * 100) + ' of generation';
+  } else {
+    const t = HMAX * 0.6, h = boxH(t), c = h / 2;
+    pMain = link(xL, c - t / 2, c + t / 2, xR, c - t / 2, c + t / 2);
+    box('L', 0, h, t, FLOW_COLORS.gen, 'GENERATED', gen);
+    box('R', 0, h, t, FLOW_COLORS.dem, 'DEMAND', use);
+    tag(c, '100%', '#1f2937');
+    H = h + 2;
+    mainTip = fmtTWh(gen) + ' generated and used at home';
+  }
+  H = Math.round(H);
+  host.className = animate && !REDUCED_MOTION ? 'fc-animate' : '';
+  host.style.height = H + 'px';
+  // Each ribbon: a soft gradient fill (stronger where it leaves the source, lighter where it lands),
+  // a hairline edge in the same colour for definition, a native tooltip, and a "shine" copy that
+  // a bright band sweeps across whenever the ambient pulse fires.
+  const grad = (id, from, to, a0, a1) => '<linearGradient id="' + id + '" x1="0" x2="1" y1="0" y2="0">'
+    + '<stop offset="0" stop-color="' + from + '" stop-opacity="' + a0 + '"/><stop offset="1" stop-color="' + to + '" stop-opacity="' + a1 + '"/></linearGradient>';
+  const ribbon = (cls, d, fillId, edge, tip) => '<g class="' + cls + '">'
+    + '<path class="fc-fill" d="' + d + '" fill="url(#' + fillId + ')" stroke="' + edge + '" stroke-opacity="0.35" stroke-width="1" stroke-linejoin="round"><title>' + tip + '</title></path>'
+    + '<path class="fc-shine" d="' + d + '" fill="url(#fc-shine)" pointer-events="none"/></g>';
+  host.innerHTML =
+    '<svg width="' + w + '" height="' + H + '" viewBox="0 0 ' + w + ' ' + H + '">'
+    + '<defs>'
+    + grad('fc-gA', FLOW_COLORS.gen, FLOW_COLORS.dem, 0.36, 0.26)
+    + grad('fc-gB', tradeFrom, tradeTo, 0.46, 0.34)
+    + '<linearGradient id="fc-shine" gradientUnits="userSpaceOnUse" x1="-180" x2="0" y1="0" y2="0">'
+    +   '<stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>'
+    +   '<animate class="fc-shine-anim" attributeName="x1" from="-180" to="' + w + '" dur="1.1s" begin="indefinite" fill="freeze"/>'
+    +   '<animate class="fc-shine-anim" attributeName="x2" from="0" to="' + (w + 180) + '" dur="1.1s" begin="indefinite" fill="freeze"/>'
+    + '</linearGradient></defs>'
+    + '<g class="fc-links">'
+    + ribbon('fc-link', pMain, 'fc-gA', FLOW_COLORS.gen, mainTip)
+    + (pTrade ? ribbon('fc-link fc-link--trade', pTrade, 'fc-gB', tradeTo, tradeTip) : '')
+    + '</g></svg>' + boxes + tags;
+  host.setAttribute('role', 'img');
+  host.setAttribute('aria-label', imp > 0
+    ? fmtTWh(gen) + ' generated plus ' + fmtTWh(imp) + ' imported gives ' + fmtTWh(use) + ' of demand'
+    : exp > 0 ? fmtTWh(gen) + ' generated: ' + fmtTWh(use) + ' used at home and ' + fmtTWh(exp) + ' exported'
+    : fmtTWh(gen) + ' generated, all used at home');
+}
+
+// Redraw the flow chart to the new width when the window is resized (no animation).
+let flowResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(flowResizeTimer);
+  flowResizeTimer = setTimeout(() => { if (target && document.getElementById('flow-chart')) renderFlowBar(false); }, 150);
+});
+
+// ============================================================
+//  CHART HELPERS
+// ============================================================
+// ------------------------------------------------------------
+//  CHART VIEW: by source (default) or by category (fossil / nuclear / renewables).
+//  The three categories don't overlap and add up to total generation. Low-carbon = nuclear + renewables,
+//  shown as a total in the tooltips. The category colours are the glossary's group colours.
+// ------------------------------------------------------------
+const CATEGORIES = [
+  { key: 'Fossil',     color: '#8a4a2a', members: ['Coal', 'Gas', 'Other Fossil'] },
+  { key: 'Nuclear',    color: '#6a4a9a', members: ['Nuclear'] },
+  { key: 'Renewables', color: '#2a7a4a', members: ['Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables'] },
+];
+const CAT_COLORS = Object.fromEntries(CATEGORIES.map(c => [c.key, c.color]));
+let CHART_VIEW = (() => { try { return localStorage.getItem('energle_chart_view_v1') === 'category' ? 'category' : 'source'; } catch (e) { return 'source'; } })();
+
+function colorOf(key) {
+  if (CHART_VIEW === 'category' && CAT_COLORS[key]) return CAT_COLORS[key];
+  return COLORS[key] || CAT_COLORS[key] || '#888888';
+}
+// Low-carbon total (nuclear + renewables) for one year, used in the category view's tooltips
+function lowCarbonOf(yd) {
+  return ['Nuclear', 'Renewables'].reduce((s, k) => s + (viewYear(yd)[k] || 0), 0);
+}
+// One year of data as the current view sees it (categories are summed from their sources)
+function viewYear(yd) {
+  if (!yd) return {};
+  if (CHART_VIEW !== 'category') return yd;
+  const out = { ...yd };
+  CATEGORIES.forEach(c => { out[c.key] = c.members.reduce((s, m) => s + (yd[m] || 0), 0); });
+  return out;
+}
+// The series to chart, biggest first in the latest year
+function viewKeys(name) {
+  if (CHART_VIEW !== 'category') return sortedSources(name);
+  const info = ALL_DATA[name], ld = viewYear(info.years[info.latestYear]);
+  return CATEGORIES.map(c => c.key).sort((a, b) => (ld[b] || 0) - (ld[a] || 0));
+}
+function setChartView(view) {
+  if (view === CHART_VIEW) return;
+  CHART_VIEW = view;
+  try { localStorage.setItem('energle_chart_view_v1', view); } catch (e) {}
+  renderCharts();
+}
+
+function sortedSources(name) {
+  const info = ALL_DATA[name], ld = info.years[info.latestYear];
+  return [...SOURCES].sort((a,b) => (ld[b]||0) - (ld[a]||0));
+}
+
+// ============================================================
+//  PRACTICE QUEUE
+// ============================================================
+function interestScore(c) {
+  return (Math.log10(Math.max(c.latestTotal, 1)) + Math.log10(Math.max((c.latestDpc ?? 0) * 10, 1)))
+    * ((c.latestTotal < 5 && (c.latestDpc ?? 0) < 1) ? 0.2 : 1);
+}
+
+function weightedShuffle(arr) {
+  const items = arr.map(c => ({ c, score: interestScore(c) }));
+  const result = [];
+  while (items.length) {
+    const tot = items.reduce((s,x) => s + x.score, 0);
+    let rand = Math.random() * tot, idx = 0;
+    for (; idx < items.length-1; idx++) { rand -= items[idx].score; if (rand <= 0) break; }
+    result.push(items[idx].c); items.splice(idx, 1);
+  }
+  return result;
+}
+
+function applyCooldown(queue, history) {
+  const cd = Math.min(Math.floor(POOL.length/2), 12);
+  const hot = new Set(history.slice(-cd).map(c => c.iso3));
+  return [...queue.filter(c => !hot.has(c.iso3)), ...queue.filter(c => hot.has(c.iso3))];
+}
+
+let practiceQueue = [], practiceRetry = [], practiceHistory = [];
+
+function resetPracticeQueue() {
+  practiceQueue = weightedShuffle([...POOL]); practiceRetry = []; practiceHistory = [];
+}
+
+function nextPracticeCountry() {
+  if (practiceQueue.length === 0) {
+    practiceQueue = practiceRetry.length > 0
+      ? applyCooldown(weightedShuffle(practiceRetry), practiceHistory)
+      : applyCooldown(weightedShuffle([...POOL]), practiceHistory);
+    practiceRetry = [];
+  }
+  const next = practiceQueue.shift();
+  practiceHistory.push(next);
+  if (practiceHistory.length > 200) practiceHistory.shift();
+  return next;
+}
+
+function recordPracticeResult(won) { if (!won) practiceRetry.push(target); }
+
+// ============================================================
+//  RENDER CHARTS
+// ============================================================
+// Line chart: a dot where each line ends, with the source and its latest value beside it (labels are
+// nudged apart so they never overlap). On phones only the value is written, to save width.
+const LINE_END_LABELS = {
+  id: 'lineEndLabels',
+  afterDatasetsDraw(chart) {
+    const narrow = window.innerWidth <= 600, ctx = chart.ctx, area = chart.chartArea;
+    const items = [];
+    chart.data.datasets.forEach((d, i) => {
+      if (d.label.startsWith('__')) return;
+      const meta = chart.getDatasetMeta(i); if (meta.hidden) return;
+      const pt = meta.data[meta.data.length - 1]; if (!pt) return;
+      const y = pt.getProps(['y'], true).y, x = pt.getProps(['x'], true).x;
+      if (!isFinite(y)) return;
+      items.push({ src: d.label, x, y, ly: y, v: d.data[d.data.length - 1] || 0 });
+    });
+    items.sort((a, b) => a.y - b.y);
+    const GAP = narrow ? 12 : 14;
+    for (let k = 1; k < items.length; k++) if (items[k].ly - items[k - 1].ly < GAP) items[k].ly = items[k - 1].ly + GAP;
+    const over = items.length ? items[items.length - 1].ly - (area.bottom + 4) : 0;
+    if (over > 0) items.forEach(it => { it.ly -= over; });
+    for (let k = items.length - 2; k >= 0; k--) if (items[k + 1].ly - items[k].ly < GAP) items[k].ly = items[k + 1].ly - GAP;
+    ctx.save();
+    const font = getComputedStyle(document.body).fontFamily;
+    items.forEach(it => {
+      const dim = FOCUS_SRC && FOCUS_SRC !== it.src, col = dim ? colorOf(it.src) + '40' : colorOf(it.src);
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(it.x, it.y, 3, 0, Math.PI * 2); ctx.fill();
+      const lx = it.x + 8;
+      if (Math.abs(it.ly - it.y) > 2) {                    // a short leader when the label had to move
+        ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = .5;
+        ctx.beginPath(); ctx.moveTo(it.x + 4, it.y); ctx.lineTo(lx - 2, it.ly); ctx.stroke(); ctx.globalAlpha = 1;
+      }
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      const val = it.v >= 100 ? Math.round(it.v) : it.v.toFixed(1);
+      if (narrow) {
+        ctx.font = '600 10.5px ' + font; ctx.fillStyle = dim ? '#c8c8c4' : col; ctx.fillText(val, lx, it.ly);
+      } else {
+        ctx.font = '600 11px ' + font; ctx.fillStyle = dim ? '#c8c8c4' : col;
+        ctx.fillText(it.src, lx, it.ly);
+        const w = ctx.measureText(it.src).width;
+        ctx.font = '400 11px ' + font; ctx.fillStyle = dim ? '#d4d4d0' : '#888';
+        ctx.fillText(' ' + val, lx + w, it.ly);
+      }
+    });
+    ctx.restore();
+  },
+};
+
+// Room to keep on the right of the line chart for the end labels (measured, so long names never get cut)
+function endLabelRoom(keys, latestValues) {
+  const narrow = window.innerWidth <= 600, ctx = document.createElement('canvas').getContext('2d');
+  const font = getComputedStyle(document.body).fontFamily;
+  let w = 0;
+  keys.forEach(k => {
+    const v = latestValues?.[k] || 0, val = v >= 100 ? String(Math.round(v)) : v.toFixed(1);
+    ctx.font = '600 11px ' + font;
+    const name = narrow ? 0 : ctx.measureText(k).width;
+    ctx.font = (narrow ? '600 10.5px ' : '400 11px ') + font;
+    w = Math.max(w, name + ctx.measureText((narrow ? '' : ' ') + val).width);
+  });
+  return Math.ceil(w + 16);
+}
+
+// Line chart: a faint vertical guide at the hovered year
+const HOVER_GUIDE = {
+  id: 'hoverGuide',
+  beforeDatasetsDraw(chart) {
+    const act = chart.tooltip && chart.tooltip.getActiveElements ? chart.tooltip.getActiveElements() : [];
+    if (!act.length) return;
+    const x = act[0].element.x, a = chart.chartArea, ctx = chart.ctx;
+    ctx.save(); ctx.strokeStyle = '#d6d4cf'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(x, a.top); ctx.lineTo(x, a.bottom); ctx.stroke(); ctx.restore();
+  },
+};
+
+// Writes each source's share of the latest year inside its bar segment when the segment is tall enough
+const BAR_SHARE_LABELS = {
+  id: 'barShareLabels',
+  afterDatasetsDraw(chart) {
+    const total = chart.data.datasets.reduce((s, d) => s + (d.data[0] || 0), 0); if (!total) return;
+    const ctx = chart.ctx; ctx.save();
+    ctx.font = '700 11px ' + getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    chart.data.datasets.forEach((d, i) => {
+      const bar = chart.getDatasetMeta(i).data[0]; if (!bar || bar.hidden) return;
+      const top = Math.min(bar.y, bar.base), h = Math.abs(bar.base - bar.y);
+      if (h < 16 || (FOCUS_SRC && FOCUS_SRC !== d.label)) return;
+      const pct = d.data[0] / total * 100;
+      const c = colorOf(d.label), rgb = [1, 3, 5].map(k => Math.round(parseInt(c.slice(k, k + 2), 16) * 0.55));
+      ctx.fillStyle = 'rgb(' + rgb.join(',') + ')';
+      ctx.fillText((pct < 10 ? pct.toFixed(1) : Math.round(pct)) + '%', bar.x, top + h / 2);
+    });
+    ctx.restore();
+  },
+};
+
+function renderCharts() {
+  const info = ALL_DATA[target.name];
+  const years = Object.keys(info.years).map(Number).sort((a,b) => a-b);
+  const V = {}; years.forEach(y => { V[y] = viewYear(info.years[y]); });
+  const latest = years[years.length-1], latestData = V[latest], ordered = viewKeys(target.name);
+
+  document.getElementById('bar-label').textContent = 'Latest mix (' + latest + ')';
+  const lineLabel = document.getElementById('line-label');
+  if (lineLabel) lineLabel.textContent = 'Generation by ' + (CHART_VIEW === 'category' ? 'category' : 'source') + ' over time (TWh)';
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+
+  // Only chart sources the country has actually used (non-zero in at least one year)
+  // — otherwise unused sources render as flat dotted lines along the x-axis
+  const activeSources = ordered.filter(src => years.some(y => (V[y]?.[src] ?? 0) > 0));
+  const AREA = false;
+  const srcDS = activeSources.map(src => ({
+    label: src, data: years.map(y => V[y]?.[src] ?? 0),
+    // Colours are functions so a legend highlight (FOCUS_SRC) restyles every line on update
+    borderColor: () => focusColor(src, '2e'), backgroundColor: colorOf(src) + '22',
+    borderWidth: () => (FOCUS_SRC === src ? 2.8 : 2),
+    pointRadius: 0, pointHoverRadius: 4, pointBorderColor: '#fff', pointBorderWidth: 1.5,
+    pointBackgroundColor: () => focusColor(src, '2e'), pointHoverBorderWidth: 2,
+    fill: false, cubicInterpolationMode: 'monotone',   // slight rounding that never dips below a real value (or below zero)
+  }));
+  const hidDS = [
+    { label:'__total__',      data: years.map(y => info.years[y]?.Total ?? 0) },
+    { label:'__netimports__', data: years.map(y => info.years[y]?.NetImports ?? null), spanGaps: true },
+    { label:'__demand__',     data: years.map(y => info.years[y]?.Demand ?? null), spanGaps: true },
+  ].map(d => ({ ...d, borderColor:'transparent', backgroundColor:'transparent', borderWidth:0, pointRadius:0, pointHoverRadius:0, hidden:true, fill:false, tension:0.3 }));
+
+  lineChart = new Chart(document.getElementById('line-chart').getContext('2d'), {
+    type: 'line', data: { labels: years, datasets: [...srcDS, ...hidDS] },
+    plugins: [LINE_END_LABELS, HOVER_GUIDE],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: endLabelRoom(activeSources, V[latest]), top: 6 } },
+      animations: lineDrawAnimation(years.length),
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipLine } },
+      scales: {
+        x: { grid: { display: false }, border: { color: '#e4e3df' },
+             ticks: { color:'#9a9a96', font:{size:11}, maxTicksLimit:7, autoSkip:true, maxRotation:0 } },
+        y: { grid: { color:'#efeeea' }, border: { display:false },
+             ticks: { color:'#9a9a96', font:{size:11}, padding:6, maxTicksLimit:6 }, beginAtZero: true },
+      },
+    },
+  });
+
+  lineChartBornAt = performance.now();
+
+  barChart = new Chart(document.getElementById('bar-chart').getContext('2d'), {
+    type: 'bar',
+    data: { labels: [''], datasets: [...activeSources].reverse().map(src => ({ label:src, data:[latestData[src]||0],
+      // semi-transparent fill with a solid edge in the same colour, like the energy balance flows
+      backgroundColor: () => FOCUS_SRC && FOCUS_SRC !== src ? colorOf(src) + '1a' : colorOf(src) + '80',
+      borderColor: () => focusColor(src, '40'), borderWidth: 1.5, borderSkipped: false, borderRadius: 3,
+      barPercentage: 0.7, categoryPercentage: 1, maxBarThickness: 120 })) },
+    plugins: [BAR_SHARE_LABELS],
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: barStackAnimation(),
+      plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipBar } },
+      scales: {
+        x: { stacked:true, grid:{display:false}, ticks:{display:false}, border:{color:'#e4e3df'} },
+        y: { stacked:true, grid:{color:'#efeeea'}, border:{display:false, dash:[3,4]}, ticks:{color:'#9a9a96',font:{size:11},padding:6,maxTicksLimit:6} },
+      },
+    },
+  });
+
+  renderLegend(activeSources);
+}
+
+function renderLegend(keys) {
+  const cat = CHART_VIEW === 'category';
+  const toggle = '<div class="view-toggle" role="group" aria-label="Group the charts">'
+    + '<button type="button" class="vt-btn' + (cat ? '' : ' is-on') + '" aria-pressed="' + !cat + '" onclick="setChartView(\'source\')">By source</button>'
+    + '<button type="button" class="vt-btn' + (cat ? ' is-on' : '') + '" aria-pressed="' + cat + '" onclick="setChartView(\'category\')">By category</button></div>';
+  document.getElementById('legend-shared').innerHTML =
+    '<div class="lg-head">' + toggle
+    + '<button type="button" class="glossary-btn" onclick="showGlossaryModal()" aria-label="What each source covers"><span class="glossary-icon" aria-hidden="true">i</span>'
+    + '<span class="gb-long">What each source covers</span><span class="gb-short">Details</span></button></div>'
+    + '<div class="lg-items' + (cat ? ' lg-items--cat' : '') + '">' + keys
+      .map(k => {
+        const group = cat ? CATEGORIES.find(c => c.key === k) : null;
+        return '<div class="legend-item" data-src="' + k + '" tabindex="0" role="button" aria-pressed="false"' + (group ? ' title="' + group.members.join(', ') + '"' : '') + '>'
+          + '<span class="legend-swatch" style="background:' + colorOf(k) + '"></span><span class="legend-name">' + k + '</span>'
+          + (group ? '<span class="legend-members">' + group.members.join(' · ') + '</span>' : '') + '</div>';
+      })
+      .join('') + '</div>';
+  bindLegendFocus();
+}
+let lockedSource = null;
+function bindLegendFocus() {
+  lockedSource = null; FOCUS_SRC = null;
+  document.querySelectorAll('#legend-shared .legend-item').forEach(el => {
+    const src = el.dataset.src;
+    el.addEventListener('mouseenter', () => focusSource(src));
+    el.addEventListener('mouseleave', () => focusSource(lockedSource));
+    el.addEventListener('focus', () => focusSource(src));
+    el.addEventListener('blur', () => focusSource(lockedSource));
+    el.addEventListener('click', () => { lockedSource = lockedSource === src ? null : src; focusSource(lockedSource); });
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
+  });
+}
+
+// Highlighted source (null = none). Chart colours read it through focusColor().
+let FOCUS_SRC = null;
+function focusColor(src, fadedAlpha) {
+  return FOCUS_SRC && FOCUS_SRC !== src ? colorOf(src) + fadedAlpha : colorOf(src);
+}
+
+function focusSource(src) {
+  FOCUS_SRC = src || null;
+  if (lineChart) lineChart.update('none');
+  if (barChart)  barChart.update('none');
+  document.querySelectorAll('#legend-shared .legend-item').forEach(el => {
+    el.classList.toggle('is-dim', !!src && el.dataset.src !== src);
+    el.classList.toggle('is-on', !!src && el.dataset.src === src);
+    el.setAttribute('aria-pressed', String(lockedSource === el.dataset.src));
+  });
+}
+
+// ============================================================
+//  GLOSSARY MODAL
+// ============================================================
+const GLOSSARY = [
+  { group: 'Fossil fuels', tone: '#8a4a2a', items: [
+    ['Coal', 'Hard coal and lignite burned in thermal power stations.'],
+    ['Gas', 'Natural gas and LNG burned in gas turbines or combined-cycle plants.'],
+    ['Other Fossil', 'Oil, diesel, heavy fuel oil, other petroleum products and waste incineration.'] ] },
+  { group: 'Low-carbon · nuclear', tone: '#6a4a9a', items: [
+    ['Nuclear', 'Electricity from uranium fission. Very low lifecycle emissions.'] ] },
+  { group: 'Low-carbon · renewables', tone: '#2a7a4a', items: [
+    ['Hydro', 'Run-of-river and reservoir hydropower.'],
+    ['Wind', 'Onshore and offshore wind turbines.'],
+    ['Solar', 'Solar photovoltaic (PV) panels and solar thermal plants.'],
+    ['Bioenergy', 'Biomass, biogas, sugarcane bagasse and wood pellets.'],
+    ['Other Renewables', 'Geothermal, tidal and wave energy.'] ] },
+];
+
+function showGlossaryModal() {
+  const existing = document.getElementById('glossary-modal'); if (existing) existing.remove();
+  // Sources that appear in today's charts get a small tag, so the list maps onto what is on screen
+  const info = target && ALL_DATA[target.name];
+  const inMix = src => !!info && Object.values(info.years).some(y => (y?.[src] ?? 0) > 0);
+  const body = GLOSSARY.map(g => '<section class="gl-group"><h3 class="gl-group-title" style="color:' + g.tone + '">' + g.group + '</h3><ul class="gl-list">'
+    + g.items.map(([src, desc]) => '<li class="gl-item' + (inMix(src) ? '' : ' is-absent') + '">'
+      + '<span class="gl-sw" style="background:' + COLORS[src] + '" aria-hidden="true"></span>'
+      + '<div class="gl-text"><span class="gl-name">' + src + (inMix(src) ? '<span class="gl-here">In this chart</span>' : '') + '</span>'
+      + '<span class="gl-desc">' + desc + '</span></div></li>').join('')
+    + '</ul></section>').join('');
+  const modal = document.createElement('div'); modal.id = 'glossary-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="gl-box" role="dialog" aria-modal="true" aria-labelledby="gl-title">'
+    + '<span class="gl-grab" aria-hidden="true"></span>'
+    + '<div class="gl-head"><div class="gl-heading"><span class="gl-title" id="gl-title">Electricity sources</span>'
+    + '<span class="gl-sub">What each colour in the charts includes</span></div>'
+    + '<button type="button" class="sx-close" id="gl-close-btn" aria-label="Close">×</button></div>'
+    + '<div class="gl-body">' + body + '</div>'
+    + '<p class="gl-foot">Source: <a href="https://ember-climate.org" target="_blank" rel="noopener">Ember Global Electricity Review</a></p>'
+    + '</div>';
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  document.body.appendChild(modal);
+  document.getElementById('gl-close-btn').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+}
+
+// ============================================================
+//  TOOLTIPS
+// ============================================================
+function showTooltip(html, canvasEl, caretX, caretY) {
+  const tip = document.getElementById('tooltip');
+  tip.innerHTML = html;
+
+  // On narrow screens, cap width to viewport and pin to top of chart area
+  const isMobile = window.innerWidth <= 600;
+  const margin   = 8;
+  const maxW     = Math.min(270, window.innerWidth - margin * 2);
+  tip.style.maxWidth = maxW + 'px';
+
+  // Temporarily show off-screen to measure height
+  tip.style.opacity = '0';
+  tip.style.left = '0px';
+  tip.style.top  = '0px';
+  tip.style.display = 'block';
+  const tipH = tip.getBoundingClientRect().height;
+  tip.style.display = '';
+
+  const rect = canvasEl.getBoundingClientRect();
+
+  let left, top;
+
+  if (isMobile) {
+    // On mobile: centre the tooltip above the chart, pinned just below the header
+    left = margin;
+    top  = rect.top - tipH - 8;
+    // If no room above the chart, show just inside the top of the chart
+    if (top < margin) top = rect.top + 8;
+  } else {
+    // Desktop: prefer right of cursor, flip left if it would overflow
+    left = rect.left + caretX + 14;
+    top  = rect.top  + caretY - 10;
+    if (left + maxW > window.innerWidth - margin) left = rect.left + caretX - maxW - 14;
+    if (top  + tipH > window.innerHeight - margin) top = window.innerHeight - tipH - margin;
   }
 
-  h1 { font-size: 1.4rem; }
+  // Hard clamp — never let it go off either edge
+  left = Math.max(margin, Math.min(left, window.innerWidth  - maxW - margin));
+  top  = Math.max(margin, Math.min(top,  window.innerHeight - tipH - margin));
 
-  /* Mode switcher — 2x2 grid on mobile */
-  .mode-switcher {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    border-radius: 4px;
-    overflow: hidden;
+  tip.style.left    = left + 'px';
+  tip.style.top     = top  + 'px';
+  tip.style.opacity = '1';
+}
+function hideTooltip() { document.getElementById('tooltip').style.opacity = '0'; }
+
+function tooltipRow(color, label, twh, total, bold) {
+  const pct = total > 0 ? (Math.abs(twh)/total*100).toFixed(1) : '0.0';
+  return '<div style="display:flex;align-items:center;gap:6px;margin:2px 0">'
+    + '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:' + color + '"></span>'
+    + '<span style="min-width:110px;font-size:0.85em;' + (bold ? 'font-weight:600' : '') + '">' + label + '</span>'
+    + '<span style="font-weight:500">' + fmtTWh(Math.abs(twh)) + '</span>'
+    + '<span style="color:#888;margin-left:3px;font-size:0.85em">(' + pct + '%)</span></div>';
+}
+
+function externalTooltipLine(context) {
+  const model = context.tooltip; if (model.opacity === 0) { hideTooltip(); return; }
+  const year = parseInt(model.title?.[0]), yd = ALL_DATA[target.name]?.years[year] ?? {};
+  const total = yd.Total ?? 0, demand = yd.Demand ?? null, netImp = yd.NetImports ?? null;
+  let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Year: ' + year + '</div>';
+  html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
+  if (demand !== null && demand > 0) html += tooltipRow('#1a1a1a', 'Demand', demand, total, true);
+  if (netImp !== null && netImp !== 0) html += tooltipRow(netImp<0?'#3f3cbb':'#e0218a', netImp<0?'Net exports':'Net imports', Math.abs(netImp), total, true);
+  if (CHART_VIEW === 'category') html += tooltipRow('#3f7f66', 'Low-carbon (nuclear + renewables)', lowCarbonOf(yd), total, true);
+  html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
+  model.dataPoints.filter(dp => !dp.dataset.label.startsWith('__') && (dp.parsed?.y ?? 0) > 0)
+    .sort((a,b) => (b.parsed?.y??0) - (a.parsed?.y??0))
+    .forEach(dp => { html += tooltipRow(colorOf(dp.dataset.label), dp.dataset.label, dp.parsed.y, total, false); });
+  html += '</div>'; showTooltip(html, context.chart.canvas, model.caretX, model.caretY);
+}
+
+function externalTooltipBar(context) {
+  const model = context.tooltip; if (model.opacity === 0) { hideTooltip(); return; }
+  const info = ALL_DATA[target.name], latest = info.latestYear, data = info.years[latest], total = data.Total ?? 0;
+  let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Mix (' + latest + ')</div>';
+  html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
+  if (data.Demand && data.Demand > 0) html += tooltipRow('#1a1a1a', 'Demand', data.Demand, total, true);
+  if (data.NetImports && data.NetImports !== 0) html += tooltipRow(data.NetImports<0?'#3f3cbb':'#e0218a', data.NetImports<0?'Net exports':'Net imports', Math.abs(data.NetImports), total, true);
+  if (CHART_VIEW === 'category') html += tooltipRow('#3f7f66', 'Low-carbon (nuclear + renewables)', lowCarbonOf(data), total, true);
+  html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
+  const vd = viewYear(data);
+  viewKeys(target.name).filter(src => (vd[src]||0) > 0)
+    .forEach(src => { html += tooltipRow(colorOf(src), src, vd[src], total, false); });
+  html += '</div>'; showTooltip(html, context.chart.canvas, model.caretX, model.caretY);
+}
+
+document.addEventListener('mousemove', e => {
+  const s = document.getElementById('charts-section');
+  if (s && !s.contains(e.target)) hideTooltip();
+});
+
+// ============================================================
+//  FLAGS, CLOSENESS, COMPASS
+//  Shared by the guess rows, the result card and the stats screen.
+// ============================================================
+// ISO 3166 alpha-3 → alpha-2, for flag images (flagcdn.com, public domain flags)
+const ISO3_TO_ISO2 = {ABW:'aw',AFG:'af',AGO:'ao',AIA:'ai',ALA:'ax',ALB:'al',AND:'ad',ARE:'ae',ARG:'ar',ARM:'am',ASM:'as',ATA:'aq',ATF:'tf',ATG:'ag',AUS:'au',AUT:'at',AZE:'az',BDI:'bi',BEL:'be',BEN:'bj',BES:'bq',BFA:'bf',BGD:'bd',BGR:'bg',BHR:'bh',BHS:'bs',BIH:'ba',BLM:'bl',BLR:'by',BLZ:'bz',BMU:'bm',BOL:'bo',BRA:'br',BRB:'bb',BRN:'bn',BTN:'bt',BVT:'bv',BWA:'bw',CAF:'cf',CAN:'ca',CCK:'cc',CHE:'ch',CHL:'cl',CHN:'cn',CIV:'ci',CMR:'cm',COD:'cd',COG:'cg',COK:'ck',COL:'co',COM:'km',CPV:'cv',CRI:'cr',CUB:'cu',CUW:'cw',CXR:'cx',CYM:'ky',CYP:'cy',CZE:'cz',DEU:'de',DJI:'dj',DMA:'dm',DNK:'dk',DOM:'do',DZA:'dz',ECU:'ec',EGY:'eg',ERI:'er',ESH:'eh',ESP:'es',EST:'ee',ETH:'et',FIN:'fi',FJI:'fj',FLK:'fk',FRA:'fr',FRO:'fo',FSM:'fm',GAB:'ga',GBR:'gb',GEO:'ge',GGY:'gg',GHA:'gh',GIB:'gi',GIN:'gn',GLP:'gp',GMB:'gm',GNB:'gw',GNQ:'gq',GRC:'gr',GRD:'gd',GRL:'gl',GTM:'gt',GUF:'gf',GUM:'gu',GUY:'gy',HKG:'hk',HMD:'hm',HND:'hn',HRV:'hr',HTI:'ht',HUN:'hu',IDN:'id',IMN:'im',IND:'in',IOT:'io',IRL:'ie',IRN:'ir',IRQ:'iq',ISL:'is',ISR:'il',ITA:'it',JAM:'jm',JEY:'je',JOR:'jo',JPN:'jp',KAZ:'kz',KEN:'ke',KGZ:'kg',KHM:'kh',KIR:'ki',KNA:'kn',KOR:'kr',KWT:'kw',LAO:'la',LBN:'lb',LBR:'lr',LBY:'ly',LCA:'lc',LIE:'li',LKA:'lk',LSO:'ls',LTU:'lt',LUX:'lu',LVA:'lv',MAC:'mo',MAF:'mf',MAR:'ma',MCO:'mc',MDA:'md',MDG:'mg',MDV:'mv',MEX:'mx',MHL:'mh',MKD:'mk',MLI:'ml',MLT:'mt',MMR:'mm',MNE:'me',MNG:'mn',MNP:'mp',MOZ:'mz',MRT:'mr',MSR:'ms',MTQ:'mq',MUS:'mu',MWI:'mw',MYS:'my',MYT:'yt',NAM:'na',NCL:'nc',NER:'ne',NFK:'nf',NGA:'ng',NIC:'ni',NIU:'nu',NLD:'nl',NOR:'no',NPL:'np',NRU:'nr',NZL:'nz',OMN:'om',PAK:'pk',PAN:'pa',PCN:'pn',PER:'pe',PHL:'ph',PLW:'pw',PNG:'pg',POL:'pl',PRI:'pr',PRK:'kp',PRT:'pt',PRY:'py',PSE:'ps',PYF:'pf',QAT:'qa',REU:'re',ROU:'ro',RUS:'ru',RWA:'rw',SAU:'sa',SDN:'sd',SEN:'sn',SGP:'sg',SGS:'gs',SHN:'sh',SJM:'sj',SLB:'sb',SLE:'sl',SLV:'sv',SMR:'sm',SOM:'so',SPM:'pm',SRB:'rs',SSD:'ss',STP:'st',SUR:'sr',SVK:'sk',SVN:'si',SWE:'se',SWZ:'sz',SXM:'sx',SYC:'sc',SYR:'sy',TCA:'tc',TCD:'td',TGO:'tg',THA:'th',TJK:'tj',TKL:'tk',TKM:'tm',TLS:'tl',TON:'to',TTO:'tt',TUN:'tn',TUR:'tr',TUV:'tv',TWN:'tw',TZA:'tz',UGA:'ug',UKR:'ua',UMI:'um',URY:'uy',USA:'us',UZB:'uz',VAT:'va',VCT:'vc',VEN:'ve',VGB:'vg',VIR:'vi',VNM:'vn',VUT:'vu',WLF:'wf',WSM:'ws',XKX:'xk',YEM:'ye',ZAF:'za',ZMB:'zm',ZWE:'zw'};
+
+function flagImg(iso3, cls = 'flag') {
+  const a2 = ISO3_TO_ISO2[iso3];
+  if (!a2) return '<span class="' + cls + ' flag--none" aria-hidden="true"></span>';
+  return '<img class="' + cls + '" src="https://flagcdn.com/w40/' + a2 + '.png" srcset="https://flagcdn.com/w80/' + a2 + '.png 2x"'
+    + ' alt="" loading="lazy" decoding="async" onerror="this.style.visibility=\'hidden\'">';
+}
+
+// Closeness: 0 km = 100 %, 10,000 km or more = 0 %
+function closeness(km) { return Math.max(0, Math.round(100 - km / 100)); }
+
+// Closeness colour: muted red (0 %) → muted amber (50 %) → muted green (100 %)
+const CLOSE_STOPS = [[196, 112, 96], [214, 168, 80], [84, 160, 112]];
+const WIN_RGB = [63, 154, 99], MISS_RGB = [196, 112, 96];
+function closeRGB(p) {
+  const t = Math.min(1, Math.max(0, p / 100)), i = t <= 0.5 ? 0 : 1, u = (t - i * 0.5) / 0.5;
+  return CLOSE_STOPS[i].map((v, k) => Math.round(v + (CLOSE_STOPS[i + 1][k] - v) * u));
+}
+function rgbaOf(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+function darker(c) { return rgbaOf(c.map(v => Math.round(v * 0.72)), 1); }
+
+const DIR_NAMES = { N: 'north', NNE: 'north-northeast', NE: 'northeast', ENE: 'east-northeast', E: 'east', ESE: 'east-southeast',
+  SE: 'southeast', SSE: 'south-southeast', S: 'south', SSW: 'south-southwest', SW: 'southwest', WSW: 'west-southwest',
+  W: 'west', WNW: 'west-northwest', NW: 'northwest', NNW: 'north-northwest' };
+
+// Distance, bearing and closeness from a guessed country to today's answer
+function guessInfo(c) {
+  const km = Math.round(haversineKm(c.lat, c.lng, target.lat, target.lng));
+  const deg = bearingDeg(c.lat, c.lng, target.lat, target.lng);
+  return { km, deg, dir: bearingLabel(deg), prox: closeness(km) };
+}
+function fmtKm(km) { return km.toLocaleString('en-US') + ' km'; }
+
+// Compass: two light quarter arcs (north-east and south-west), an "N", and a black needle.
+const COMPASS_DIAL = (() => {
+  const P = (a, r) => { const q = a * Math.PI / 180; return (26 + r * Math.sin(q)).toFixed(1) + ' ' + (26 - r * Math.cos(q)).toFixed(1); };
+  const arcs = [16, 196].map(a => 'M' + P(a, 17) + ' A17 17 0 0 1 ' + P(a + 58, 17)).join(' ');
+  return '<svg viewBox="0 0 52 52" width="22" height="22"><path d="' + arcs + '" fill="none" stroke="#b9bec6" stroke-width="2.5" stroke-linecap="round"/>'
+    + '<text x="26" y="12.5" text-anchor="middle" font-size="13" font-weight="800" fill="#1a1a1a" font-family="inherit">N</text></svg>';
+})();
+function compassHTML(deg) {
+  return '<span class="gr-compass" aria-hidden="true">' + COMPASS_DIAL
+    + '<span class="gr-needle" style="--deg:' + deg.toFixed(1) + 'deg"><svg viewBox="0 0 52 52" width="22" height="22">'
+    + '<polygon points="26,12 26,30 17.5,35" fill="#1a1a1a"/><polygon points="26,12 34.5,35 26,30" fill="#4b4b4b"/></svg></span></span>';
+}
+
+// ============================================================
+//  GUESSES LEFT: a six-cell battery
+//  Green with 4-6 left, amber with 2-3, red with the last one. A wrong guess makes the
+//  cell it uses flicker out; on a win the cells left glow one after another.
+// ============================================================
+function renderLives(drain = false) {
+  const container = document.getElementById('lives-container'); if (!container) return;
+  const left = MAX_GUESSES - guesses.length;
+  const color = left >= 4 ? 'is-high' : left >= 2 ? 'is-mid' : 'is-low';
+  let cells = '';
+  for (let i = 0; i < MAX_GUESSES; i++) {
+    const on = i < left, justUsed = drain && i === left;
+    cells += '<span class="battery-cell' + (on ? ' is-on ' + color : '') + (justUsed ? ' is-drain' : '') + '"></span>';
+  }
+  container.innerHTML = '<span class="battery" role="img" aria-label="' + left + ' of ' + MAX_GUESSES + ' guesses left">'
+    +   '<span class="battery-body">' + cells + '</span><span class="battery-cap"></span></span>';
+  const count = document.getElementById('lives-count');
+  if (count) count.textContent = left + '/' + MAX_GUESSES;
+}
+function glowBattery(delay) {
+  if (REDUCED_MOTION) return;
+  document.querySelectorAll('#lives-container .battery-cell.is-on').forEach((c, i) => {
+    c.style.animationDelay = (delay + i * 0.1).toFixed(2) + 's'; c.classList.add('is-glow');
+  });
+}
+
+// ============================================================
+//  GUESS LOGIC
+// ============================================================
+function submitGuess() {
+  if (gameOver) return;
+  const input = document.getElementById('guess-input'), error = document.getElementById('error');
+  const val = input.value.trim();
+  if (!val) { error.textContent = 'Please type a country name.'; return; }
+  const match = COUNTRIES.find(c => c.name.toLowerCase() === val.toLowerCase());
+  if (!match) { error.textContent = '"' + val + '" not found — check spelling.'; return; }
+  if (guesses.find(g => g.iso3 === match.iso3)) { error.textContent = 'Already guessed!'; return; }
+  error.textContent = '';
+  guesses.push(match);
+  const isCorrect = match.iso3 === target.iso3;
+  renderLives(!isCorrect);
+  addGuessRow(match, isCorrect);
+  input.value = ''; syncInputFlag(); document.getElementById('autocomplete-list').style.display = 'none';
+  saveDailyState();
+  if (isCorrect)                          { renderResultCard(true);  endGame(); }
+  else if (guesses.length >= MAX_GUESSES) { renderResultCard(false); endGame(); }
+}
+
+// One slim row per guess, newest on top.
+//   left:  closeness ring around the guess number · flag · country · that country's own figures
+//   right: the hint toward the answer: compass and direction as one piece, the distance (in the closeness colour) under it
+//   under: a thin "live wire" energised up to the closeness level; the ambient pulse sometimes runs along one
+function addGuessRow(country, isCorrect, animate = true) {
+  const num = guesses.length; // this guess's number (1-based, set after the push)
+  const row = document.createElement('div');
+  row.className = 'gr-row' + (isCorrect ? ' gr-row--win' : '') + (animate && !REDUCED_MOTION ? ' gr-anim' : '');
+  const name = escHtml(country.name);
+  if (isCorrect) {
+    row.innerHTML = '<span class="gr-sweep" aria-hidden="true"></span><span class="gr-current" aria-hidden="true"></span>'
+      + '<div class="gr-winline"><span class="gr-badge">' + num + '</span>'
+      + '<span class="gr-name">' + flagImg(country.iso3) + '<span>' + name + '</span></span>'
+      + '<span class="gr-wintxt">Puzzle solved in ' + num + '</span>'
+      + '<span class="gr-check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>';
+  } else {
+    const h = guessInfo(country), col = closeRGB(h.prox);
+    const L = 2 * Math.PI * 13, filled = L * h.prox / 100;
+    row.style.setProperty('--cl', col.join(','));
+    const facts = fmtTWh(country.latestTotal) + '<span class="u-long"> generated</span>'
+      + (country.latestDpc != null ? '<span class="gr-dot">·</span>' + country.latestDpc.toFixed(1)
+        + ' MWh/<span class="u-long">person</span><span class="u-short">cap</span>' : '');
+    row.innerHTML = '<div class="gr-main">'
+      + '<button type="button" class="gr-num" aria-label="Guess ' + num + ', closeness ' + h.prox + '%">'
+      +   '<svg viewBox="0 0 30 30" width="30" height="30" aria-hidden="true"><circle class="gr-ring-bg" cx="15" cy="15" r="13"/>'
+      +   '<circle class="gr-ring" cx="15" cy="15" r="13" stroke-dasharray="' + filled.toFixed(1) + ' ' + L.toFixed(1) + '" style="--c:' + filled.toFixed(1) + '" transform="rotate(-90 15 15)"/></svg>'
+      +   '<span class="gr-n">' + num + '</span>'
+      +   '<span class="gr-tip" role="tooltip">Closeness ' + h.prox + '% (' + fmtKm(h.km) + ' away). The fuller and greener the ring, the closer this guess is to the answer.</span>'
+      + '</button>'
+      + '<span class="gr-who"><span class="gr-name">' + flagImg(country.iso3) + '<span title="' + name + '">' + name + '</span></span>'
+      +   '<span class="gr-facts">' + facts + '</span></span>'
+      + '<button type="button" class="gr-hint" aria-label="Hint: the answer is ' + fmtKm(h.km) + ' ' + DIR_NAMES[h.dir] + ' of ' + name + '">'
+      +   '<span class="gr-hintbox"><span class="gr-hintdir">' + compassHTML(h.deg) + '<span class="gr-dir">' + h.dir + '</span></span>'
+      +   '<span class="gr-km" style="color:' + darker(col) + '">' + fmtKm(h.km) + '</span></span>'
+      +   '<span class="gr-htip" role="tooltip">Hint toward the answer: it lies about ' + fmtKm(h.km) + ' to the ' + DIR_NAMES[h.dir] + ' of ' + name
+      +   '. The figures on the left are ' + name + '’s own.</span>'
+      + '</button></div>'
+      + '<span class="gr-wire" aria-hidden="true"><span class="gr-wire-fill" style="width:' + h.prox + '%"></span></span>';
+  }
+  const container = document.getElementById('guesses');
+  container.insertBefore(row, container.firstChild);
+}
+
+// Tap to open a row's tooltip on touch screens (hover does it on desktop); a tap anywhere else closes it
+document.addEventListener('click', e => {
+  const t = e.target.closest('.gr-num, .gr-hint');
+  document.querySelectorAll('.gr-num.is-open, .gr-hint.is-open').forEach(el => { if (el !== t) el.classList.remove('is-open'); });
+  if (t) t.classList.toggle('is-open');
+});
+
+// ------------------------------------------------------------
+//  RESULT CARD (replaces the old emoji banner, sits where the input was)
+//  The guesses are stops on a line, in order, each the country's flag in its closeness colour.
+//  Win: a current runs along the line to the answer, which lights green.
+//  Loss: the current stops at the last guess; a dashed gap leads to the answer, revealed greyed out.
+// ------------------------------------------------------------
+function pathModel(won) {
+  const path = won ? guesses.slice() : guesses.concat([target]);
+  const n = path.length, last = n - 1;
+  const frac = i => (last ? i / last : 0);
+  const liveEnd = won ? 1 : (last > 1 ? frac(last - 1) : 0);
+  const nodes = path.map((c, i) => {
+    const isAns = c.iso3 === target.iso3, h = isAns ? null : guessInfo(c);
+    return { c, isAns, h, frac: frac(i), col: isAns ? (won ? WIN_RGB : MISS_RGB) : closeRGB(h.prox) };
+  });
+  const live = nodes.filter((nd, i) => won || i < last);
+  const stops = live.map(nd => rgbaOf(nd.col, 0.85) + ' ' + (liveEnd ? nd.frac / liveEnd * 100 : 0).toFixed(1) + '%').join(', ');
+  return { nodes, n, liveEnd, stops };
+}
+
+function pathHTML(won, mini, animate) {
+  const m = pathModel(won), RUN = Math.min(1.6, 0.4 + 0.3 * (m.n - 1)), START = 0.35;
+  const at = nd => (!won && nd.isAns ? START + RUN * m.liveEnd + 0.35 : START + RUN * nd.frac);
+  const lineW = (m.liveEnd * 100).toFixed(2) + '%';
+  let line = '';
+  if (m.n > 1) {
+    line = '<span class="go-linebox">'
+      + '<span class="go-line" style="width:' + lineW + ';background:linear-gradient(90deg,' + m.stops + ');--dur:' + (RUN * m.liveEnd).toFixed(2) + 's;--at:' + START + 's"></span>'
+      + (won ? '' : '<span class="go-gap" style="left:' + lineW + ';--at:' + (START + RUN * m.liveEnd).toFixed(2) + 's"></span>')
+      + (mini ? '' : '<span class="go-spark" style="--to:' + lineW + ';--dur:' + (RUN * m.liveEnd).toFixed(2) + 's;--at:' + START + 's"></span>')
+      + '</span>';
+  }
+  const nodes = m.nodes.map(nd => {
+    const title = nd.isAns ? nd.c.name + (won ? ', the answer' : ', the answer you missed')
+      : nd.c.name + ', ' + fmtKm(nd.h.km) + ' away (' + nd.h.prox + '% close)';
+    const cls = 'go-node' + (nd.isAns ? ' go-node--answer' : '') + (!won && nd.isAns ? ' go-node--miss' : '');
+    return '<span class="' + cls + '" style="--cl:' + nd.col.join(',') + ';--at:' + at(nd).toFixed(2) + 's" title="' + escHtml(title) + '">'
+      + '<span class="go-ring">' + flagImg(nd.c.iso3, 'go-flag') + '</span>'
+      + (nd.isAns && !mini ? '<span class="go-badge" aria-hidden="true">' + (won ? '✓' : '?') + '</span>' : '')
+      + (nd.isAns && won && !mini ? '<span class="go-burst" aria-hidden="true"></span>' : '')
+      + '</span>';
+  }).join('');
+  const labels = mini ? '' : '<div class="go-labels">' + m.nodes.map(nd =>
+      '<span class="go-label' + (nd.isAns ? ' go-label--answer' : '') + '" style="--at:' + at(nd).toFixed(2) + 's;color:'
+      + (nd.isAns ? (won ? '#2f7a4d' : '#a85a4a') : darker(nd.col)) + '">' + (nd.isAns ? escHtml(nd.c.name) : fmtKm(nd.h.km)) + '</span>').join('') + '</div>';
+  return { html: '<div class="go-path' + (mini ? ' go-path--mini' : '') + (m.n === 1 ? ' go-path--one' : '') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
+      + '<div class="go-track">' + line + '<div class="go-nodes">' + nodes + '</div></div>' + labels + '</div>',
+    doneAt: START + RUN + 0.2 };
+}
+
+let resultTicker = null;
+function renderResultCard(won, animate = true) {
+  const host = document.getElementById('banner'); if (!host) return;
+  const p = pathHTML(won, false, animate);
+  let summary;
+  if (won) {
+    summary = guesses.length > 1
+      ? 'Your guesses closed in from ' + fmtKm(guessInfo(guesses[0]).km) + ' to ' + escHtml(target.name) + '.'
+      : 'First guess, straight to ' + escHtml(target.name) + '.';
+  } else {
+    const best = guesses.map(c => [c, guessInfo(c)]).sort((a, b) => a[1].km - b[1].km)[0];
+    summary = 'Closest guess: ' + escHtml(best[0].name) + ', ' + fmtKm(best[1].km) + ' away. '
+      + escHtml(target.name) + ' lay to its ' + DIR_NAMES[best[1].dir] + '.';
+  }
+  const tagline = MODE === 'practice' ? escHtml(practiceSubtitle().replace(/ · \d+ countries$/, '') || 'Practice') : 'Puzzle #' + getDayNumber();
+  const foot = MODE === 'practice'
+    ? '<span class="go-next">Practice round</span>'
+      + '<div class="go-actions"><button type="button" class="go-btn go-btn--dark" onclick="newGame()">Next puzzle ↺</button></div>'
+    : '<span class="go-next">Next puzzle in <strong id="go-countdown">' + getCountdown() + '</strong></span>'
+      + '<div class="go-actions"><button type="button" class="go-btn" onclick="showStatsModal(true)">Stats</button>'
+      + '<button type="button" class="go-btn go-btn--dark" onclick="copyShare(this)">Share</button></div>';
+  host.innerHTML = '<div class="go-card ' + (won ? 'go-card--won' : 'go-card--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
+    + '<div class="go-head"><span class="go-title">' + (won ? 'Your path to ' + escHtml(target.name) : 'Out of guesses. It was ' + escHtml(target.name) + '.') + '</span>'
+    + '<span class="go-tag">' + tagline + '</span></div>'
+    + p.html
+    + '<p class="go-summary">' + summary + '</p>'
+    + '<div class="go-foot">' + foot + '</div></div>';
+  if (won && animate) glowBattery(p.doneAt);
+  clearInterval(resultTicker);
+  if (MODE !== 'practice') resultTicker = setInterval(() => {
+    const el = document.getElementById('go-countdown'); if (!el) { clearInterval(resultTicker); return; }
+    el.textContent = getCountdown();
+  }, 1000);
+}
+
+function endGame() {
+  gameOver = true; saveDailyState();
+  if (MODE === 'practice') recordPracticeResult(guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3);
+  if (MODE === 'normal') {
+    const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
+    recordDailyResult(won, guesses.length);
+    // Returning player: submit now, stats after 2.5s.
+    // First-time player: after 2.5s ask for a name FIRST, then submit, then show stats —
+    // previously both modals opened together and the stats modal covered the name prompt,
+    // so many first-time scores (wins and losses) were never sent.
+    if (getUsername()) {
+      submitDailyScore();
+      setTimeout(() => showStatsModal(true), 2500);
+    } else {
+      setTimeout(() => ensureUsername().then(() => { submitDailyScore(); showStatsModal(true); }), 2500);
+    }
+  }
+  document.getElementById('input-area').style.display   = 'none';
+  if (MODE === 'normal') {
+    const switcher = document.getElementById('mode-nav');
+    if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
+  }
+}
+
+// Sends today's result once. `scoreSubmitted` is saved in the daily state, so a score that
+// failed to send (no name yet, tab closed, network error) is retried on the next visit.
+async function submitDailyScore() {
+  const username = getUsername();
+  if (!username || scoreSubmitted || !gameOver || MODE !== 'normal') return;
+  const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
+  const ok = await sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won });
+  if (ok) {
+    scoreSubmitted = true;
+    saveDailyState();
+    loadPodium(); // refresh in case the top 3 changed
+  }
+}
+
+// ============================================================
+//  AUTOCOMPLETE
+// ============================================================
+function setupAutocomplete() {
+  const input = document.getElementById('guess-input'), list = document.getElementById('autocomplete-list');
+  let activeIdx = -1;
+  function getItems() { return list.querySelectorAll('.ac-item'); }
+  function highlight(idx) {
+    const items = getItems(); items.forEach(el => el.classList.remove('ac-active'));
+    if (idx >= 0 && idx < items.length) { items[idx].classList.add('ac-active'); items[idx].scrollIntoView({ block: 'nearest' }); }
+    activeIdx = idx;
+  }
+  function selectActive() {
+    const items = getItems();
+    if (activeIdx >= 0 && activeIdx < items.length) { input.value = items[activeIdx].textContent; syncInputFlag(); list.style.display = 'none'; activeIdx = -1; return true; }
+    return false;
+  }
+  function buildList(q) {
+    activeIdx = -1;
+    // Empty query: show the full eligible pool (alphabetical, scrollable).
+    // POOL is the active country set, so practice categories are filtered automatically.
+    const source = [...POOL].sort((a,b) => a.name.localeCompare(b.name));
+    const matches = q.length === 0 ? source : source.filter(c => c.name.toLowerCase().includes(q));
+    if (!matches.length) { list.style.display = 'none'; return; }
+    list.innerHTML = '';
+    matches.forEach(c => {
+      const item = document.createElement('div'); item.className = 'ac-item';
+      item.innerHTML = flagImg(c.iso3, 'ac-flag') + '<span>' + escHtml(c.name) + '</span>';
+      item.addEventListener('mousedown', e => { e.preventDefault(); input.value = c.name; syncInputFlag(); list.style.display = 'none'; activeIdx = -1; });
+      list.appendChild(item);
+    });
+    list.style.display = 'block';
+  }
+  input.addEventListener('input', () => { syncInputFlag(); buildList(input.value.toLowerCase().trim()); });
+  input.addEventListener('focus', () => buildList(input.value.toLowerCase().trim()));
+  input.addEventListener('keydown', e => {
+    const items = getItems(), open = list.style.display === 'block' && items.length > 0;
+    if (e.key === 'ArrowDown') { e.preventDefault(); highlight(open ? Math.min(activeIdx+1, items.length-1) : 0); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(open ? Math.max(activeIdx-1, 0) : items.length-1); }
+    else if (e.key === 'Tab' && open) {
+      // Tab behaves exactly like Enter: select the highlighted suggestion
+      // (or the first one if none is highlighted) into the input field.
+      e.preventDefault();
+      if (activeIdx === -1) highlight(0);
+      selectActive();
+    }
+    else if (e.key === 'Enter') { if (open && activeIdx >= 0) { e.preventDefault(); selectActive(); } else { list.style.display = 'none'; submitGuess(); } }
+    else if (e.key === 'Escape') { list.style.display = 'none'; activeIdx = -1; }
+  });
+  document.addEventListener('click', e => { if (!e.target.closest('#autocomplete-wrapper')) { list.style.display = 'none'; activeIdx = -1; } });
+}
+
+// Show the flag inside the input once the text matches a country exactly
+function syncInputFlag() {
+  const input = document.getElementById('guess-input'), slot = document.getElementById('guess-flag');
+  if (!input || !slot) return;
+  const val = input.value.trim().toLowerCase();
+  const match = val ? COUNTRIES.find(c => c.name.toLowerCase() === val) : null;
+  const key = match ? match.iso3 : '';
+  if (slot.dataset.iso3 === key) return;
+  slot.dataset.iso3 = key;
+  slot.innerHTML = match ? flagImg(match.iso3, 'ac-flag') : '';
+  slot.parentNode.classList.toggle('has-flag', !!match);
+}
+
+// ============================================================
+//  DAILY GAME
+// ============================================================
+function restoreDailyGame() {
+  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false;
+  document.getElementById('guesses').innerHTML      = '';
+  document.getElementById('banner').innerHTML       = '';
+  document.getElementById('error').textContent      = '';
+  document.getElementById('input-area').style.display   = 'flex';
+  document.getElementById('guess-input').value      = ''; syncInputFlag();
+  renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
+  const saved = loadDailyState();
+  if (saved && saved.guesses.length > 0) {
+    for (const iso3 of saved.guesses) {
+      const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) continue;
+      guesses.push(country); addGuessRow(country, country.iso3 === target.iso3, false);
+    }
+    renderLives();
+    if (saved.gameOver) {
+      const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
+      gameOver = true; renderResultCard(won, false);
+      document.getElementById('input-area').style.display   = 'none';
+      // Saved states from before this fix have no flag — treat them as already sent
+      // so nobody gets a duplicate row today.
+      scoreSubmitted = saved.submitted !== false;
+      if (!scoreSubmitted) {
+        if (getUsername()) submitDailyScore();
+        else setTimeout(() => ensureUsername().then(submitDailyScore), 1000);
+      }
+    }
+  }
+}
+
+// ============================================================
+//  PRACTICE GAME
+// ============================================================
+function newGame() {
+  target = nextPracticeCountry(); guesses = []; gameOver = false;
+  document.getElementById('guesses').innerHTML      = '';
+  document.getElementById('banner').innerHTML       = '';
+  document.getElementById('error').textContent      = '';
+  document.getElementById('input-area').style.display   = 'flex';
+  document.getElementById('guess-input').value      = ''; syncInputFlag();
+  renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
+}
+
+// ============================================================
+//  SHARE + COUNTDOWN
+// ============================================================
+// Each wrong guess becomes a square by closeness: 🟥 under 40 %, 🟧 40-74 %, 🟨 75 % and up; the answer is 🟩.
+function shareSquare(c) {
+  if (c.iso3 === target.iso3) return '🟩';
+  const p = guessInfo(c).prox;
+  return p >= 75 ? '🟨' : p >= 40 ? '🟧' : '🟥';
+}
+
+function buildShareText() {
+  const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
+  const score = won ? guesses.length : 'X';
+  return 'Energle ⚡ #' + getDayNumber() + '  ' + score + '/' + MAX_GUESSES + '\n' + guesses.map(shareSquare).join('') + '\nhttps://energle.org';
+}
+
+function copyShare(btn) {
+  btn = btn || document.getElementById('share-btn');
+  const label = btn ? btn.textContent : 'Share';
+  const reset = () => { if (btn) setTimeout(() => { btn.textContent = label; }, 2000); };
+  navigator.clipboard.writeText(buildShareText())
+    .then(() => { if (btn) btn.textContent = 'Copied!'; reset(); })
+    .catch(() => { if (btn) btn.textContent = 'Copy failed'; reset(); });
+}
+
+function getCountdown() {
+  const now = new Date(), next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+1));
+  const diff = next - now;
+  const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+// ============================================================
+//  STATS MODAL
+// ============================================================
+// ============================================================
+//  STATS MODAL
+//  Personal header (avatar, name, all-time rank), today's result,
+//  a row of four numbers, and the guess distribution as shares of games played.
+//  Stats live in this browser; the name and rank come from the leaderboard.
+// ============================================================
+const AVATAR_COLORS = ['#4a90c4', '#5ab88a', '#e8925a', '#9b6dbd', '#2ab5a0', '#c0654a'];
+
+function avatarColor(name) {
+  let h = 0;
+  for (const ch of name) h = (h + ch.charCodeAt(0)) % 997;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+function showStatsModal(afterGame) {
+  const existing = document.getElementById('stats-modal'); if (existing) existing.remove();
+  const stats = loadStats();
+  const name = getUsername();
+  const winPct = stats.played > 0 ? Math.round(stats.won / stats.played * 100) : 0;
+  const solvedGuesses = [1, 2, 3, 4, 5, 6].reduce((s, k) => s + k * (stats.dist[k] || 0), 0);
+  const avg = stats.won > 0 ? (solvedGuesses / stats.won).toFixed(1) : '–';
+  const won = afterGame && gameOver && MODE === 'normal' && guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
+  const currentKey = afterGame && gameOver && MODE === 'normal' ? (won ? guesses.length : 'X') : null;
+
+  // Header: who these stats belong to
+  const header = '<div class="sx-head">'
+    + '<span class="sx-avatar" aria-hidden="true" style="background:' + (name ? avatarColor(name) : '#c9c9c6') + '">'
+    +   (name ? escHtml(name.charAt(0).toUpperCase()) : '?') + '</span>'
+    + '<div class="sx-who"><span class="sx-name">' + (name ? escHtml(name) : 'Guest') + '</span>'
+    +   '<span class="sx-sub" id="sx-rank">' + (name ? 'Looking up your rank…' : 'Not on the leaderboard yet. You pick a name after your first daily.') + '</span></div>'
+    + '<button class="sx-close" id="st-close-btn" aria-label="Close">×</button></div>';
+
+  // Today's result, only right after the daily
+  let today = '';
+  if (afterGame && MODE === 'normal' && gameOver) {
+    const streakLine = won
+      ? (stats.streak > 1 ? stats.streak + ' days in a row.' + (stats.streak >= stats.bestStreak ? ' Your best run yet.' : '') : 'Streak started. See you tomorrow.')
+      : 'Streak reset.';
+    // Today's result with the same guess path as the result card, in miniature
+    today = '<div class="sx-today ' + (won ? 'sx-today--won' : 'sx-today--lost') + '">'
+      + '<div class="sx-today-top"><span class="sx-today-title">' + (won
+          ? 'Puzzle #' + getDayNumber() + ' solved in ' + guesses.length
+          : 'Puzzle #' + getDayNumber() + ': it was ' + escHtml(target.name)) + '</span>'
+      + '<span class="sx-today-sub">' + streakLine + '</span></div>'
+      + pathHTML(won, true, false).html + '</div>';
   }
 
-  .mode-btn {
-    padding: 6px 8px;
-    font-size: 0.75rem;
+  const tiles = [[stats.played, 'Played'], [winPct + '%', 'Win rate'], [stats.streak, 'Streak'], [stats.bestStreak, 'Best streak']]
+    .map(([v, l]) => '<div class="sx-tile"><span class="sx-tile-num">' + v + '</span><span class="sx-tile-lbl">' + l + '</span></div>').join('');
+
+  const rows = [1, 2, 3, 4, 5, 6, 'X'].map((k, i) => {
+    const n = stats.dist[k] || 0, share = stats.played ? n / stats.played : 0, isToday = k === currentKey;
+    const cls = isToday ? (k === 'X' ? ' sx-fill--lost' : ' sx-fill--today') : (k === 'X' ? ' sx-fill--x' : '');
+    return '<div class="sx-row"><span class="sx-key">' + k + '</span>'
+      + '<span class="sx-track"><span class="sx-fill' + cls + '" style="width:' + (share * 100).toFixed(1) + '%;animation-delay:' + (0.12 + i * 0.06).toFixed(2) + 's">'
+      +   (isToday ? '<span class="sx-pulse"></span>' : '') + '</span></span>'
+      + '<span class="sx-count' + (n ? '' : ' sx-count--zero') + (isToday ? ' sx-count--today' : '') + '">'
+      + (n ? n + ' · ' + Math.round(share * 100) + '%' : '–') + '</span></div>';
+  }).join('');
+
+  const cdId = 'stcd' + Date.now();
+  const modal = document.createElement('div'); modal.id = 'stats-modal';
+  modal.innerHTML =
+    '<div class="st-backdrop"></div>'
+    + '<div class="sx-box" role="dialog" aria-label="Statistics">'
+    + header + today
+    + '<div class="sx-tiles">' + tiles + '</div>'
+    + '<div class="sx-dist-head"><span>Guesses to solve</span><span>avg ' + avg + '</span></div>'
+    + '<div class="sx-dist">' + rows + '</div>'
+    + '<div class="sx-foot">'
+    +   '<div class="sx-next"><span class="sx-next-lbl">Next puzzle</span><span class="sx-next-time" id="' + cdId + '">' + getCountdown() + '</span></div>'
+    +   '<div class="sx-actions">'
+    +     (afterGame && MODE === 'normal' ? '<button class="sx-btn sx-btn--dark" id="share-btn" onclick="copyShare(this)">Share</button>' : '')
+    +     (afterGame ? '<button class="sx-btn" onclick="document.getElementById(\'stats-modal\').remove();switchMode(\'practice\')">Practice</button>' : '')
+    +   '</div>'
+    + '</div>'
+    + (afterGame && MODE === 'normal' && gameOver
+        ? '<div class="sx-share"><span class="sx-share-lbl">Share copies</span><pre class="sx-share-txt">' + escHtml(buildShareText()) + '</pre></div>' : '')
+    + '</div>';
+
+  modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
+  document.body.appendChild(modal);
+  document.getElementById('st-close-btn').addEventListener('click', () => modal.remove());
+  const ticker = setInterval(() => {
+    const el = document.getElementById(cdId); if (!el) { clearInterval(ticker); return; }
+    el.textContent = getCountdown();
+  }, 1000);
+
+  // All-time rank and Weighted Score, from the same view as the leaderboard
+  if (name) {
+    sbFetchAllTime().then(rows => {
+      const el = document.getElementById('sx-rank'); if (!el) return;
+      const i = rows.findIndex(r => (r.username || '').toLowerCase() === name.toLowerCase());
+      el.textContent = i >= 0
+        ? 'All-time rank #' + (i + 1) + ' of ' + rows.length + ' · Weighted score ' + Number(rows[i].score).toFixed(2)
+        : 'Not ranked yet. Finish a daily puzzle to appear on the leaderboard.';
+    }).catch(() => { const el = document.getElementById('sx-rank'); if (el) el.textContent = 'Playing on the leaderboard as ' + name; });
   }
+}
 
-  .mode-btn:nth-child(1),
-  .mode-btn:nth-child(2) {
-    border-bottom: 1px solid #d0d0d0;
+// ============================================================
+//  LEADERBOARD MODAL
+// ============================================================
+function showLeaderboardModal(tab = 'today') {
+  const existing = document.getElementById('lb-modal'); if (existing) existing.remove();
+  const modal = document.createElement('div'); modal.id = 'lb-modal';
+  modal.innerHTML =
+    '<div class="st-backdrop"></div>'
+    // `lb-box` makes this modal larger than the shared .st-box (see style.css)
+    + '<div class="st-box lb-box">'
+    + '<div class="st-header"><span class="st-title">Leaderboard</span><button class="st-close" id="lb-close-btn">×</button></div>'
+    + '<div class="lb-tabs">'
+    + '<button class="lb-tab' + (tab === 'today' ? ' lb-tab--active' : '') + '" id="lb-tab-today" onclick="lbSwitchTab(\'today\')">Today</button>'
+    + '<button class="lb-tab' + (tab === 'alltime' ? ' lb-tab--active' : '') + '" id="lb-tab-alltime" onclick="lbSwitchTab(\'alltime\')">All Time</button>'
+    + '</div>'
+    + '<div class="lb-body" id="lb-body"><div class="lb-loading">Loading…</div></div>'
+    + '</div>';
+  modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
+  document.body.appendChild(modal);
+  document.getElementById('lb-close-btn').addEventListener('click', () => modal.remove());
+  lbLoadTab(tab);
+}
+
+function lbSwitchTab(tab) {
+  document.querySelectorAll('.lb-tab').forEach(b => b.classList.remove('lb-tab--active'));
+  document.getElementById('lb-tab-' + tab).classList.add('lb-tab--active');
+  document.getElementById('lb-body').innerHTML = '<div class="lb-loading">Loading…</div>';
+  lbLoadTab(tab);
+}
+
+async function lbLoadTab(tab) {
+  const me = getUsername();
+  try {
+    const rows = tab === 'today' ? await sbFetchToday(getDayNumber()) : await sbFetchAllTime();
+    tab === 'today' ? renderLbToday(rows, me) : renderLbAllTime(rows, me);
+  } catch {
+    document.getElementById('lb-body').innerHTML = '<div class="lb-loading">Could not load scores.</div>';
   }
+}
 
-  /* Stack charts vertically (minmax stops the canvas's default 300 px width from pushing the card wider than small phones) */
-  #charts-section {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 0.9rem 0.9rem 0.75rem;
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderLbToday(rows, me) {
+  if (!rows.length) {
+    document.getElementById('lb-body').innerHTML = '<div class="lb-empty">No scores yet for Puzzle #' + getDayNumber() + '. Be the first!</div>';
+    return;
   }
+  // Sort by effective score: a loss counts as 7 so it always ranks below any win.
+  // Ties broken by submission time (earlier first).
+  const effScore = r => r.won ? r.guesses : 7;
+  const sorted = [...rows].sort((a,b) =>
+    effScore(a) - effScore(b) ||
+    new Date(a.created_at) - new Date(b.created_at)
+  );
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('lb-body').innerHTML = '<div class="lb-list">' + sorted.map((r, i) => {
+    const isMe = me && r.username.toLowerCase() === me.toLowerCase();
+    const rank = i < 3 ? medals[i] : (i+1) + '.';
+    const scoreStr = r.won ? r.guesses + '/6' : 'X/6';
+    return '<div class="lb-row' + (isMe ? ' lb-row--me' : '') + '">'
+      + '<span class="lb-rank">' + rank + '</span>'
+      + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
+      + '<span class="lb-score' + (r.won ? ' lb-score--won' : ' lb-score--lost') + '">' + scoreStr + '</span>'
+      + '</div>';
+  }).join('') + '</div>';
+}
 
-  #chart-right {
-    border-left: none;
-    border-top: 1px solid #e8e8e8;
-    padding-left: 0;
-    padding-top: 0.75rem;
+// Rows arrive aggregated and sorted by the `leaderboard_alltime` view:
+// { username, played, avg_guesses, score, site_avg } — one row per player, best score first.
+function renderLbAllTime(rows, me) {
+  if (!rows.length) {
+    document.getElementById('lb-body').innerHTML = '<div class="lb-empty">No scores yet.</div>';
+    return;
   }
-
-  #line-wrapper  { height: 220px; }
-  #bar-wrapper   { min-height: 180px; }
-
-  /* Stat bar — 2 columns */
-  #stat-bar {
-    gap: 0.75rem;
-    padding: 0.6rem 0.9rem;
-    flex-wrap: wrap;
-  }
-
-  .stat-divider { display: none; }
-
-  .stat-value { font-size: 0.85rem; }
-
-  /* Flow bar */
-  #flow-bar { padding: 0.6rem 0.9rem 0.55rem; }
-
-  /* Category grid — 2 columns */
-  .cat-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.6rem;
-  }
-
-  .cat-card { padding: 0.9rem 0.5rem; }
-  .cat-emoji { font-size: 1.5rem; }
-  .cat-label { font-size: 0.78rem; }
-  .cat-desc  { font-size: 0.65rem; }
-
-  /* Guess rows — stack hint below name */
-  .guess-row {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    padding: 8px 10px;
-  }
-
-  .guess-hint {
-    font-size: 0.75rem;
-    flex-wrap: wrap;
-    gap: 3px;
-  }
-
-  /* Input area */
-  #input-area { gap: 6px; }
-  #guess-input { font-size: 0.85rem; padding: 8px 10px; }
-  #submit-btn  { padding: 8px 14px; font-size: 0.85rem; }
-
-  /* Stats modal */
-  .st-box { width: 96vw; }
-  .st-num  { font-size: 1.6rem; }
-
-  .st-footer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.6rem;
-  }
-
-  .st-share-btn,
-  .st-practice-btn {
-    width: 100%;
-    text-align: center;
-  }
-
-  /* Country list modal */
-  .cl-box { width: 96vw; max-height: 75vh; }
-
-  /* Browse list */
-  .browse-row { padding: 8px 10px; }
-  .browse-name { font-size: 0.83rem; }
-  .browse-meta { font-size: 0.7rem; }
-
-  /* Leaderboard */
-  .lb-body { max-height: 260px; }
-  .lb-row  { padding: 0.45rem 0.75rem; font-size: 0.8rem; }
-  .lb-score { width: 40px; font-size: 0.75rem; }
-
-  /* Glossary */
-  .glossary-grid { grid-template-columns: 1fr; }
-
-  /* Legend */
-  #legend-shared { gap: 4px 10px; }
-  .legend-item   { font-size: 0.72rem; }
-
-  /* Footer */
-  footer { font-size: 0.65rem; }
-}
-
-/* ---------- STATS MODAL — today's result ---------- */
-
-.st-today {
-  margin: 0 1.2rem 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 4px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-.st-today--won {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  color: #166534;
-}
-
-.st-today--lost {
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
-  color: #991b1b;
-}
-
-.st-today strong { font-weight: 700; }
-
-/* ---------- LEADERBOARD — all-time avg column header ---------- */
-
-.lb-score--hdr {
-  color: #999;
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* Give the all-time table a touch more room */
-.lb-row--alltime { padding: 0.65rem 1rem; }
-
-.lb-body { max-height: 380px; }
-
-/* ---------- GLOSSARY BUTTON in legend + GLOSSARY MODAL ---------- */
-
-#legend-shared {
-  position: relative;
-}
-
-.glossary-btn {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #fafafa;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #666;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-  white-space: nowrap;
-}
-
-.glossary-btn:hover { border-color: #1a1a1a; color: #1a1a1a; }
-
-.glossary-btn .glossary-icon {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #e8e8e8;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #555;
-}
-
-.gl-box { max-width: 520px; }
-
-.gl-body {
-  overflow-y: auto;
-  max-height: 70vh;
-  padding: 1rem 1.2rem;
-}
-
-/* ---------- AUTOCOMPLETE — scrollable full list ---------- */
-
-#autocomplete-list {
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-/* Mobile: glossary button wraps below legend items */
-@media (max-width: 600px) {
-  .glossary-btn { margin-left: 0; margin-top: 4px; }
-  #autocomplete-list { max-height: 200px; }
-  .gl-box { width: 96vw; }
-}
-
-/* ---------- GUESS NUMBER BADGE + TIGHTER SPACING (practice/daily) ---------- */
-
-.guess-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 10px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: #f0f0f0;
-  color: #888;
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.guess-row.correct .guess-num {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.guess-name {
-  display: flex;
-  align-items: center;
-}
-
-/* Tighten the space between input, error line, and the first guess */
-#error {
-  margin: 0;
-}
-
-#error:not(:empty) {
-  margin-top: 4px;
-}
-
-/* Guesses container takes no space until it has at least one guess */
-#guesses {
-  margin: 0;
-}
-
-#guesses:not(:empty) {
-  margin-top: 8px;
-}
-
-/* Banner collapses entirely when empty, spaced only when shown */
-#banner {
-  margin: 0;
-}
-
-#banner:not(:empty) {
-  margin-top: 10px;
-}
-
-/* Next-game button only exists in the layout when visible (display toggled in JS) */
-#new-game-btn {
-  margin-top: 10px;
-}
-
-/* ── Leaderboard modal: larger than the shared .st-box, but not full screen ── */
-#lb-modal .st-box.lb-box {
-  width: min(760px, 92vw);     /* ~2x the current width on a monitor, near full width on phones */
-  max-width: none;
-  height: min(820px, 85vh);    /* fixed tall box; the list scrolls inside it */
-  max-height: none;
-  display: flex;
-  flex-direction: column;
-}
-#lb-modal .lb-body {
-  flex: 1 1 auto;              /* list fills the space under the header and tabs */
-  min-height: 0;               /* lets the flex child scroll instead of overflowing */
-  max-height: none;            /* removes the old short cap that caused the early scrollbar */
-  overflow-y: auto;
-}
-
-/* ── Header right: podium + Leaderboard button ── */
-.header-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.header-right { display: flex; align-items: center; gap: 18px; }
-.header-right .mode-switcher { margin: 0; }
-
-.podium {
-  display: flex; align-items: flex-end; gap: 6px;
-  background: none; border: 0; padding: 4px 6px; margin: 0;
-  border-radius: 6px; cursor: pointer; font: inherit; color: inherit;
-}
-.podium:hover { background: rgba(0, 0, 0, 0.04); }
-.podium-slot { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 72px; }
-.podium-medal { font-size: 1.35rem; line-height: 1; }
-.podium-name {
-  max-width: 100%; font-size: 0.72rem; font-weight: 600; color: #444;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* ── Row under the header line: lives left, mode buttons right ── */
-.nav-row {
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 12px; flex-wrap: wrap;
-  margin: 0;                   /* #app's 1.25rem gap already spaces this row, as it did the old lives row */
-}
-.nav-row #lives-container { margin: 0; }
-.nav-row .mode-switcher { margin: 0 0 0 auto; flex-shrink: 0; }
-
-/* ============================================================
-   PHONES ONLY (max 600px) — compact header
-   Desktop is unaffected by everything in this block.
-   ============================================================ */
-@media (max-width: 600px) {
-
-  /* The older mobile rule made .mode-switcher a 2x2 grid for 4 buttons.
-     The groups now hold 3 (Daily/Practice/Stats) and 1 (Leaderboard), so use a single row. */
-  .mode-switcher { display: flex; flex-wrap: nowrap; }
-  .mode-btn:nth-child(1),
-  .mode-btn:nth-child(2) { border-bottom: none; }
-
-  /* Row 1: larger title left; medals with the Leaderboard button stacked under them, right */
-  .header-top { flex-wrap: nowrap; gap: 10px; align-items: center; }
-  h1 { font-size: 1.9rem; white-space: nowrap; }
-  .header-right {
-    flex-direction: column; align-items: stretch; gap: 5px;
-    flex-shrink: 1; min-width: 0;
-  }
-  .podium { gap: 0; padding: 2px; justify-content: space-between; }
-  .podium-slot { width: 50px; }
-  .podium-medal { font-size: 1.05rem; }
-  .podium-name { font-size: 0.62rem; }
-  .lb-switcher { width: 100%; }                       /* button spans the width of the medals */
-  .lb-switcher .mode-btn { flex: 1; padding: 5px 8px; font-size: 0.72rem; }
-
-  /* Row 2: subtitle kept to a single line */
-  .subtitle {
-    font-size: 0.72rem;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    min-width: 0; flex: 1;
-  }
-  .subtitle-row { flex-wrap: nowrap; }
-
-  /* Row 3: Daily / Practice / Stats as a full-width row,
-     Row 4: "Guesses left" as its own full row underneath */
-  .nav-row { flex-direction: column-reverse; align-items: stretch; flex-wrap: nowrap; gap: 0.9rem; }
-  .nav-row > div:empty { display: none; }              /* Practice/Browse screens have no dots */
-  .nav-row .mode-switcher { width: 100%; margin: 0; }
-  .nav-row .mode-btn { flex: 1; padding: 7px 8px; font-size: 0.78rem; }
-  .nav-row #lives-container { justify-content: center; }
-  .lives-label { white-space: nowrap; }
-
-  /* Stat bar: 2x2 grid, centred — generation + its world average on top,
-     demand per capita + its world average below */
-  #stat-bar {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 0.7rem 0.75rem; text-align: center;
-  }
-  .stat-item { align-items: center; }
-}
-
-/* Very narrow phones (≤ 380px, e.g. many Androids at 360px): tighten one more step */
-@media (max-width: 380px) {
-  h1 { font-size: 1.65rem; }
-  .podium-slot { width: 46px; }
-  .podium-name { font-size: 0.58rem; }
-  .subtitle { font-size: 0.68rem; }
-  .stat-value { font-size: 0.8rem; }
-}
-/* ---------- LEADERBOARD — Weighted Score + optional explanation ---------- */
-
-/* "Weighted Score ⓘ" header: a button that opens the explanation */
-.lb-info-btn {
-  background: none; border: none; padding: 0; margin: 0; cursor: pointer;
-  font: inherit; text-transform: inherit; letter-spacing: inherit;
-  display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px;
-  text-align: right;
-}
-.lb-info-btn:hover, .lb-info-btn[aria-expanded="true"] { color: #4a90c4; }
-.lb-info-icon {
-  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
-  width: 14px; height: 14px; border-radius: 50%;
-  border: 1.5px solid currentColor;
-  font-size: 0.6rem; font-weight: 700; font-style: italic; font-family: Georgia, serif;
-  text-transform: none; line-height: 1;
-}
-
-/* The explanation itself — only shown after a tap */
-.lb-info-panel {
-  margin: 0.4rem 1rem 0.6rem;
-  padding: 0.7rem 0.9rem 0.8rem;
-  background: #f4f8fc;
-  border: 1px solid #d6e5f2;
-  border-radius: 6px;
-  font-size: 0.8rem; line-height: 1.5; color: #444;
-}
-.lb-info-head {
-  display: flex; align-items: center; justify-content: space-between;
-  font-weight: 700; color: #1a1a1a; margin-bottom: 0.35rem;
-}
-.lb-info-close {
-  background: none; border: none; cursor: pointer;
-  font-size: 1.1rem; line-height: 1; color: #888; padding: 0 2px;
-}
-.lb-info-close:hover { color: #1a1a1a; }
-.lb-info-panel ul { padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.25rem; }
-.lb-info-panel strong { color: #1a1a1a; }
-
-/* Weighted Score column: the ranking key, so it stands out */
-.lb-score--main { color: #1a1a1a; font-weight: 700; font-size: 0.88rem; }
-.lb-score--main-hdr { color: #1a1a1a; width: 120px; }
-.lb-row--alltime .lb-score--main { width: 120px; }
-
-/* Reference line where scores pass the typical result */
-.lb-avg-divider {
-  display: flex; align-items: center; gap: 0.6rem;
-  padding: 0.35rem 1rem;
-  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
-  color: #4a90c4;
-}
-.lb-avg-divider::before, .lb-avg-divider::after {
-  content: ''; flex: 1; border-top: 1px dashed #b9d3e8;
-}
-
-@media (max-width: 600px) {
-  .lb-info-panel { margin: 0.4rem 0.75rem 0.6rem; font-size: 0.76rem; }
-  .lb-score--main-hdr, .lb-row--alltime .lb-score--main { width: 70px; }
-  .lb-info-btn { white-space: normal; line-height: 1.15; }
-  .lb-avg-divider { padding: 0.3rem 0.75rem; }
-  /* Narrow numeric columns: keep Win %, Avg and Played headers apart */
-  #lb-modal .lb-score { width: 44px; flex-shrink: 0; }
-  #lb-modal .lb-header-row .lb-score { font-size: 0.6rem; letter-spacing: 0.02em; }
-  /* Weighted Score (far right) needs room for its two-line header and the info icon */
-  #lb-modal .lb-score.lb-score--main-hdr,
-  #lb-modal .lb-row--alltime .lb-score.lb-score--main { width: 70px; margin-left: 6px; }
-}
-.lb-info-sub {
-  margin: 0.55rem 0 0.25rem; padding-top: 0.5rem; border-top: 1px solid #d6e5f2;
-  font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #4a90c4;
-}
-
-/* ============================================================
-   MOTION — load animations + ambient pulses
-   ============================================================ */
-header { position: relative; }
-
-.logo-bolt { display: inline-block; transform-origin: 50% 60%; }
-header.intro-play .logo-bolt { animation: boltFlicker .55s steps(1, end) .1s both; }
-@keyframes boltFlicker {
-  0% { opacity: 0 } 15% { opacity: 1 } 25% { opacity: .15 } 40% { opacity: 1 }
-  55% { opacity: .35 } 70%, 100% { opacity: 1 }
-}
-
-/* a short charge every 7–20 s (timed in game.js) */
-.logo-bolt.bolt-pulse { animation: boltPulse .9s ease-out; }
-@keyframes boltPulse {
-  0%   { transform: scale(1); filter: none; }
-  18%  { transform: scale(1.22) rotate(-6deg); filter: drop-shadow(0 0 6px rgba(255, 196, 0, .95)) brightness(1.15); }
-  34%  { transform: scale(.96); filter: drop-shadow(0 0 2px rgba(255, 196, 0, .5)); }
-  48%  { transform: scale(1.07); filter: drop-shadow(0 0 4px rgba(255, 196, 0, .7)); }
-  100% { transform: scale(1); filter: none; }
-}
-
-/* a current runs along the header line on first load */
-.header-current {
-  position: absolute; left: 0; right: 0; bottom: -2px; height: 2px;
-  overflow: hidden; pointer-events: none;
-}
-.header-current::before {
-  content: ''; position: absolute; top: 0; left: -18%; width: 16%; height: 100%;
-  background: linear-gradient(90deg, rgba(245, 200, 66, 0), #f5c842 40%, #fff6cf 50%, #f5c842 60%, rgba(245, 200, 66, 0));
-  box-shadow: 0 0 8px 1px rgba(245, 200, 66, .6);
-  animation: headerCurrent 1.1s cubic-bezier(.5, 0, .4, 1) .45s forwards;
-}
-@keyframes headerCurrent { to { left: 102%; } }
-/* the same current, fired with every ambient pulse (no start delay, slightly softer) */
-.header-current.is-pulse::before { animation-delay: 0s; animation-duration: 1.2s; opacity: .85; }
-
-/* legend: hover or tap a source to bring its line forward */
-#legend-shared .legend-item { cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: opacity .2s, background .2s; }
-#legend-shared .legend-item:hover,
-#legend-shared .legend-item.is-on { background: #f3f3f1; }
-#legend-shared .legend-item.is-on { font-weight: 600; color: #1a1a1a; }
-#legend-shared .legend-item.is-dim { opacity: .4; }
-#legend-shared .legend-item:focus-visible { outline: 2px solid #f5c842; outline-offset: 1px; }
-
-/* energy balance fills in: generation first, then imports / exports */
-.flow-segment { transform-origin: left center; animation: flowGrow .7s cubic-bezier(.3, .7, .3, 1) .6s both; }
-.flow-segment.imports,
-.flow-segment.exports { position: relative; animation-delay: 1.25s; animation-duration: .35s; }
-.flow-segment.imports::after,
-.flow-segment.exports::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .4), rgba(255, 255, 255, 0));
-  background-size: 200% 100%;
-  animation: flowShimmer 2.2s linear 1.7s infinite;
-}
-@keyframes flowGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes flowShimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-
-/* overlay for the spark that runs along a chart line */
-canvas.line-pulse { position: absolute; left: 0; top: 0; pointer-events: none; }
-
-@media (prefers-reduced-motion: reduce) {
-  header.intro-play .logo-bolt, .logo-bolt.bolt-pulse, .flow-segment,
-  .flow-segment.imports::after, .flow-segment.exports::after, .header-current::before { animation: none !important; }
-  .header-current, canvas.line-pulse { display: none; }
-}
-
-/* ============================================================
-   BALANCE CARD — headline stats (left) + energy balance flow chart (right)
-   ============================================================ */
-#balance-card {
-  display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px;
-}
-.bc-stats, .bc-flow { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; }
-.bc-stats {
-  display: flex; flex-direction: column; justify-content: space-evenly; align-items: center; text-align: center;
-  gap: 18px; padding: 22px 16px;
-}
-.bc-stat { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-#balance-card .stat-value { font-size: 1.75rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.15; }
-.bc-world {
-  margin-top: 2px; padding: 3px 10px; border-radius: 999px; font-size: 0.75rem;
-  font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.bc-world--gen { background: rgba(100, 116, 139, .12); color: #475569; }   /* generation colour, very light */
-.bc-world--dem { background: rgba(31, 41, 55, .07);   color: #374151; }   /* demand colour, very light */
-.bc-flow { padding: 14px 20px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-
-#flow-chart { position: relative; width: 100%; }
-#flow-chart svg { position: absolute; left: 0; top: 0; overflow: visible; }
-.fc-box {
-  position: absolute; box-sizing: border-box; background: #fff; border: 1px solid #e2e4e8; border-radius: 6px;
-  display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 1px; padding: 0 8px;
-}
-.fc-accent { position: absolute; width: 4px; }
-.fc-accent--L { right: -1px; }
-.fc-accent--R { left: -1px; }
-.fc-name { font-size: 11px; font-weight: 700; letter-spacing: .06em; }
-.fc-val  { font-size: 17px; font-weight: 600; color: #111827; font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
-.fc-tag  { position: absolute; transform: translateY(-50%); line-height: 1; font-size: 13px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
-
-/* load animation: boxes appear, flows grow left to right, then the shares */
-.fc-animate .fc-box { opacity: 0; animation: fcIn .35s ease-out .15s forwards; }
-.fc-animate .fc-link { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: fcGrow .8s cubic-bezier(.3,.7,.3,1) .4s forwards; }
-.fc-animate .fc-link--trade { animation-delay: .6s; }
-.fc-animate .fc-tag { opacity: 0; animation: fcIn .35s ease-out 1.25s forwards; }
-@keyframes fcGrow { to { transform: scaleX(1); } }
-@keyframes fcIn { to { opacity: 1; } }
-
-@media (max-width: 600px) {
-  #balance-card { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-  .bc-stats { flex-direction: row; justify-content: space-around; align-items: flex-start; gap: 12px; padding: 16px 10px; }
-  .bc-stat { flex: 1; min-width: 0; gap: 3px; }
-  #balance-card .stat-value { font-size: 1.25rem; }
-  .bc-world { font-size: 0.68rem; padding: 2px 8px; }
-  .bc-flow { padding: 12px 12px 14px; gap: 10px; }
-  .fc-name { font-size: 9.5px; }
-  .fc-val  { font-size: 13.5px; }
-  .fc-tag  { font-size: 12px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .fc-animate .fc-box, .fc-animate .fc-link, .fc-animate .fc-tag { animation: none !important; opacity: 1; transform: none; }
-}
-
-/* ---------- flow chart polish ---------- */
-.fc-box { box-shadow: 0 1px 2px rgba(17, 24, 39, .05); }
-.fc-accent--L { border-radius: 0 2px 2px 0; }
-.fc-accent--R { border-radius: 2px 0 0 2px; }
-.fc-tag { text-shadow: 0 0 3px rgba(255, 255, 255, .9), 0 0 1px rgba(255, 255, 255, .9); }
-#flow-chart .fc-link { transition: opacity .2s ease; cursor: default; }
-#flow-chart .fc-links:hover .fc-link { opacity: .45; }          /* hovering one flow quiets the other */
-#flow-chart .fc-links .fc-link:hover { opacity: 1; }
-
-/* ---------- stats: whose stats these are ---------- */
-.st-player {
-  display: flex; align-items: center; gap: 10px;
-  margin: 0 0 12px; padding: 8px 12px; background: #f6f6f4; border-radius: 6px;
-  font-size: .85rem; color: #333; line-height: 1.3;
-}
-.st-player strong { font-weight: 700; color: #1a1a1a; }
-.st-player-note { display: block; font-size: .72rem; color: #888; }
-.st-player-avatar {
-  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: #1a1a1a; color: #fff; font-size: .8rem; font-weight: 700;
-}
-.st-player-avatar--empty { background: #d4d4d4; color: #fff; }
-
-/* ============================================================
-   STATS MODAL (refreshed): personal header, today, tiles, distribution
-   ============================================================ */
-.sx-box {
-  position: relative; background: #fff; border-radius: 14px;
-  width: min(500px, 94vw); max-height: 90vh; overflow-y: auto;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .22);
-  display: flex; flex-direction: column;
-}
-.sx-head { display: flex; align-items: center; gap: 16px; padding: 26px 28px 18px; }
-.sx-avatar {
-  width: 54px; height: 54px; flex-shrink: 0; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 22px; font-weight: 700;
-}
-.sx-who { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.sx-name { font-size: 1.35rem; font-weight: 700; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sx-sub { font-size: .85rem; color: #6b7280; }
-.sx-close {
-  width: 40px; height: 40px; flex-shrink: 0; border: 0; border-radius: 50%;
-  background: #f3f3f1; color: #555; font-size: 20px; cursor: pointer;
-}
-.sx-close:hover { background: #e8e8e5; }
-
-.sx-today { margin: 0 28px 18px; padding: 14px 16px; border-radius: 12px; display: flex; align-items: center; gap: 14px; }
-.sx-today--won  { background: #ecf7f0; }
-.sx-today--lost { background: #fdeceb; }
-.sx-today-badge {
-  width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 17px;
-}
-.sx-today--won .sx-today-badge  { background: #22a04b; }
-.sx-today--lost .sx-today-badge { background: #c0392b; }
-.sx-today-title { display: block; font-size: 1rem; font-weight: 700; }
-.sx-today--won .sx-today-title  { color: #14532d; }
-.sx-today--lost .sx-today-title { color: #7f1d1d; }
-.sx-today-sub { display: block; font-size: .8rem; margin-top: 2px; }
-.sx-today--won .sx-today-sub  { color: #2f6b45; }
-.sx-today--lost .sx-today-sub { color: #9b3a32; }
-
-.sx-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 28px; border: 1px solid #ececec; border-radius: 12px; }
-.sx-tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 16px 4px; }
-.sx-tile + .sx-tile { border-left: 1px solid #ececec; }
-.sx-tile-num { font-size: 1.7rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.sx-tile-lbl { font-size: .75rem; color: #6b7280; text-align: center; }
-
-.sx-dist-head {
-  display: flex; justify-content: space-between; align-items: baseline; padding: 24px 28px 10px;
-  font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #888;
-}
-.sx-dist-head span:last-child { text-transform: none; letter-spacing: 0; font-weight: 500; font-variant-numeric: tabular-nums; }
-.sx-dist { display: flex; flex-direction: column; gap: 9px; padding: 0 28px 24px; }
-.sx-row { display: grid; grid-template-columns: 18px minmax(0, 1fr) 64px; gap: 12px; align-items: center; }
-.sx-key { font-size: .85rem; font-weight: 700; color: #444; text-align: center; font-variant-numeric: tabular-nums; }
-.sx-track { height: 20px; border-radius: 6px; background: #f1f1ef; overflow: hidden; display: block; }
-.sx-fill {
-  display: block; height: 100%; border-radius: 6px; background: #9aa3ad;
-  transform-origin: left center; transform: scaleX(0); animation: sxGrow .6s cubic-bezier(.3, .7, .3, 1) forwards;
-}
-.sx-fill--today { background: #22a04b; }
-.sx-fill--x     { background: #c0654a; }
-.sx-fill--lost  { background: #c0392b; }
-@keyframes sxGrow { to { transform: scaleX(1); } }
-.sx-count { font-size: .8rem; text-align: right; color: #1a1a1a; font-variant-numeric: tabular-nums; }
-.sx-count--zero  { color: #bbb; }
-.sx-count--today { font-weight: 700; }
-
-.sx-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  padding: 18px 28px 22px; border-top: 1px solid #ececec; background: #fafaf8;
-}
-.sx-next { display: flex; flex-direction: column; }
-.sx-next-lbl { font-size: .72rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #888; }
-.sx-next-time { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.sx-actions { display: flex; gap: 8px; }
-.sx-btn {
-  min-height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid #d4d4d4; background: #fff;
-  font-family: inherit; font-size: .9rem; font-weight: 600; color: #1a1a1a; cursor: pointer;
-}
-.sx-btn:hover { border-color: #1a1a1a; }
-.sx-btn--dark { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-.sx-btn--dark:hover { background: #333; }
-
-@media (max-width: 520px) {
-  .sx-head { padding: 20px 18px 14px; gap: 12px; }
-  .sx-avatar { width: 44px; height: 44px; font-size: 18px; }
-  .sx-today, .sx-tiles { margin-left: 18px; margin-right: 18px; }
-  .sx-tile-num { font-size: 1.35rem; }
-  .sx-dist-head { padding: 20px 18px 8px; }
-  .sx-dist { padding: 0 18px 20px; }
-  .sx-foot { padding: 16px 18px 18px; }
-}
-@media (prefers-reduced-motion: reduce) { .sx-fill { animation: none; transform: none; } }
-
-/* ============================================================
-   GUESSES LEFT — six-cell battery
-   ============================================================ */
-#lives-container { gap: 10px; }
-.lives-label { margin-right: 0; }
-.battery { display: inline-flex; align-items: center; }
-.battery-body { display: inline-flex; gap: 2px; padding: 2px; border: 2px solid #1a1a1a; border-radius: 5px; }
-.battery-cap { width: 3px; height: 8px; background: #1a1a1a; border-radius: 0 2px 2px 0; }
-.battery-cell { width: 13px; height: 16px; border-radius: 2px; background: #ececea; transition: background .3s; }
-.battery-cell.is-high { background: #58b07a; }
-.battery-cell.is-mid  { background: #e0b25a; }
-.battery-cell.is-low  { background: #c97064; }
-.battery-cell.is-drain { animation: batDrain .8s steps(1, end) forwards; }
-@keyframes batDrain { 0% { background: #c97064; } 15% { background: #ececea; } 30% { background: #c97064; } 45% { background: #ececea; } 60% { background: #c97064; } 75%, 100% { background: #ececea; } }
-.battery-cell.is-glow { animation: batGlow .5s ease-out both; }
-@keyframes batGlow { 0% { filter: brightness(1); } 50% { filter: brightness(1.35); box-shadow: 0 0 8px rgba(46, 204, 113, .8); } 100% { filter: brightness(1); } }
-.battery-count { font-size: .8rem; font-weight: 700; color: #444; font-variant-numeric: tabular-nums; }
-
-/* ============================================================
-   FLAGS
-   ============================================================ */
-.flag, .ac-flag {
-  width: 20px; height: 15px; flex-shrink: 0; display: block; object-fit: cover;
-  border-radius: 2px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .1); background: #f0f0ee;
-}
-.flag--none { background: #ececea; }
-.ac-item { display: flex; align-items: center; gap: 10px; }
-#guess-flag { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); pointer-events: none; z-index: 1; }
-#guess-flag:empty { display: none; }
-#autocomplete-wrapper.has-flag #guess-input { padding-left: 42px; }
-
-/* ============================================================
-   GUESS ROWS — slim rows with a closeness ring, hint pill and live wire
-   ============================================================ */
-#guesses { gap: 5px; }
-.gr-row {
-  --cl: 196, 112, 96;
-  position: relative; padding: 5px 10px 5px 6px; border-radius: 6px;
-  background: #fff; border: 1px solid #e6e5e1;
-}
-.gr-main { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; }
-
-.gr-num {
-  position: relative; width: 30px; height: 30px; padding: 0; border: 0; background: none; border-radius: 50%;
-  cursor: help; font: inherit; display: inline-flex; align-items: center; justify-content: center;
-}
-.gr-num svg { position: absolute; inset: 0; }
-.gr-ring-bg { fill: rgba(var(--cl), .08); stroke: #ecebe8; stroke-width: 2.5; }
-.gr-ring { fill: none; stroke: rgb(var(--cl)); stroke-width: 2.5; stroke-linecap: round; }
-.gr-n { position: relative; font-size: 12px; font-weight: 700; color: #333; font-variant-numeric: tabular-nums; }
-
-.gr-who { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
-.gr-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; align-self: center; font-size: .95rem; font-weight: 600; }
-.gr-name > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gr-facts { font-size: .82rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
-.gr-dot { color: #ccc; margin: 0 6px; }
-
-.gr-hint { position: relative; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: help; border-radius: 999px; flex-shrink: 0; }
-.gr-pill {
-  display: inline-flex; align-items: center; gap: 7px; width: 158px; box-sizing: border-box;
-  padding: 2px 11px 2px 3px; border-radius: 999px;
-  background: rgba(var(--cl), .10); border: 1px solid rgba(var(--cl), .25);
-}
-.gr-compass { position: relative; width: 26px; height: 26px; flex-shrink: 0; }
-.gr-compass > svg { position: absolute; inset: 0; }
-.gr-needle { position: absolute; inset: 0; display: block; transform: rotate(var(--deg)); }
-.gr-dir { font-size: 13px; font-weight: 700; color: #1a1a1a; }
-.gr-km { margin-left: auto; font-size: 13px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
-
-.gr-num:focus-visible, .gr-hint:focus-visible { outline: 2px solid #1a1a1a; outline-offset: 2px; }
-.gr-tip, .gr-htip {
-  position: absolute; z-index: 20; padding: 8px 10px; border-radius: 8px; background: #1a1a1a; color: #fff;
-  font-size: 12px; line-height: 1.4; text-align: left; font-weight: 400; white-space: normal;
-  opacity: 0; pointer-events: none; transition: opacity .15s, transform .15s;
-}
-.gr-tip { left: calc(100% + 10px); top: 50%; width: 200px; transform: translate(-4px, -50%); }
-.gr-num:hover .gr-tip, .gr-num:focus-visible .gr-tip { opacity: 1; transform: translate(0, -50%); }
-.gr-htip { right: 0; bottom: calc(100% + 8px); width: 230px; transform: translateY(4px); }
-.gr-hint:hover .gr-htip, .gr-hint:focus-visible .gr-htip { opacity: 1; transform: none; }
-
-/* live wire under each row, energised up to the closeness level */
-.gr-wire { position: absolute; left: 8px; right: 8px; bottom: -1px; height: 2px; border-radius: 2px; background: #efeeea; overflow: hidden; pointer-events: none; }
-.gr-wire-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: rgba(var(--cl), .75); overflow: hidden; transform-origin: left center; }
-.gr-wire-fill::after {
-  content: ''; position: absolute; top: 0; bottom: 0; width: 60px; left: -60px;
-  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.95), rgba(255,255,255,0));
-}
-.gr-wire-fill.is-pulse::after { animation: grWirePulse 1.1s ease-in-out; }
-@keyframes grWirePulse { from { left: -60px; } to { left: 100%; } }
-
-/* the solved row */
-.gr-row--win { overflow: hidden; border: 0; background: #3f9a63; color: #fff; }
-.gr-sweep { position: absolute; inset: 0; background: linear-gradient(90deg, #3f9a63, #58b07a); transform-origin: left center; }
-.gr-current { position: absolute; top: 0; bottom: 0; width: 22%; left: -25%; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.45), rgba(255,255,255,0)); }
-.gr-winline { position: relative; display: flex; align-items: center; gap: 10px; }
-.gr-badge {
-  width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; background: rgba(255,255,255,.2);
-  font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
-}
-.gr-row--win .gr-name { flex: 1; font-weight: 700; color: #fff; }
-.gr-wintxt { font-size: .82rem; font-weight: 600; white-space: nowrap; }
-.gr-check { width: 24px; height: 24px; flex-shrink: 0; border-radius: 50%; background: #fff; color: #3f9a63; display: inline-flex; align-items: center; justify-content: center; }
-
-/* entry animation for a new guess (rows restored on reload appear without it) */
-.gr-anim { animation: grIn .42s cubic-bezier(.2, .8, .3, 1) both; }
-@keyframes grIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-.gr-anim .gr-ring { stroke-dashoffset: var(--c); animation: grRing 1s cubic-bezier(.3, .7, .3, 1) .25s forwards; }
-@keyframes grRing { to { stroke-dashoffset: 0; } }
-.gr-anim .gr-needle { animation: grSpin .9s cubic-bezier(.3, .7, .3, 1) .15s both; }
-@keyframes grSpin { 0% { transform: rotate(calc(var(--deg) - 300deg)); } 70% { transform: rotate(calc(var(--deg) + 14deg)); } 85% { transform: rotate(calc(var(--deg) - 5deg)); } 100% { transform: rotate(var(--deg)); } }
-.gr-anim .gr-wire-fill { animation: grGrow .9s cubic-bezier(.3, .7, .3, 1) .3s both; }
-.gr-anim .gr-facts { animation: grFade .35s ease-out .5s both; }
-@keyframes grGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes grFade { from { opacity: 0; } to { opacity: 1; } }
-.gr-anim.gr-row--win .gr-sweep { animation: grGrow .55s cubic-bezier(.5, 0, .3, 1) both; }
-.gr-anim .gr-current { animation: grCurrent 1s cubic-bezier(.5, 0, .4, 1) .45s forwards; }
-@keyframes grCurrent { to { left: 105%; } }
-.gr-anim .gr-check { animation: grPop .35s cubic-bezier(.3, 1.6, .5, 1) .3s both; }
-@keyframes grPop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-@media (max-width: 600px) {
-  .gr-who { display: contents; }
-  .gr-num { grid-row: 1 / span 2; }
-  .gr-hint { grid-row: 1; grid-column: 3; }
-  .gr-facts { grid-row: 2; grid-column: 2 / -1; font-size: .75rem; margin-top: -2px; }
-  .gr-pill { width: auto; gap: 5px; }
-  .gr-km { margin-left: 2px; }
-  .gr-wintxt { font-size: .75rem; }
-  .gr-tip { left: calc(100% + 6px); width: 180px; }
-}
-
-/* ============================================================
-   RESULT CARD — the guess path, replacing the old emoji banner
-   ============================================================ */
-.go-card {
-  position: relative; padding: 14px 16px; border-radius: 10px; background: #fff;
-  border: 1px solid rgba(63, 154, 99, .35); box-shadow: inset 3px 0 0 #3f9a63;
-}
-.go-card--lost { border-color: rgba(196, 112, 96, .35); box-shadow: inset 3px 0 0 #c47060; }
-.go-card.go-anim { animation: grIn .42s cubic-bezier(.2, .8, .3, 1) both; }
-.go-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.go-title { font-size: .95rem; font-weight: 700; }
-.go-tag { font-size: .75rem; color: #888; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.go-summary { margin: 12px 0 0; font-size: .82rem; color: #555; }
-.go-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid #efeeea; }
-.go-next { font-size: .82rem; color: #666; }
-.go-next strong { color: #1a1a1a; font-variant-numeric: tabular-nums; }
-.go-actions { display: flex; gap: 8px; }
-.go-btn {
-  min-height: 38px; padding: 0 16px; border-radius: 6px; border: 1px solid #d4d4d4; background: #fff;
-  font-family: inherit; font-size: .88rem; font-weight: 600; color: #1a1a1a; cursor: pointer;
-}
-.go-btn:hover { border-color: #1a1a1a; }
-.go-btn--dark { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
-.go-btn--dark:hover { background: #333; }
-
-.go-path { margin: 16px 18px 0; }
-.go-track { position: relative; height: 34px; }
-.go-linebox { position: absolute; left: 13px; right: 15px; top: 0; bottom: 0; }
-.go-line { position: absolute; left: 0; top: 50%; height: 2px; margin-top: -1px; border-radius: 2px; transform-origin: left center; }
-.go-gap { position: absolute; right: 0; top: 50%; margin-top: -1px; border-top: 2px dashed #d6d3cd; }
-.go-spark { position: absolute; top: 50%; width: 46px; height: 6px; margin: -3px 0 0 -23px; border-radius: 6px; opacity: 0; background: radial-gradient(closest-side, #fff, rgba(255,255,255,0)); }
-.go-nodes { position: relative; height: 100%; display: flex; justify-content: space-between; align-items: center; }
-.go-path--one .go-nodes { justify-content: center; }
-.go-node { position: relative; width: 26px; height: 26px; flex-shrink: 0; }
-.go-node--answer { width: 30px; height: 30px; }
-.go-ring {
-  display: block; width: 100%; height: 100%; box-sizing: border-box; border-radius: 50%; padding: 2px;
-  background: #fff; border: 2px solid rgb(var(--cl));
-}
-.go-node--miss .go-ring { border-style: dashed; }
-.go-flag { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; background: #f0f0ee; }
-.go-node--miss .go-flag { filter: grayscale(.6); opacity: .8; }
-.go-badge {
-  position: absolute; right: -4px; bottom: -3px; width: 14px; height: 14px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; color: #fff;
-  background: rgb(var(--cl)); box-shadow: 0 0 0 2px #fff;
-}
-.go-burst { position: absolute; inset: -3px; border-radius: 50%; border: 2px solid #58b07a; opacity: 0; pointer-events: none; }
-.go-labels { display: flex; justify-content: space-between; margin-top: 4px; }
-.go-path--one .go-labels { justify-content: center; }
-.go-label { width: 52px; margin: 0 -13px; text-align: center; font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.go-label--answer { width: 64px; margin: 0 -17px; font-weight: 700; }
-
-/* the current runs from the first guess to the answer */
-.go-anim .go-line { animation: grGrow var(--dur) linear var(--at) both; }
-.go-anim .go-gap  { opacity: 0; animation: grFade .3s ease-out var(--at) forwards; }
-.go-anim .go-spark { animation: goSpark var(--dur) linear var(--at) forwards; }
-@keyframes goSpark { 0% { left: 0; opacity: 1; } 92% { opacity: 1; } 100% { left: var(--to); opacity: 0; } }
-.go-anim .go-node { opacity: .25; transform: scale(.7); animation: goNode .35s cubic-bezier(.3, 1.5, .5, 1) var(--at) forwards; }
-.go-anim .go-node--miss { transform: none; animation: grFade .35s ease-out var(--at) forwards; }
-@keyframes goNode { to { opacity: 1; transform: scale(1); } }
-.go-anim .go-label { opacity: 0; animation: grFade .35s ease-out var(--at) forwards; }
-.go-anim .go-burst { animation: goBurst .7s ease-out var(--at) forwards; }
-@keyframes goBurst { 0% { opacity: .9; transform: scale(.9); } 100% { opacity: 0; transform: scale(2); } }
-
-/* miniature version in the stats screen */
-.go-path--mini { margin: 10px 0 0; }
-.go-path--mini .go-track { height: 24px; }
-.go-path--mini .go-linebox { left: 9px; right: 11px; }
-.go-path--mini .go-node { width: 18px; height: 18px; }
-.go-path--mini .go-node--answer { width: 22px; height: 22px; }
-.go-path--mini .go-ring { padding: 1.5px; border-width: 1.5px; }
-
-@media (max-width: 600px) {
-  .go-card { padding: 12px 12px; }
-  .go-path { margin: 14px 10px 0; }
-  .go-node { width: 24px; height: 24px; }
-  .go-linebox { left: 12px; right: 14px; }
-  .go-label:not(.go-label--answer) { visibility: hidden; }     /* too tight for every distance; hover/long-press a flag for it */
-  .go-foot { flex-wrap: wrap; }
-  .go-btn { min-height: 36px; padding: 0 12px; }
-}
-
-/* ============================================================
-   STATS SCREEN — live wire touches
-   ============================================================ */
-.sx-today { display: block; padding: 12px 14px; }
-.sx-today--won  { background: #f0f7f2; }
-.sx-today--lost { background: #faf2f0; }
-.sx-today-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.sx-today-title { display: inline; font-size: .9rem; }
-.sx-today--won .sx-today-title  { color: #1f5c38; }
-.sx-today--lost .sx-today-title { color: #7a3b2f; }
-.sx-today-sub { display: inline; margin: 0; font-size: .75rem; color: #6b7280 !important; }
-.sx-tiles { border: 0; border-radius: 0; margin-top: 2px; }
-.sx-tile { padding: 8px 4px; }
-.sx-tile + .sx-tile { border-left: 0; }
-.sx-track { position: relative; height: 6px; border-radius: 6px; background: #efeeea; }
-.sx-fill { position: relative; overflow: hidden; border-radius: 6px; background: #a3abb5; }
-.sx-fill--today { background: #4fa671; }
-.sx-fill--x     { background: rgba(196, 112, 96, .55); }
-.sx-fill--lost  { background: #c47060; }
-.sx-pulse { position: absolute; top: 0; bottom: 0; width: 50px; left: -50px; background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.9), rgba(255,255,255,0)); animation: sxPulse 6s ease-in-out 1.2s infinite; }
-@keyframes sxPulse { 0% { left: -50px; } 20% { left: 100%; } 100% { left: 100%; } }
-.sx-dist { gap: 11px; }
-.sx-share { padding: 10px 28px 16px; background: #fafaf8; border-top: 1px dashed #e6e5e1; }
-.sx-share-lbl { font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #aaa; }
-.sx-share-txt { margin: 4px 0 0; font-family: inherit; font-size: .82rem; line-height: 1.5; color: #444; white-space: pre-wrap; }
-@media (max-width: 520px) { .sx-share { padding: 10px 18px 14px; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .gr-anim, .gr-anim .gr-ring, .gr-anim .gr-needle, .gr-anim .gr-wire-fill, .gr-anim .gr-facts, .gr-anim .gr-sweep,
-  .gr-anim .gr-check, .battery-cell.is-drain, .battery-cell.is-glow, .sx-pulse, .gr-wire-fill.is-pulse::after { animation: none !important; }
-  .gr-current, .go-spark, .go-burst { display: none; }
-}
-
-/* Smallest phones (≤ 380 px): tighten the guess rows so country names keep their room */
-@media (max-width: 380px) {
-  .gr-row { padding: 5px 8px 5px 5px; }
-  .gr-main { gap: 3px 8px; }
-  .gr-name { gap: 6px; font-size: .88rem; }
-  .gr-pill { gap: 4px; padding: 2px 8px 2px 2px; }
-  .gr-compass, .gr-compass > svg, .gr-needle svg { width: 22px; height: 22px; }
-  .gr-dir, .gr-km { font-size: 12px; }
-  .gr-facts { font-size: .7rem; }
-  .gr-dot { margin: 0 4px; }
-  .gr-htip { width: 210px; }
-}
-
-/* Empty result slot takes no room (it sits between the input and the guesses) */
-#banner:empty { display: none; }
-
-/* Touch screens: a tap opens a guess row's tooltip and a tap elsewhere closes it */
-@media (hover: none) {
-  .gr-num.is-open .gr-tip { opacity: 1; transform: translate(0, -50%); }
-  .gr-hint.is-open .gr-htip { opacity: 1; transform: none; }
-}
-
-/* ============================================================
-   PHONE FIXES + REFRESH (legend, sources sheet, guesses header)
-   ============================================================ */
-
-/* Section titles share the chart-label look */
-.section-title { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #888; }
-
-/* "Guesses" header right above the input: title left, battery right */
-#guess-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: -0.55rem; }
-#guess-head #lives-container { display: flex; align-items: center; gap: 8px; margin: 0; }
-#guess-head .lives-label { font-size: .8rem; font-weight: 500; text-transform: none; letter-spacing: 0; color: #888; }
-.battery-body { gap: 3px; }
-.battery-cell { width: 15px; height: 16px; }
-
-/* Legend card: title + link on top, then the sources */
-#legend-shared { display: block; padding: .75rem 1rem .85rem; }
-.lg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: .55rem; }
-.lg-items { display: flex; flex-wrap: wrap; gap: 4px 6px; }
-#legend-shared .legend-item { gap: 7px; padding: 4px 9px 4px 7px; border-radius: 999px; border: 1px solid #ecebe8; font-size: .8rem; color: #333; background: #fff; }
-#legend-shared .legend-item:hover, #legend-shared .legend-item.is-on { background: #f3f3f1; border-color: #dcdad5; }
-.legend-swatch { width: 10px; height: 10px; border-radius: 3px; }
-.glossary-btn { margin: 0; padding: 0; border: 0; background: none; font-size: .78rem; font-weight: 600; color: #666; gap: 6px; }
-.glossary-btn:hover { color: #1a1a1a; border: 0; text-decoration: underline; text-underline-offset: 2px; }
-.glossary-btn .glossary-icon { width: 16px; height: 16px; font-size: .7rem; font-style: italic; font-family: Georgia, serif; background: #ececea; color: #555; }
-
-/* Sources explanation: centred window on desktop, a sheet sliding up from the bottom on phones */
-#glossary-modal { position: fixed; inset: 0; z-index: 600; display: flex; align-items: center; justify-content: center; }
-#glossary-modal .gl-box {
-  position: relative; width: min(560px, 94vw); max-height: 86vh; max-width: none; display: flex; flex-direction: column;
-  background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.18); overflow: hidden;
-  animation: glIn .22s ease-out;
-}
-@keyframes glIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.gl-grab { display: none; }
-.gl-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 20px 22px 12px; }
-.gl-heading { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gl-title { font-size: 1.15rem; font-weight: 700; color: #1a1a1a; }
-.gl-sub { font-size: .8rem; color: #6b7280; }
-#glossary-modal .gl-body { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; padding: 4px 22px 8px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-.gl-group + .gl-group { margin-top: 16px; }
-.gl-group-title { margin: 0 0 6px; font-size: .7rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
-.gl-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.gl-item { display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #f7f7f5; min-width: 0; }
-.gl-item.is-absent { opacity: .6; }
-.gl-sw { width: 4px; align-self: stretch; border-radius: 4px; flex-shrink: 0; }
-.gl-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.gl-name { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: .88rem; font-weight: 700; color: #1a1a1a; }
-.gl-here { font-size: .65rem; font-weight: 600; color: #2f7a4d; background: #e9f4ed; padding: 1px 7px; border-radius: 999px; }
-.gl-desc { font-size: .78rem; line-height: 1.4; color: #555; }
-.gl-foot { margin: 0; padding: 10px 22px 16px; border-top: 1px solid #efeeea; font-size: .72rem; color: #888; }
-.gl-foot a { color: #888; }
-
-@media (max-width: 600px) {
-  #glossary-modal { align-items: flex-end; }
-  #glossary-modal .gl-box { width: 100%; max-height: 85vh; border-radius: 16px 16px 0 0; animation: glUp .25s cubic-bezier(.2,.8,.3,1); }
-  @keyframes glUp { from { transform: translateY(100%); } to { transform: none; } }
-  .gl-grab { display: block; width: 36px; height: 4px; border-radius: 4px; background: #d6d4cf; margin: 8px auto 0; }
-  .gl-head { padding: 12px 16px 10px; }
-  #glossary-modal .gl-body { padding: 2px 16px 8px; }
-  .gl-list { grid-template-columns: 1fr; gap: 6px; }
-  .gl-foot { padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); }
-
-  #legend-shared { padding: .7rem .75rem .8rem; }
-  .lg-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 5px; }
-  #legend-shared .legend-item { font-size: .74rem; padding: 4px 8px 4px 7px; min-width: 0; }
-  .legend-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .glossary-btn { font-size: .74rem; }
-
-  /* Phones zoom into any text field under 16 px when it is focused; 16 px keeps the whole page in view */
-  input[type="text"], input[type="search"], input:not([type]), select, textarea { font-size: 16px !important; }
-}
-@media (prefers-reduced-motion: reduce) { #glossary-modal .gl-box { animation: none; } }
-
-/* Result path: a long answer name ("Dominican Republic (the)") stays inside the card */
-.go-labels { position: relative; }
-.go-label--answer { width: auto; max-width: 76px; margin: 0 -2px 0 0; text-align: right; white-space: normal; line-height: 1.25; overflow-wrap: anywhere; }
-.go-path--one .go-label--answer { max-width: 100%; margin: 0; text-align: center; }
-@media (max-width: 600px) { .go-label--answer { max-width: 46%; } }   /* distances are hidden on phones, so the name has room */
-.go-head { align-items: flex-start; }
-.go-title { min-width: 0; overflow-wrap: anywhere; }
-
-/* ============================================================
-   GUESS SECTION v2 — battery over the Guess button, stacked hint, two-arc compass
-   ============================================================ */
-:root { --gbtn: 96px; }
-#submit-btn { width: var(--gbtn); padding-left: 0; padding-right: 0; flex-shrink: 0; }
-#guess-head { display: grid; grid-template-columns: minmax(0, 1fr) auto var(--gbtn); column-gap: 8px; align-items: center; }
-#lives-count { font-size: .8rem; font-weight: 700; color: #444; font-variant-numeric: tabular-nums; }
-#guess-head #lives-container { display: flex; }
-#guess-head .battery { display: flex; width: 100%; }
-#guess-head .battery-body { flex: 1; }
-#guess-head .battery-cell { flex: 1; width: auto; height: 14px; }
-
-.gr-hintbox { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 76px; padding: 0 6px 0 16px; }
-.gr-hintdir { display: inline-flex; align-items: center; gap: 5px; }
-.gr-compass, .gr-compass > svg, .gr-needle svg { width: 22px; height: 22px; }
-.gr-dir { font-size: 12px; }
-.gr-km { margin: 0; font-size: 12px; line-height: 1.25; }
-.u-short { display: none; }
-
-@media (max-width: 600px) {
-  :root { --gbtn: 84px; }
-  .gr-row { padding: 7px 8px 8px 7px; }
-  .gr-main { grid-template-columns: 28px minmax(0, 1fr) auto; column-gap: 9px; }
-  .gr-num { grid-row: auto; width: 28px; height: 28px; }
-  .gr-num svg { width: 28px; height: 28px; }
-  .gr-who { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; }
-  .gr-name { align-self: flex-start; align-items: flex-start; font-size: .94rem; line-height: 1.3; }
-  .gr-name .flag { margin-top: 3px; }
-  .gr-name > span { white-space: normal; overflow: visible; }
-  .gr-facts { grid-row: auto; grid-column: auto; margin-top: 0; font-size: .75rem; max-width: 100%; }
-  .gr-hint { grid-row: auto; grid-column: auto; align-self: center; }
-  .u-long { display: none; }
-  .u-short { display: inline; }
-}
-
-@media (max-width: 600px) { .gr-row--win .gr-name { align-self: center; align-items: center; } .gr-row--win .gr-name .flag { margin-top: 0; } }
-
-/* ============================================================
-   PAGE HEADER v2 — fixed parts above the line, today's puzzle below it
-   ============================================================ */
-.hd-grid {
-  display: grid; align-items: center; column-gap: 10px; row-gap: 10px;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  grid-template-areas: "title podium lb" "title modes modes";
-}
-.hd-grid h1 { grid-area: title; font-size: 2.7rem; line-height: 1; letter-spacing: .5px; white-space: nowrap; }
-.hd-grid .podium { grid-area: podium; justify-self: end; }
-.hd-grid #mode-nav { grid-area: modes; margin: 0; }
-.hd-grid .lb-switcher { grid-area: lb; margin: 0; }
-header { padding-bottom: .85rem; }
-.subtitle-row { margin-top: -0.55rem; }       /* sits just under the line; #app's gap is 1.25rem */
-.subtitle { font-size: .9rem; color: #555; }
-
-@media (max-width: 600px) {
-  .hd-grid {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "title podium" "title lb" "modes modes";
-    row-gap: 6px;
-  }
-  .hd-grid h1 { font-size: 2.2rem; }
-  .hd-grid .lb-switcher { width: 100%; }
-  .hd-grid #mode-nav { width: 100%; margin-top: 6px; }
-  .hd-grid #mode-nav .mode-btn { flex: 1; padding: 7px 8px; font-size: 0.78rem; }
-  .subtitle-row { margin-top: -0.6rem; }
-  .subtitle { font-size: .76rem; }
-}
-
-/* ============================================================
-   CHARTS SPLIT — the latest mix (narrow, left, under the headline stats)
-   and the time series (wide, right, under the energy balance) as two cards
-   ============================================================ */
-#charts-section {
-  grid-template-columns: 220px minmax(0, 1fr); gap: 20px;
-  background: none; border: 0; border-radius: 0; padding: 0;
-}
-#chart-left, #chart-right {
-  background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box;
-  padding: 1.1rem 1.1rem .9rem; min-width: 0;
-}
-#chart-right { order: -1; border-left: 1px solid #e0e0e0; padding-left: 1.1rem; }
-#bar-wrapper { min-height: 0; }
-@media (max-width: 600px) {
-  #charts-section { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 0; }
-  #chart-left, #chart-right { padding: .9rem .9rem .75rem; }
-  #chart-right { order: 0; border-top: 1px solid #e0e0e0; padding-top: .9rem; }
-  #bar-wrapper { min-height: 200px; }
-}
-@media (max-width: 600px) {
-  .subtitle { white-space: normal; overflow: visible; line-height: 1.35; }
-  #bar-wrapper { min-height: 170px; }
-}
-
-/* ============================================================
-   LAYOUT v3 — header buttons, fitted subtitle, spacing rhythm, bar on the right
-   ============================================================ */
-.hd-grid .lb-switcher { align-self: center; }
-.hd-grid #mode-nav { width: 100%; }
-.hd-grid #mode-nav .mode-btn { flex: 1; text-align: center; }
-
-/* subtitle: the puzzle (bold) then the task, scaled in game.js to fill the line */
-.subtitle-row { margin: 2px 0 6px; align-items: center; }
-.subtitle { white-space: nowrap; color: #666; font-size: 20px; line-height: 1.25; margin: 0; }
-.sub-lead { font-weight: 700; color: #1a1a1a; }
-.sub-sep { color: #bbb; }
-
-/* one rhythm for the game's information, a bigger break before the guesses */
-#app { gap: 12px; }
-#balance-card, #charts-section { gap: 12px; }
-#guess-head { margin-top: 18px; margin-bottom: -4px; }
-
-/* charts: the time series wide on the left, the latest mix narrow on the right */
-#charts-section { grid-template-columns: minmax(0, 1fr) 220px; }
-#chart-right { order: 0; }
-
-@media (max-width: 600px) {
-  .subtitle-row { margin: 0 0 4px; }
-  .subtitle { white-space: normal; font-size: 15px; }
-  .sub-lead { display: block; font-size: 15px; }
-  .sub-sep { display: none; }
-  .sub-rest { display: block; white-space: nowrap; color: #555; }
-  #app { gap: 10px; }
-  #balance-card, #charts-section { gap: 10px; }
-  #guess-head { margin-top: 16px; }
-  #charts-section { grid-template-columns: minmax(0, 1fr); }
-}
-
-/* ============================================================
-   HEADER — calmer title; under the line: the puzzle and task on one quiet line, today's date on the right
-   ============================================================ */
-.hd-grid h1 { font-size: 2.2rem; font-weight: 600; letter-spacing: -.01em; }
-.hd-grid h1 .logo-bolt { font-size: .85em; }
-.subtitle-row { margin: 4px 0 8px; gap: 16px; }
-.subtitle { white-space: normal; font-size: 17px; }
-.sub-lead { font-weight: 600; color: #1a1a1a; }
-.sub-rest { color: #666; }
-.sub-date { font-size: 13px; color: #888; white-space: nowrap; }
-
-/* footer: credit and data source on one small line */
-footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10px; margin: 0; }
-.ft-credit { color: #999; }
-.ft-sep { color: #ccc; }
-
-@media (max-width: 600px) {
-  .hd-grid h1 { font-size: 1.9rem; }
-  .subtitle { font-size: 15px; }
-  .sub-lead, .sub-sep, .sub-rest { display: inline; white-space: normal; }
-  .sub-date { display: none; }
-  .ft-sep { display: none; }
-  footer p { flex-direction: column; align-items: center; }
-}
-
-/* ============================================================
-   CHART VIEW TOGGLE — by source / by category
-   ============================================================ */
-.view-toggle { display: inline-flex; padding: 2px; border: 1px solid #e0dfdb; border-radius: 999px; background: #f7f7f5; }
-.vt-btn { padding: 4px 12px; border: 0; border-radius: 999px; background: none; font-family: inherit; font-size: .76rem; font-weight: 600; color: #777; cursor: pointer; transition: background .15s, color .15s; }
-.vt-btn:hover { color: #1a1a1a; }
-.vt-btn.is-on { background: #1a1a1a; color: #fff; }
-.vt-btn:focus-visible { outline: 2px solid #1a1a1a; outline-offset: 2px; }
-.lg-head { flex-wrap: wrap; }
-.legend-members { font-size: .72rem; font-weight: 400; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.lg-items--cat .legend-item { gap: 7px; }
-@media (max-width: 600px) {
-  .lg-items.lg-items--cat { display: flex; flex-direction: column; align-items: stretch; }
-  .lg-items--cat .legend-item { justify-content: flex-start; }
-  .vt-btn { padding: 4px 10px; font-size: .72rem; }
-}
-
-.gb-short { display: none; }
-.lg-items--cat .legend-item { min-width: 0; max-width: 100%; box-sizing: border-box; }
-.lg-items--cat .legend-name { flex-shrink: 0; }
-.lg-items--cat .legend-members { flex: 1 1 auto; }
-@media (max-width: 600px) {
-  .lg-head { flex-wrap: nowrap; }
-  .gb-long { display: none; }
-  .gb-short { display: inline; }
-}
-
-/* Smallest phones (≤ 380 px): a slightly narrower hint block so the country's figures fit */
-@media (max-width: 380px) {
-  .gr-hintbox { min-width: 62px; padding: 0 2px 0 10px; }
-  .gr-hintdir { gap: 3px; }
-  .gr-facts { font-size: .7rem; }
-  .gr-main { column-gap: 7px; }
-}
+  const medals  = ['🥇','🥈','🥉'];
+  const typical = Number(rows[0].site_avg).toFixed(2); // average guesses per game, all players
+
+  // How fast your score becomes your own. Your results make up n/(n+m) of the score,
+  // where m (weight_games) = 2 × the puzzles played by the player behind a typical result
+  // = 2 × sum(played²) / sum(played). One-off visitors barely move it; regulars raise it.
+  const weight = Math.round(Number(rows[0].weight_games));
+  const pace = '<li>Your score is halfway to your own Avg after about <strong>' + weight + ' puzzles</strong>. '
+    + 'It isn\'t a fixed number: it\'s recalculated from everyone\'s results, so it rises as regulars keep playing and one-off visits barely change it.</li>';
+
+  // Explanation: hidden until the player taps "Weighted Score ⓘ" in the column header
+  const info =
+    '<div class="lb-info-panel" id="lb-info-panel" hidden>'
+    + '<div class="lb-info-head"><span>How the ranking works</span>'
+    + '<button class="lb-info-close" onclick="lbToggleInfo()" aria-label="Close">×</button></div>'
+    + '<ul>'
+    + '<li><strong>Weighted Score decides your rank.</strong> It combines how few guesses you need with how many puzzles you\'ve played. Lower is better.</li>'
+    + '<li>After only a few puzzles, your score stays close to a typical result on Energle (<strong>' + typical + ' guesses</strong>). Every puzzle you play moves it closer to your own Avg.</li>'
+    + pace
+    + '<li>So one lucky puzzle won\'t put you on top, but playing well regularly will, whenever you started.</li>'
+    + '</ul>'
+    + '<div class="lb-info-sub">The other columns</div>'
+    + '<ul>'
+    + '<li><strong>Win %:</strong> the share of daily puzzles you solved.</li>'
+    + '<li><strong>Avg:</strong> your average number of guesses per puzzle. A puzzle you didn\'t solve counts as 7.</li>'
+    + '<li><strong>Played:</strong> how many daily puzzles you\'ve played. Only your first try at each one counts.</li>'
+    + '</ul></div>';
+
+  let dividerShown = false;
+  const body = rows.map((r, i) => {
+    const isMe  = me && r.username.toLowerCase() === me.toLowerCase();
+    const rank  = i < 3 ? medals[i] : (i+1) + '.';
+    const score = Number(r.score);
+    // Reference line where scores pass the typical result
+    let divider = '';
+    if (!dividerShown && score > Number(typical)) {
+      dividerShown = true;
+      divider = '<div class="lb-avg-divider"><span>Typical result · ' + typical + '</span></div>';
+    }
+    return divider
+      + '<div class="lb-row lb-row--alltime' + (isMe ? ' lb-row--me' : '') + '">'
+      + '<span class="lb-rank">' + rank + '</span>'
+      + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
+      + '<span class="lb-score' + (Number(r.win_pct) >= 50 ? ' lb-score--won' : '') + '">' + Number(r.win_pct) + '%</span>'
+      + '<span class="lb-score">' + Number(r.avg_guesses).toFixed(2) + '</span>'
+      + '<span class="lb-score">' + r.played + '</span>'
+      + '<span class="lb-score lb-score--main">' + score.toFixed(2) + '</span>'
+      + '</div>';
+  }).join('');
+
+  document.getElementById('lb-body').innerHTML = info
+    + '<div class="lb-list">'
+    + '<div class="lb-header-row">'
+    + '<span class="lb-rank">#</span>'
+    + '<span class="lb-name">Player</span>'
+    + '<span class="lb-score lb-score--hdr">Win %</span>'
+    + '<span class="lb-score lb-score--hdr">Avg</span>'
+    + '<span class="lb-score lb-score--hdr">Played</span>'
+    + '<button class="lb-score lb-score--hdr lb-score--main-hdr lb-info-btn" id="lb-info-btn" onclick="lbToggleInfo()" aria-expanded="false" title="How the ranking works">'
+    +   'Weighted Score <span class="lb-info-icon">i</span></button>'
+    + '</div>'
+    + body
+    + '</div>';
+}
+
+function lbToggleInfo() {
+  const panel = document.getElementById('lb-info-panel');
+  const btn   = document.getElementById('lb-info-btn');
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  btn.setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) document.getElementById('lb-body').scrollTop = 0;
+}
+
+// ============================================================
+//  BOOT
+// ============================================================
+loadData();
