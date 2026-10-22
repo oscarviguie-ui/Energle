@@ -31,6 +31,25 @@ async function sbInsert(row) {
   } catch { return false; }
 }
 
+// Today's average path (see path_stats.sql). Only running totals are stored, never a player's guesses.
+async function sbRecordPath(day, kms, iso3s) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/record_path', {
+      method: 'POST', headers: SB_HEADERS,
+      body: JSON.stringify({ p_day: day, p_km: kms, p_iso3: iso3s }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+async function sbFetchPathStats(day) {
+  try {
+    const [t, c] = await Promise.all([
+      fetch(SUPABASE_URL + '/rest/v1/path_totals?day=eq.' + day + '&select=step,players,sum_km&order=step.asc', { headers: SB_HEADERS }),
+      fetch(SUPABASE_URL + '/rest/v1/guess_counts?day=eq.' + day + '&select=step,iso3,n&order=step.asc,n.desc', { headers: SB_HEADERS }),
+    ]);
+    return { totals: t.ok ? await t.json() : [], counts: c.ok ? await c.json() : [] };
+  } catch { return { totals: [], counts: [] }; }
+}
 async function sbFetchToday(day) {
   try {
     const res = await fetch(
@@ -128,7 +147,7 @@ function saveDailyState() {
   if (MODE !== 'normal') return;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
-      day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver, submitted: scoreSubmitted,
+      day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver, submitted: scoreSubmitted, pathSent,
     }));
   } catch {}
 }
@@ -252,6 +271,7 @@ let target = null, guesses = [], gameOver = false;
 let lineChart = null, barChart = null;
 let MODE = 'normal', PRACTICE_CAT = null;
 let scoreSubmitted = false; // has today's daily result reached Supabase?
+let pathSent = false, pathSending = null; // has today's game been added to the average-path totals?
 
 function practiceUnlocked() {
   if (MODE === 'practice') return true;
@@ -1056,26 +1076,120 @@ const HOVER_GUIDE = {
   },
 };
 
-// Writes each source's share of the latest year inside its bar segment when the segment is tall enough
+// Bar chart: every segment's share of the latest year, written beside the bar on a "_/" leader line.
+// Labels alternate between the two sides so the bar stays centred, and are nudged apart so they never overlap.
 const BAR_SHARE_LABELS = {
   id: 'barShareLabels',
   afterDatasetsDraw(chart) {
     const total = chart.data.datasets.reduce((s, d) => s + (d.data[0] || 0), 0); if (!total) return;
-    const ctx = chart.ctx; ctx.save();
-    ctx.font = '700 11px ' + getComputedStyle(document.body).fontFamily;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ctx = chart.ctx, area = chart.chartArea, font = getComputedStyle(document.body).fontFamily;
+    const fmt = p => (p < 0.1 ? '<0.1' : p < 10 ? p.toFixed(1) : String(Math.round(p))) + '%';
+    const dark = c => 'rgb(' + [1, 3, 5].map(k => Math.round(parseInt(c.slice(k, k + 2), 16) * 0.6)).join(',') + ')';
+    const segs = [];
     chart.data.datasets.forEach((d, i) => {
-      const bar = chart.getDatasetMeta(i).data[0]; if (!bar || bar.hidden) return;
+      const v = d.data[0] || 0, bar = chart.getDatasetMeta(i).data[0]; if (!v || !bar) return;
       const top = Math.min(bar.y, bar.base), h = Math.abs(bar.base - bar.y);
-      if (h < 16 || (FOCUS_SRC && FOCUS_SRC !== d.label)) return;
-      const pct = d.data[0] / total * 100;
-      const c = colorOf(d.label), rgb = [1, 3, 5].map(k => Math.round(parseInt(c.slice(k, k + 2), 16) * 0.55));
-      ctx.fillStyle = 'rgb(' + rgb.join(',') + ')';
-      ctx.fillText((pct < 10 ? pct.toFixed(1) : Math.round(pct)) + '%', bar.x, top + h / 2);
+      segs.push({ cy: top + h / 2, x: bar.x, half: bar.width / 2, col: colorOf(d.label), text: fmt(v / total * 100), dim: FOCUS_SRC && FOCUS_SRC !== d.label });
+    });
+    segs.sort((a, b) => a.cy - b.cy);                       // top of the bar first
+    const sides = [[], []];
+    segs.forEach((sg, k) => { sg.side = k % 2 === 0 ? 1 : -1; sg.ly = sg.cy - 8; sides[k % 2].push(sg); });   // labels sit a little above: "_/"
+    const GAP = 14;
+    sides.forEach(list => {
+      for (let k = 1; k < list.length; k++) if (list[k].ly - list[k - 1].ly < GAP) list[k].ly = list[k - 1].ly + GAP;
+      const over = list.length ? list[list.length - 1].ly - (area.bottom - 4) : 0;
+      if (over > 0) list.forEach(o => { o.ly -= over; });
+      const under = list.length ? (area.top + 4) - list[0].ly : 0;
+      if (under > 0) list.forEach(o => { o.ly += under; });
+      for (let k = list.length - 2; k >= 0; k--) if (list[k + 1].ly - list[k].ly < GAP) list[k].ly = list[k + 1].ly - GAP;
+    });
+    ctx.save(); ctx.textBaseline = 'middle'; ctx.lineWidth = 1; ctx.lineJoin = 'round';
+    segs.forEach(o => {
+      const s = o.side, e = o.x + s * o.half;                // segment edge on this side
+      const x1 = e + s * 7, x2 = e + s * 15, x3 = e + s * 19, tx = e + s * 22;
+      ctx.globalAlpha = o.dim ? 0.25 : 0.8; ctx.strokeStyle = o.col;
+      ctx.beginPath(); ctx.moveTo(e + s * 1.5, o.cy); ctx.lineTo(x1, o.cy); ctx.lineTo(x2, o.ly); ctx.lineTo(x3, o.ly); ctx.stroke();
+      ctx.globalAlpha = o.dim ? 0.35 : 1;
+      ctx.font = '600 11px ' + font; ctx.textAlign = s > 0 ? 'left' : 'right'; ctx.fillStyle = dark(o.col);
+      ctx.fillText(o.text, tx, o.ly);
     });
     ctx.restore();
   },
 };
+
+// ------------------------------------------------------------
+//  TOOLTIPS ON TOUCH SCREENS
+//  Charts: a tap on a point opens its tooltip, a tap on the same point (or anywhere else) closes it,
+//  a tap on another point moves it. Scrolling, rotating or resizing closes every tooltip.
+//  The game handles the taps itself, so a swipe that starts on a chart never opens anything.
+// ------------------------------------------------------------
+const IS_TOUCH = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
+let tipOwner = null;    // { chart, index } of the chart tooltip that is open, or null
+
+function closeChartTips() {
+  hideTooltip();
+  tipOwner = null;
+  [lineChart, barChart].forEach(ch => {
+    if (!ch || !ch.getActiveElements || !ch.getActiveElements().length) return;
+    ch.setActiveElements([]); ch.tooltip.setActiveElements([], { x: 0, y: 0 }); ch.update('none');
+  });
+}
+function closeRowTips() {
+  document.querySelectorAll('.gr-num.is-open, .gr-hint.is-open').forEach(el => el.classList.remove('is-open'));
+}
+function closeAllTips() { closeChartTips(); closeRowTips(); closeDotTip(); }
+
+function bindTapTooltip(chart) {
+  // one listener per canvas, always acting on the chart currently drawn on it (charts are redrawn on the same canvas)
+  if (!IS_TOUCH || chart.canvas.dataset.tapBound) return;
+  chart.canvas.dataset.tapBound = '1';
+  chart.canvas.addEventListener('click', e => {
+    chart = Chart.getChart(e.currentTarget); if (!chart) return;
+    const mode = chart.options.interaction?.mode || 'nearest', opts = chart.options.interaction || { intersect: true };
+    const els = chart.getElementsAtEventForMode(e, mode, opts, false).filter(el => !chart.data.datasets[el.datasetIndex].label.startsWith('__') || mode === 'index');
+    const idx = els.length ? els[0].index : null;
+    const same = tipOwner && tipOwner.chart === chart && tipOwner.index === idx;
+    closeAllTips();
+    if (idx === null || same) return;
+    const r = chart.canvas.getBoundingClientRect();
+    chart.setActiveElements(els);
+    chart.tooltip.setActiveElements(els, { x: e.clientX - r.left, y: e.clientY - r.top });
+    chart.update('none');
+    tipOwner = { chart, index: idx };
+  });
+}
+
+// Distance chart: the flags and the grey average points carry their details in a title (shown on hover);
+// on touch screens a tap shows the same text in a small bubble, and a second tap closes it.
+let dotTipEl = null;
+function closeDotTip() {
+  if (!dotTipEl) return;
+  const t = document.getElementById('dot-tip'); if (t) t.remove();
+  dotTipEl = null;
+}
+function openDotTip(el) {
+  const text = el.getAttribute('data-tip') || el.getAttribute('title'); if (!text) return;
+  if (!el.getAttribute('data-tip')) { el.setAttribute('data-tip', text); el.removeAttribute('title'); }
+  const tip = document.createElement('div'); tip.id = 'dot-tip'; tip.textContent = text; document.body.appendChild(tip);
+  const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, m = 8;
+  let left = r.left + r.width / 2 - w / 2, top = r.top - h - 8;
+  if (top < m) top = r.bottom + 8;
+  tip.style.left = Math.max(m, Math.min(left, innerWidth - w - m)) + 'px';
+  tip.style.top = top + 'px';
+  dotTipEl = el;
+}
+
+if (IS_TOUCH) {
+  document.addEventListener('click', e => {
+    if (e.target.closest('#charts-section canvas')) return;                 // handled by bindTapTooltip
+    const dot = e.target.closest('.dc [title], .dc [data-tip]');
+    if (dot) { const again = dotTipEl === dot; closeAllTips(); if (!again) openDotTip(dot); return; }
+    if (!e.target.closest('.gr-num, .gr-hint')) closeAllTips();
+  });
+}
+['scroll', 'resize', 'orientationchange'].forEach(ev => window.addEventListener(ev, () => {
+  if (tipOwner || dotTipEl || document.querySelector('.gr-num.is-open, .gr-hint.is-open')) closeAllTips();
+}, { passive: true }));
 
 function renderCharts() {
   const info = ALL_DATA[target.name];
@@ -1086,6 +1200,7 @@ function renderCharts() {
   document.getElementById('bar-label').textContent = 'Latest mix (' + latest + ')';
   const lineLabel = document.getElementById('line-label');
   if (lineLabel) lineLabel.textContent = 'Generation by ' + (CHART_VIEW === 'category' ? 'category' : 'source') + ' over time (TWh)';
+  closeAllTips();
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
 
@@ -1114,6 +1229,7 @@ function renderCharts() {
     options: {
       responsive: true, maintainAspectRatio: false,
       layout: { padding: { right: endLabelRoom(activeSources, V[latest]), top: 6 } },
+      ...(IS_TOUCH ? { events: [] } : {}),                   // phones: taps are handled by bindTapTooltip
       animations: lineDrawAnimation(years.length),
       interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipLine } },
@@ -1127,6 +1243,7 @@ function renderCharts() {
   });
 
   lineChartBornAt = performance.now();
+  bindTapTooltip(lineChart);
 
   barChart = new Chart(document.getElementById('bar-chart').getContext('2d'), {
     type: 'bar',
@@ -1134,10 +1251,12 @@ function renderCharts() {
       // semi-transparent fill with a solid edge in the same colour, like the energy balance flows
       backgroundColor: () => FOCUS_SRC && FOCUS_SRC !== src ? colorOf(src) + '1a' : colorOf(src) + '80',
       borderColor: () => focusColor(src, '40'), borderWidth: 1.5, borderSkipped: false, borderRadius: 3,
-      barPercentage: 0.7, categoryPercentage: 1, maxBarThickness: 120 })) },
+      barPercentage: 0.7, categoryPercentage: 1, maxBarThickness: window.innerWidth > 600 ? 46 : 64 })) },
     plugins: [BAR_SHARE_LABELS],
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { left: 6, right: 6, top: 4 } },
+      ...(IS_TOUCH ? { events: [] } : {}),
       animation: barStackAnimation(),
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipBar } },
       scales: {
@@ -1147,6 +1266,7 @@ function renderCharts() {
     },
   });
 
+  bindTapTooltip(barChart);
   renderLegend(activeSources);
 }
 
@@ -1257,7 +1377,7 @@ function showTooltip(html, canvasEl, caretX, caretY) {
   // On narrow screens, cap width to viewport and pin to top of chart area
   const isMobile = window.innerWidth <= 600;
   const margin   = 8;
-  const maxW     = Math.min(270, window.innerWidth - margin * 2);
+  const maxW     = Math.min(isMobile ? 250 : 270, window.innerWidth - margin * 2);
   tip.style.maxWidth = maxW + 'px';
 
   // Temporarily show off-screen to measure height
@@ -1273,11 +1393,10 @@ function showTooltip(html, canvasEl, caretX, caretY) {
   let left, top;
 
   if (isMobile) {
-    // On mobile: centre the tooltip above the chart, pinned just below the header
-    left = margin;
-    top  = rect.top - tipH - 8;
-    // If no room above the chart, show just inside the top of the chart
-    if (top < margin) top = rect.top + 8;
+    // Phones: just above the tapped point, centred on it; below it when there is no room above
+    left = rect.left + caretX - maxW / 2;
+    top  = rect.top + caretY - tipH - 14;
+    if (top < margin) top = rect.top + caretY + 18;
   } else {
     // Desktop: prefer right of cursor, flip left if it would overflow
     left = rect.left + caretX + 14;
@@ -1297,24 +1416,22 @@ function showTooltip(html, canvasEl, caretX, caretY) {
 function hideTooltip() { document.getElementById('tooltip').style.opacity = '0'; }
 
 function tooltipRow(color, label, twh, total, bold) {
-  const pct = total > 0 ? (Math.abs(twh)/total*100).toFixed(1) : '0.0';
-  return '<div style="display:flex;align-items:center;gap:6px;margin:2px 0">'
-    + '<span style="width:8px;height:8px;border-radius:2px;flex-shrink:0;background:' + color + '"></span>'
-    + '<span style="min-width:110px;font-size:0.85em;' + (bold ? 'font-weight:600' : '') + '">' + label + '</span>'
-    + '<span style="font-weight:500">' + fmtTWh(Math.abs(twh)) + '</span>'
-    + '<span style="color:#888;margin-left:3px;font-size:0.85em">(' + pct + '%)</span></div>';
+  const p = total > 0 ? Math.abs(twh) / total * 100 : 0;
+  return '<div class="tt-row' + (bold ? ' tt-row--b' : '') + '"><span class="tt-sw" style="background:' + color + '"></span>'
+    + '<span class="tt-l">' + label + '</span><span class="tt-v">' + fmtTWh(Math.abs(twh)) + '</span>'
+    + '<span class="tt-p">' + (p < 10 ? p.toFixed(1) : Math.round(p)) + '%</span></div>';
 }
 
 function externalTooltipLine(context) {
   const model = context.tooltip; if (model.opacity === 0) { hideTooltip(); return; }
   const year = parseInt(model.title?.[0]), yd = ALL_DATA[target.name]?.years[year] ?? {};
   const total = yd.Total ?? 0, demand = yd.Demand ?? null, netImp = yd.NetImports ?? null;
-  let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Year: ' + year + '</div>';
+  let html = '<div class="tt-h">' + year + '</div>';
   html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
   if (demand !== null && demand > 0) html += tooltipRow('#1a1a1a', 'Demand', demand, total, true);
   if (netImp !== null && netImp !== 0) html += tooltipRow(netImp<0?'#3f3cbb':'#e0218a', netImp<0?'Net exports':'Net imports', Math.abs(netImp), total, true);
   if (CHART_VIEW === 'category') html += tooltipRow('#3f7f66', 'Low-carbon (nuclear + renewables)', lowCarbonOf(yd), total, true);
-  html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
+  html += '<div class="tt-sep"></div><div>';
   model.dataPoints.filter(dp => !dp.dataset.label.startsWith('__') && (dp.parsed?.y ?? 0) > 0)
     .sort((a,b) => (b.parsed?.y??0) - (a.parsed?.y??0))
     .forEach(dp => { html += tooltipRow(colorOf(dp.dataset.label), dp.dataset.label, dp.parsed.y, total, false); });
@@ -1324,12 +1441,12 @@ function externalTooltipLine(context) {
 function externalTooltipBar(context) {
   const model = context.tooltip; if (model.opacity === 0) { hideTooltip(); return; }
   const info = ALL_DATA[target.name], latest = info.latestYear, data = info.years[latest], total = data.Total ?? 0;
-  let html = '<div style="font-weight:700;font-size:0.9em;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px">Mix (' + latest + ')</div>';
+  let html = '<div class="tt-h">Mix in ' + latest + '</div>';
   html += tooltipRow('#4a90c4', 'Total generation', total, total, true);
   if (data.Demand && data.Demand > 0) html += tooltipRow('#1a1a1a', 'Demand', data.Demand, total, true);
   if (data.NetImports && data.NetImports !== 0) html += tooltipRow(data.NetImports<0?'#3f3cbb':'#e0218a', data.NetImports<0?'Net exports':'Net imports', Math.abs(data.NetImports), total, true);
   if (CHART_VIEW === 'category') html += tooltipRow('#3f7f66', 'Low-carbon (nuclear + renewables)', lowCarbonOf(data), total, true);
-  html += '<div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">';
+  html += '<div class="tt-sep"></div><div>';
   const vd = viewYear(data);
   viewKeys(target.name).filter(src => (vd[src]||0) > 0)
     .forEach(src => { html += tooltipRow(colorOf(src), src, vd[src], total, false); });
@@ -1484,11 +1601,13 @@ function addGuessRow(country, isCorrect, animate = true) {
   container.insertBefore(row, container.firstChild);
 }
 
-// Tap to open a row's tooltip on touch screens (hover does it on desktop); a tap anywhere else closes it
+// Guess rows: a tap opens the ring's or the hint's explanation (hover does it with a mouse);
+// a second tap, a tap anywhere else, or scrolling closes it. Only one is open at a time.
 document.addEventListener('click', e => {
-  const t = e.target.closest('.gr-num, .gr-hint');
-  document.querySelectorAll('.gr-num.is-open, .gr-hint.is-open').forEach(el => { if (el !== t) el.classList.remove('is-open'); });
-  if (t) t.classList.toggle('is-open');
+  const t = e.target.closest('.gr-num, .gr-hint'); if (!t) return;
+  const wasOpen = t.classList.contains('is-open');
+  closeAllTips();
+  if (!wasOpen) t.classList.add('is-open');
 });
 
 // ------------------------------------------------------------
@@ -1497,48 +1616,177 @@ document.addEventListener('click', e => {
 //  Win: a current runs along the line to the answer, which lights green.
 //  Loss: the current stops at the last guess; a dashed gap leads to the answer, revealed greyed out.
 // ------------------------------------------------------------
-function pathModel(won) {
-  const path = won ? guesses.slice() : guesses.concat([target]);
-  const n = path.length, last = n - 1;
-  const frac = i => (last ? i / last : 0);
-  const liveEnd = won ? 1 : (last > 1 ? frac(last - 1) : 0);
-  const nodes = path.map((c, i) => {
-    const isAns = c.iso3 === target.iso3, h = isAns ? null : guessInfo(c);
-    return { c, isAns, h, frac: frac(i), col: isAns ? (won ? WIN_RGB : MISS_RGB) : closeRGB(h.prox) };
-  });
-  const live = nodes.filter((nd, i) => won || i < last);
-  const stops = live.map(nd => rgbaOf(nd.col, 0.85) + ' ' + (liveEnd ? nd.frac / liveEnd * 100 : 0).toFixed(1) + '%').join(', ');
-  return { nodes, n, liveEnd, stops };
+// ------------------------------------------------------------
+//  DISTANCE CHART (result card and stats screen)
+//  How far each guess was from the answer, guess by guess. The answer sits on the 0 km line:
+//  reached on a win, joined by a dashed line on a loss.
+// ------------------------------------------------------------
+// Heights for the guesses: on a log scale between the closest and the farthest guess, then spread so that
+// any two different distances are always visibly apart (order kept, exact km written on each point).
+function distanceLevels(kms) {
+  const fn = distanceLevelFn(kms);
+  return kms.map(fn);
 }
+// The same scale as a function, so any distance (e.g. today's average) can be placed on it.
+// Between two of your guesses it interpolates on the log scale; beyond them it extends gently.
+function distanceLevelFn(kms) {
+  const uniq = [...new Set(kms)].sort((a, b) => a - b);
+  if (uniq.length === 1) {
+    const k0 = uniq[0];
+    return km => (km <= 0 ? 0 : Math.max(0.08, Math.min(1.1, 0.6 + 0.25 * Math.log(km / k0))));
+  }
+  const lo = Math.log(uniq[0]), hi = Math.log(uniq[uniq.length - 1]);
+  const t = uniq.map(k => (Math.log(k) - lo) / ((hi - lo) || 1));
+  const MIN = Math.min(0.16, 1 / (uniq.length - 1));
+  for (let i = 1; i < t.length; i++) t[i] = Math.max(t[i], t[i - 1] + MIN);
+  const top = t[t.length - 1];
+  const anchors = uniq.map((k, i) => [Math.log(k), 0.22 + 0.78 * t[i] / top]);   // the answer sits on the 0 line
+  return km => {
+    if (km <= 0) return 0;
+    const lk = Math.log(km);
+    if (lk <= anchors[0][0]) return Math.max(0.06, anchors[0][1] - (anchors[0][0] - lk) * 0.12);
+    const L = anchors.length - 1;
+    if (lk >= anchors[L][0]) return Math.min(1.12, anchors[L][1] + (lk - anchors[L][0]) * 0.12);
+    let i = 1; while (anchors[i][0] < lk) i++;
+    const [x0, y0] = anchors[i - 1], [x1, y1] = anchors[i];
+    return y0 + (y1 - y0) * (lk - x0) / (x1 - x0);
+  };
+}
+function shortKm(km) { return km >= 1000 ? (km / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(km); }
 
 function pathHTML(won, mini, animate) {
-  const m = pathModel(won), RUN = Math.min(1.6, 0.4 + 0.3 * (m.n - 1)), START = 0.35;
-  const at = nd => (!won && nd.isAns ? START + RUN * m.liveEnd + 0.35 : START + RUN * nd.frac);
-  const lineW = (m.liveEnd * 100).toFixed(2) + '%';
-  let line = '';
-  if (m.n > 1) {
-    line = '<span class="go-linebox">'
-      + '<span class="go-line" style="width:' + lineW + ';background:linear-gradient(90deg,' + m.stops + ');--dur:' + (RUN * m.liveEnd).toFixed(2) + 's;--at:' + START + 's"></span>'
-      + (won ? '' : '<span class="go-gap" style="left:' + lineW + ';--at:' + (START + RUN * m.liveEnd).toFixed(2) + 's"></span>')
-      + (mini ? '' : '<span class="go-spark" style="--to:' + lineW + ';--dur:' + (RUN * m.liveEnd).toFixed(2) + 's;--at:' + START + 's"></span>')
-      + '</span>';
+  const pts = guesses.filter(c => c.iso3 !== target.iso3).map(c => ({ c, h: guessInfo(c), isAns: false }));
+  pts.push({ c: target, h: null, isAns: true });
+  const n = pts.length, last = n - 1;
+  const lv = distanceLevels(pts.filter(p => !p.isAns).map(p => Math.max(1, p.h.km)));
+  pts.forEach((p, i) => {
+    p.x = n > 1 ? i / last : 0.5;
+    p.y = p.isAns ? 0 : lv[i];
+    p.col = p.isAns ? (won ? WIN_RGB : MISS_RGB) : closeRGB(p.h.prox);
+  });
+  const RUN = Math.min(1.6, 0.4 + 0.3 * last), START = 0.35;
+  const at = p => (!won && p.isAns ? START + RUN + 0.3 : START + RUN * p.x);
+  const X = p => (p.x * 100).toFixed(2), Y = p => ((1 - p.y) * 100).toFixed(2);
+  const solid = won ? pts : pts.slice(0, last);
+  const lineEnd = solid.length ? solid[solid.length - 1].x : 0;
+
+  const grid = '<span class="dc-grid dc-grid--base" style="top:100%">' + (mini ? '' : '<span class="dc-yl">Answer</span>') + '</span>';
+  let svg = '';
+  if (n > 1) {
+    svg = '<div class="dc-reveal" style="--dur:' + (RUN * lineEnd).toFixed(2) + 's;--at:' + START + 's;--end:' + (lineEnd * 100).toFixed(2) + '%">'
+      + '<svg class="dc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+      + (solid.length > 1 ? '<polyline class="dc-line" points="' + solid.map(p => X(p) + ',' + Y(p)).join(' ') + '"/>' : '')
+      + '</svg></div>';
+    if (!won) {
+      const a = pts[last - 1], b = pts[last];
+      svg += '<svg class="dc-svg dc-gapsvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="--at:' + (START + RUN).toFixed(2) + 's">'
+        + '<line class="dc-gap" x1="' + X(a) + '" y1="' + Y(a) + '" x2="' + X(b) + '" y2="' + Y(b) + '"/></svg>';
+    }
   }
-  const nodes = m.nodes.map(nd => {
-    const title = nd.isAns ? nd.c.name + (won ? ', the answer' : ', the answer you missed')
-      : nd.c.name + ', ' + fmtKm(nd.h.km) + ' away (' + nd.h.prox + '% close)';
-    const cls = 'go-node' + (nd.isAns ? ' go-node--answer' : '') + (!won && nd.isAns ? ' go-node--miss' : '');
-    return '<span class="' + cls + '" style="--cl:' + nd.col.join(',') + ';--at:' + at(nd).toFixed(2) + 's" title="' + escHtml(title) + '">'
-      + '<span class="go-ring">' + flagImg(nd.c.iso3, 'go-flag') + '</span>'
-      + (nd.isAns && !mini ? '<span class="go-badge" aria-hidden="true">' + (won ? '✓' : '?') + '</span>' : '')
-      + (nd.isAns && won && !mini ? '<span class="go-burst" aria-hidden="true"></span>' : '')
-      + '</span>';
+  const nodes = pts.map(p => {
+    const title = p.isAns ? p.c.name + (won ? ', the answer' : ', the answer you missed')
+      : p.c.name + ', ' + fmtKm(p.h.km) + ' away (' + p.h.prox + '% close)';
+    const cls = 'go-node' + (p.isAns ? ' go-node--answer' : '') + (!won && p.isAns ? ' go-node--miss' : '');
+    return '<span class="dc-node" style="left:' + X(p) + '%;top:' + Y(p) + '%">'
+      + '<span class="' + cls + '" style="--cl:' + p.col.join(',') + ';--at:' + at(p).toFixed(2) + 's" title="' + escHtml(title) + '">'
+      + '<span class="go-ring">' + flagImg(p.c.iso3, 'go-flag') + '</span>'
+      + (p.isAns && !mini ? '<span class="go-badge" aria-hidden="true">' + (won ? '✓' : '?') + '</span>' : '')
+      + (p.isAns && won && !mini ? '<span class="go-burst" aria-hidden="true"></span>' : '')
+      + '</span></span>';
   }).join('');
-  const labels = mini ? '' : '<div class="go-labels">' + m.nodes.map(nd =>
-      '<span class="go-label' + (nd.isAns ? ' go-label--answer' : '') + '" style="--at:' + at(nd).toFixed(2) + 's;color:'
-      + (nd.isAns ? (won ? '#2f7a4d' : '#a85a4a') : darker(nd.col)) + '">' + (nd.isAns ? escHtml(nd.c.name) : fmtKm(nd.h.km)) + '</span>').join('') + '</div>';
-  return { html: '<div class="go-path' + (mini ? ' go-path--mini' : '') + (m.n === 1 ? ' go-path--one' : '') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
-      + '<div class="go-track">' + line + '<div class="go-nodes">' + nodes + '</div></div>' + labels + '</div>',
+  let labels = '', xs = '';
+  if (!mini) {
+    labels = pts.filter(p => !p.isAns).map((p, i) => {
+      const pos = i === 0 && n > 1 ? 'l' : 'c';
+      const text = p.isAns ? escHtml(p.c.name)
+        : '<span class="u-long">' + fmtKm(p.h.km) + '</span><span class="u-short">' + shortKm(p.h.km) + '</span>';
+      return '<span class="dc-lbl dc-lbl--' + pos + '" style="left:' + X(p) + '%;top:' + Y(p) + '%;--at:' + at(p).toFixed(2) + 's;color:'
+        + (p.isAns ? (won ? '#2f7a4d' : '#a85a4a') : darker(p.col)) + '">' + text + '</span>';
+    }).join('');
+    // guess numbers under the chart; the answer's name sits under the answer
+    xs = '<div class="dc-x">' + pts.map((p, i) => p.isAns
+      ? '<span class="dc-x-ans" style="left:' + X(p) + '%;color:' + (won ? '#2f7a4d' : '#a85a4a') + '">' + escHtml(p.c.name) + '</span>'
+      : '<span style="left:' + X(p) + '%">' + (i + 1) + '</span>').join('') + '</div>';
+  }
+  const label = 'Distance to the answer, guess by guess: ' + pts.filter(p => !p.isAns).map(p => fmtKm(p.h.km)).join(', ')
+    + (won ? ', then the answer' : '. The answer was ' + target.name);
+  return { html: '<div class="dc' + (mini ? ' dc--mini' : '') + (n === 1 ? ' dc--one' : '') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '" role="img" aria-label="' + escHtml(label) + '">'
+      + '<div class="dc-plot">' + grid + '<div class="dc-in">' + svg + nodes + labels + '</div></div>' + xs + '</div>',
     doneAt: START + RUN + 0.2 };
+}
+
+// Adds today's finished daily game to the shared totals, once per day (remembered across reloads)
+function recordPathOnce() {
+  if (MODE !== 'normal' || !gameOver || pathSent) return Promise.resolve(pathSent);
+  if (pathSending) return pathSending;
+  const kms = guesses.map(c => (c.iso3 === target.iso3 ? 0 : guessInfo(c).km));
+  pathSending = sbRecordPath(getDayNumber(), kms, guesses.map(c => c.iso3)).then(ok => {
+    if (ok) { pathSent = true; saveDailyState(); }
+    pathSending = null; return ok;
+  });
+  return pathSending;
+}
+
+// Today's average path for everyone else: at each guess number, total distance ÷ players, with this
+// player's own game taken back out. A player who already solved counts as 0 km from then on.
+// Also the most common guess at each step. Shown once at least 3 other players have finished.
+function averagePath(stats) {
+  const solved = guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
+  const mineKm = k => (k < guesses.length ? (guesses[k].iso3 === target.iso3 ? 0 : guessInfo(guesses[k]).km) : (solved ? 0 : null));
+  const totals = Object.fromEntries((stats.totals || []).map(r => [r.step, r]));
+  const avg = [], common = [];
+  let others1 = 0;
+  for (let k = 0; k < MAX_GUESSES; k++) {
+    const t = totals[k + 1]; if (!t) break;
+    const mk = pathSent ? mineKm(k) : null;
+    const players = t.players - (mk !== null ? 1 : 0), sum = Number(t.sum_km) - (mk !== null ? mk : 0);
+    if (k === 0) others1 = players;
+    if (players < 1) break;
+    avg.push(sum / players);
+    const rows = (stats.counts || []).filter(r => r.step === k + 1).map(r => ({ iso3: r.iso3,
+      n: r.n - (pathSent && guesses[k] && guesses[k].iso3 === r.iso3 ? 1 : 0) }));
+    const all = rows.reduce((a, r) => a + Math.max(0, r.n), 0);
+    const top = rows.filter(r => r.n > 0).sort((a, b) => b.n - a.n)[0];
+    common.push(top && all ? { iso3: top.iso3, share: top.n / all } : null);
+  }
+  return others1 >= 3 && avg.length ? { avg, common, players: others1 } : null;
+}
+
+async function addAveragePath(won) {
+  if (MODE !== 'normal') return;
+  await new Promise(r => setTimeout(r, 0));          // let endGame() finish first
+  await recordPathOnce();
+  const res = averagePath(await sbFetchPathStats(getDayNumber()));
+  const dc = document.querySelector('#banner .go-card .dc'); if (!res || !dc || dc.dataset.avg) return;
+  dc.dataset.avg = '1';
+  const mine = guesses.filter(c => c.iso3 !== target.iso3).map(c => Math.max(1, guessInfo(c).km));
+  const level = distanceLevelFn(mine.length ? mine : [1000]);
+  const n = mine.length + 1, last = n - 1;                     // the same x positions as your own points
+  const xs = k => (n > 1 ? Math.min(k, last) / last : 0.5);
+  const pts = res.avg.slice(0, won ? n : MAX_GUESSES).map((km, k) => [xs(k), level(km), km]);
+  if (pts.length >= 2) {
+    const line = pts.map(p => (p[0] * 100).toFixed(2) + ',' + ((1 - p[1]) * 100).toFixed(2)).join(' ');
+    const dots = pts.map(p => '<span class="dc-avgdot" style="left:' + (p[0] * 100).toFixed(2) + '%;top:' + ((1 - p[1]) * 100).toFixed(2)
+      + '%" title="Today’s average: ' + fmtKm(Math.round(p[2])) + '"></span>').join('');
+    dc.querySelector('.dc-in').insertAdjacentHTML('afterbegin',
+      '<div class="dc-avg"><svg class="dc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+      + '<polyline class="dc-avgline" points="' + line + '"/></svg>' + dots + '</div>');
+  }
+  // most common guess at each step, under the guess numbers
+  const steps = Math.min(res.common.length, won ? n : MAX_GUESSES);
+  let row = '';
+  for (let k = 0; k < steps; k++) {
+    const c = res.common[k]; if (!c) continue;
+    const country = COUNTRIES.find(x => x.iso3 === c.iso3);
+    row += '<span class="dc-common-item" style="left:' + (xs(k) * 100).toFixed(2) + '%" title="Most common guess ' + (k + 1) + ': '
+      + escHtml(country ? country.name : c.iso3) + ' (' + Math.round(c.share * 100) + '%)">'
+      + flagImg(c.iso3, 'dc-common-flag') + '<span>' + Math.round(c.share * 100) + '%</span></span>';
+  }
+  if (row) dc.insertAdjacentHTML('beforeend', '<div class="dc-common">' + row + '</div>');
+  dc.insertAdjacentHTML('afterend', '<div class="dc-legend"><span class="dc-key dc-key--you"></span>You'
+    + '<span class="dc-key dc-key--avg"></span>Today’s average (' + res.players + ' players)'
+    + (row ? '<span class="dc-key-flag" aria-hidden="true"></span><span class="u-long">Most common guess at each step</span><span class="u-short">Most common guess</span>' : '') + '</div>');
+  if (row) dc.classList.add('dc--common');
 }
 
 let resultTicker = null;
@@ -1569,6 +1817,7 @@ function renderResultCard(won, animate = true) {
     + '<p class="go-summary">' + summary + '</p>'
     + '<div class="go-foot">' + foot + '</div></div>';
   if (won && animate) glowBattery(p.doneAt);
+  addAveragePath(won);
   clearInterval(resultTicker);
   if (MODE !== 'practice') resultTicker = setInterval(() => {
     const el = document.getElementById('go-countdown'); if (!el) { clearInterval(resultTicker); return; }
@@ -1582,6 +1831,7 @@ function endGame() {
   if (MODE === 'normal') {
     const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
     recordDailyResult(won, guesses.length);
+    recordPathOnce();
     // Returning player: submit now, stats after 2.5s.
     // First-time player: after 2.5s ask for a name FIRST, then submit, then show stats —
     // previously both modals opened together and the stats modal covered the name prompt,
@@ -1683,7 +1933,7 @@ function syncInputFlag() {
 //  DAILY GAME
 // ============================================================
 function restoreDailyGame() {
-  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false;
+  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false; pathSent = false;
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
@@ -1704,6 +1954,7 @@ function restoreDailyGame() {
       // Saved states from before this fix have no flag — treat them as already sent
       // so nobody gets a duplicate row today.
       scoreSubmitted = saved.submitted !== false;
+      pathSent = saved.pathSent === true;
       if (!scoreSubmitted) {
         if (getUsername()) submitDailyScore();
         else setTimeout(() => ensureUsername().then(submitDailyScore), 1000);
