@@ -330,7 +330,9 @@ function modeSwitcherHTML() {
 // Page header, above the line: title, podium, Daily / Practice / Stats and Leaderboard (the parts that never change).
 // Below the line: the puzzle number and task, which change every day (pageSubtitleHTML).
 function pageHeaderHTML() {
-  return '<header><div class="hd-grid">' + logoHTML() + podiumHTML() + modeSwitcherHTML()
+  return '<header><div class="hd-grid"><div class="hd-brand">' + logoHTML()
+    + '<span class="hd-by">by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span></div>'
+    + podiumHTML() + modeSwitcherHTML()
     + '<div class="mode-switcher lb-switcher"><button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button></div>'
     + '</div></header>';
 }
@@ -338,11 +340,10 @@ function pageSubtitleHTML(lead, rest = '', extra = '') {
   return '<div class="subtitle-row"><p class="subtitle"><span class="sub-lead">' + lead + '</span>'
     + (rest ? '<span class="sub-sep"> · </span><span class="sub-rest">' + rest + '</span>' : '') + '</p>' + extra + '</div>';
 }
-// Footer: who made it, and where the data comes from
+// Footer: where the data comes from, credited as Ember asks (CC BY 4.0)
 function footerHTML() {
-  return '<footer><p><span class="ft-credit">Energle by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span>'
-    + '<span class="ft-sep" aria-hidden="true">·</span>'
-    + '<span>Data: <a href="https://ember-climate.org" target="_blank" rel="noopener">Ember Global Electricity Review</a></span></p></footer>';
+  return '<footer><p><span>Data: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a></span>'
+    + '<span class="ft-sep" aria-hidden="true">·</span><span>CC BY 4.0</span></p></footer>';
 }
 function todayLabel() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1357,7 +1358,7 @@ function showGlossaryModal() {
     + '<span class="gl-sub">What each colour in the charts includes</span></div>'
     + '<button type="button" class="sx-close" id="gl-close-btn" aria-label="Close">×</button></div>'
     + '<div class="gl-body">' + body + '</div>'
-    + '<p class="gl-foot">Source: <a href="https://ember-climate.org" target="_blank" rel="noopener">Ember Global Electricity Review</a></p>'
+    + '<p class="gl-foot">Source: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a> (CC BY 4.0)</p>'
     + '</div>';
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = e => { if (e.key === 'Escape') close(); };
@@ -1629,7 +1630,8 @@ function distanceLevels(kms) {
 }
 // The same scale as a function, so any distance (e.g. today's average) can be placed on it.
 // Between two of your guesses it interpolates on the log scale; beyond them it extends gently.
-function distanceLevelFn(kms) {
+// floor: height of the closest guess above the 0 km line (higher after a loss, so the final drop stays visible)
+function distanceLevelFn(kms, floor = 0.22) {
   const uniq = [...new Set(kms)].sort((a, b) => a - b);
   if (uniq.length === 1) {
     const k0 = uniq[0];
@@ -1640,7 +1642,7 @@ function distanceLevelFn(kms) {
   const MIN = Math.min(0.16, 1 / (uniq.length - 1));
   for (let i = 1; i < t.length; i++) t[i] = Math.max(t[i], t[i - 1] + MIN);
   const top = t[t.length - 1];
-  const anchors = uniq.map((k, i) => [Math.log(k), 0.22 + 0.78 * t[i] / top]);   // the answer sits on the 0 line
+  const anchors = uniq.map((k, i) => [Math.log(k), floor + (1 - floor) * t[i] / top]);   // the answer sits on the 0 line
   return km => {
     if (km <= 0) return 0;
     const lk = Math.log(km);
@@ -1652,66 +1654,77 @@ function distanceLevelFn(kms) {
     return y0 + (y1 - y0) * (lk - x0) / (x1 - x0);
   };
 }
-function shortKm(km) { return km >= 1000 ? (km / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(km); }
+// Distances in the distance chart: whole kilometres with a thousands separator, e.g. 7,484 km
+function chartNum(km) { return Math.round(km).toLocaleString('en-US'); }
+function chartKm(km) { return chartNum(km) + ' km'; }
 
 function pathHTML(won, mini, animate) {
+  // Win: every wrong guess, then the answer on the 0 km line.
+  // Loss: the six guesses only, and a straight drop from the last one to the 0 km line with its distance.
   const pts = guesses.filter(c => c.iso3 !== target.iso3).map(c => ({ c, h: guessInfo(c), isAns: false }));
-  pts.push({ c: target, h: null, isAns: true });
+  if (won) pts.push({ c: target, h: null, isAns: true });
   const n = pts.length, last = n - 1;
-  const lv = distanceLevels(pts.filter(p => !p.isAns).map(p => Math.max(1, p.h.km)));
+  const kmList = pts.filter(p => !p.isAns).map(p => Math.max(1, p.h.km));
+  const levelOf = distanceLevelFn(kmList.length ? kmList : [1000], won ? 0.22 : 0.36);
   pts.forEach((p, i) => {
     p.x = n > 1 ? i / last : 0.5;
-    p.y = p.isAns ? 0 : lv[i];
-    p.col = p.isAns ? (won ? WIN_RGB : MISS_RGB) : closeRGB(p.h.prox);
+    p.y = p.isAns ? 0 : levelOf(Math.max(1, p.h.km));
+    p.col = p.isAns ? WIN_RGB : closeRGB(p.h.prox);
   });
   const RUN = Math.min(1.6, 0.4 + 0.3 * last), START = 0.35;
-  const at = p => (!won && p.isAns ? START + RUN + 0.3 : START + RUN * p.x);
+  const at = p => START + RUN * p.x;
   const X = p => (p.x * 100).toFixed(2), Y = p => ((1 - p.y) * 100).toFixed(2);
-  const solid = won ? pts : pts.slice(0, last);
-  const lineEnd = solid.length ? solid[solid.length - 1].x : 0;
 
-  const grid = '<span class="dc-grid dc-grid--base" style="top:100%">' + (mini ? '' : '<span class="dc-yl">Answer</span>') + '</span>';
+  // y-axis: the 0 km line (the answer) plus round distances placed on the same scale as the points
+  let grid = '<span class="dc-grid dc-grid--base" style="top:100%">' + (mini ? '' : '<span class="dc-yl">0</span>') + '</span>';
+  if (!mini && kmList.length) {
+    const lo = Math.min(...kmList), hi = Math.max(...kmList);
+    const ticks = [50, 100, 200, 500, 1000, 2000, 5000, 10000, 15000, 20000]
+      .filter(c => c >= lo * 0.8 && c <= hi * 1.15).map(c => [c, levelOf(c)]).filter(t => t[1] <= 1.06).sort((a, b) => b[1] - a[1]);
+    const kept = [];
+    ticks.forEach(t => { if (t[1] >= 0.12 && kept.every(k => Math.abs(k[1] - t[1]) >= 0.18)) kept.push(t); });
+    kept.forEach(t => { grid += '<span class="dc-grid" style="top:' + ((1 - t[1]) * 100).toFixed(2) + '%"><span class="dc-yl">' + chartNum(t[0]) + '</span></span>'; });
+    grid += '<span class="dc-yt">km</span>';
+  }
   let svg = '';
   if (n > 1) {
-    svg = '<div class="dc-reveal" style="--dur:' + (RUN * lineEnd).toFixed(2) + 's;--at:' + START + 's;--end:' + (lineEnd * 100).toFixed(2) + '%">'
+    svg = '<div class="dc-reveal" style="--dur:' + RUN.toFixed(2) + 's;--at:' + START + 's;--end:100%">'
       + '<svg class="dc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
-      + (solid.length > 1 ? '<polyline class="dc-line" points="' + solid.map(p => X(p) + ',' + Y(p)).join(' ') + '"/>' : '')
-      + '</svg></div>';
-    if (!won) {
-      const a = pts[last - 1], b = pts[last];
-      svg += '<svg class="dc-svg dc-gapsvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="--at:' + (START + RUN).toFixed(2) + 's">'
-        + '<line class="dc-gap" x1="' + X(a) + '" y1="' + Y(a) + '" x2="' + X(b) + '" y2="' + Y(b) + '"/></svg>';
-    }
+      + '<polyline class="dc-line" points="' + pts.map(p => X(p) + ',' + Y(p)).join(' ') + '"/></svg></div>';
+  }
+  let drop = '';
+  if (!won && n) {
+    const lp = pts[last];
+    drop = '<svg class="dc-svg dc-dropsvg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style="--at:' + (START + RUN).toFixed(2) + 's">'
+      + '<line class="dc-drop" x1="' + X(lp) + '" y1="' + Y(lp) + '" x2="' + X(lp) + '" y2="100"/></svg>'
+      + (mini ? '' : '<span class="dc-droplbl" style="left:' + X(lp) + '%;top:' + ((1 - lp.y / 2) * 100).toFixed(2) + '%;--at:' + (START + RUN).toFixed(2) + 's">'
+        + chartNum(lp.h.km) + '<span class="u-long"> km</span></span>');
   }
   const nodes = pts.map(p => {
-    const title = p.isAns ? p.c.name + (won ? ', the answer' : ', the answer you missed')
-      : p.c.name + ', ' + fmtKm(p.h.km) + ' away (' + p.h.prox + '% close)';
-    const cls = 'go-node' + (p.isAns ? ' go-node--answer' : '') + (!won && p.isAns ? ' go-node--miss' : '');
+    const title = p.isAns ? p.c.name + ', the answer' : p.c.name + ', ' + chartKm(p.h.km) + ' away (' + p.h.prox + '% close)';
+    const cls = 'go-node' + (p.isAns ? ' go-node--answer' : '');
     return '<span class="dc-node" style="left:' + X(p) + '%;top:' + Y(p) + '%">'
       + '<span class="' + cls + '" style="--cl:' + p.col.join(',') + ';--at:' + at(p).toFixed(2) + 's" title="' + escHtml(title) + '">'
       + '<span class="go-ring">' + flagImg(p.c.iso3, 'go-flag') + '</span>'
-      + (p.isAns && !mini ? '<span class="go-badge" aria-hidden="true">' + (won ? '✓' : '?') + '</span>' : '')
-      + (p.isAns && won && !mini ? '<span class="go-burst" aria-hidden="true"></span>' : '')
+      + (p.isAns && !mini ? '<span class="go-badge" aria-hidden="true">✓</span><span class="go-burst" aria-hidden="true"></span>' : '')
       + '</span></span>';
   }).join('');
   let labels = '', xs = '';
   if (!mini) {
-    labels = pts.filter(p => !p.isAns).map((p, i) => {
+    // distance above each guess (the last guess of a lost game has its distance on the drop line instead)
+    labels = pts.filter((p, i) => !p.isAns && (won || i < last)).map((p, i) => {
       const pos = i === 0 && n > 1 ? 'l' : 'c';
-      const text = p.isAns ? escHtml(p.c.name)
-        : '<span class="u-long">' + fmtKm(p.h.km) + '</span><span class="u-short">' + shortKm(p.h.km) + '</span>';
-      return '<span class="dc-lbl dc-lbl--' + pos + '" style="left:' + X(p) + '%;top:' + Y(p) + '%;--at:' + at(p).toFixed(2) + 's;color:'
-        + (p.isAns ? (won ? '#2f7a4d' : '#a85a4a') : darker(p.col)) + '">' + text + '</span>';
+      return '<span class="dc-lbl dc-lbl--' + pos + '" style="left:' + X(p) + '%;top:' + Y(p) + '%;--at:' + at(p).toFixed(2) + 's">' + chartNum(p.h.km) + '<span class="u-long"> km</span></span>';
     }).join('');
-    // guess numbers under the chart; the answer's name sits under the answer
+    // guess numbers under the chart; on a win the answer's name sits under the answer
     xs = '<div class="dc-x">' + pts.map((p, i) => p.isAns
-      ? '<span class="dc-x-ans" style="left:' + X(p) + '%;color:' + (won ? '#2f7a4d' : '#a85a4a') + '">' + escHtml(p.c.name) + '</span>'
+      ? '<span class="dc-x-ans" style="left:' + X(p) + '%;color:#2f7a4d">' + escHtml(p.c.name) + '</span>'
       : '<span style="left:' + X(p) + '%">' + (i + 1) + '</span>').join('') + '</div>';
   }
-  const label = 'Distance to the answer, guess by guess: ' + pts.filter(p => !p.isAns).map(p => fmtKm(p.h.km)).join(', ')
-    + (won ? ', then the answer' : '. The answer was ' + target.name);
-  return { html: '<div class="dc' + (mini ? ' dc--mini' : '') + (n === 1 ? ' dc--one' : '') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '" role="img" aria-label="' + escHtml(label) + '">'
-      + '<div class="dc-plot">' + grid + '<div class="dc-in">' + svg + nodes + labels + '</div></div>' + xs + '</div>',
+  const label = 'Distance to the answer, guess by guess: ' + pts.filter(p => !p.isAns).map(p => chartKm(p.h.km)).join(', ')
+    + (won ? ', then the answer' : '. Today’s country was ' + target.name);
+  return { html: '<div class="dc' + (mini ? ' dc--mini' : '') + (n === 1 ? ' dc--one' : '') + (won ? '' : ' dc--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '" role="img" aria-label="' + escHtml(label) + '">'
+      + '<div class="dc-plot">' + grid + '<div class="dc-in">' + svg + drop + nodes + labels + '</div></div>' + xs + '</div>',
     doneAt: START + RUN + 0.2 };
 }
 
@@ -1760,20 +1773,20 @@ async function addAveragePath(won) {
   const dc = document.querySelector('#banner .go-card .dc'); if (!res || !dc || dc.dataset.avg) return;
   dc.dataset.avg = '1';
   const mine = guesses.filter(c => c.iso3 !== target.iso3).map(c => Math.max(1, guessInfo(c).km));
-  const level = distanceLevelFn(mine.length ? mine : [1000]);
-  const n = mine.length + 1, last = n - 1;                     // the same x positions as your own points
+  const level = distanceLevelFn(mine.length ? mine : [1000], won ? 0.22 : 0.36);
+  const n = guesses.length, last = n - 1;                      // the same x positions as your own guesses
   const xs = k => (n > 1 ? Math.min(k, last) / last : 0.5);
-  const pts = res.avg.slice(0, won ? n : MAX_GUESSES).map((km, k) => [xs(k), level(km), km]);
+  const pts = res.avg.slice(0, n).map((km, k) => [xs(k), level(km), km]);
   if (pts.length >= 2) {
     const line = pts.map(p => (p[0] * 100).toFixed(2) + ',' + ((1 - p[1]) * 100).toFixed(2)).join(' ');
     const dots = pts.map(p => '<span class="dc-avgdot" style="left:' + (p[0] * 100).toFixed(2) + '%;top:' + ((1 - p[1]) * 100).toFixed(2)
-      + '%" title="Today’s average: ' + fmtKm(Math.round(p[2])) + '"></span>').join('');
+      + '%" title="Today’s average: ' + chartKm(p[2]) + '"></span>').join('');
     dc.querySelector('.dc-in').insertAdjacentHTML('afterbegin',
       '<div class="dc-avg"><svg class="dc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
       + '<polyline class="dc-avgline" points="' + line + '"/></svg>' + dots + '</div>');
   }
   // most common guess at each step, under the guess numbers
-  const steps = Math.min(res.common.length, won ? n : MAX_GUESSES);
+  const steps = Math.min(res.common.length, n);
   let row = '';
   for (let k = 0; k < steps; k++) {
     const c = res.common[k]; if (!c) continue;
@@ -1782,10 +1795,14 @@ async function addAveragePath(won) {
       + escHtml(country ? country.name : c.iso3) + ' (' + Math.round(c.share * 100) + '%)">'
       + flagImg(c.iso3, 'dc-common-flag') + '<span>' + Math.round(c.share * 100) + '%</span></span>';
   }
-  if (row) dc.insertAdjacentHTML('beforeend', '<div class="dc-common">' + row + '</div>');
-  dc.insertAdjacentHTML('afterend', '<div class="dc-legend"><span class="dc-key dc-key--you"></span>You'
-    + '<span class="dc-key dc-key--avg"></span>Today’s average (' + res.players + ' players)'
-    + (row ? '<span class="dc-key-flag" aria-hidden="true"></span><span class="u-long">Most common guess at each step</span><span class="u-short">Most common guess</span>' : '') + '</div>');
+  if (row) dc.insertAdjacentHTML('beforeend', '<div class="dc-common"><span class="dc-common-lbl">Most<br>guessed</span>' + row + '</div>');
+  // key: placed before the line under the chart (if any)
+  // key: just the average line ("Most guessed" is already named beside its row)
+  const key = '<div class="dc-legend" title="Today\u2019s other players: ' + res.players + '">'
+    + '<span class="dc-key-avg" aria-hidden="true"><span class="dc-key-avgdot"></span></span>'
+    + '<span class="u-long">Average distance at each guess, across ' + res.players + ' other players today</span>'
+    + '<span class="u-short">Average of ' + res.players + ' other players today</span></div>';
+  dc.insertAdjacentHTML('afterend', key);
   if (row) dc.classList.add('dc--common');
 }
 
@@ -1793,16 +1810,8 @@ let resultTicker = null;
 function renderResultCard(won, animate = true) {
   const host = document.getElementById('banner'); if (!host) return;
   const p = pathHTML(won, false, animate);
-  let summary;
-  if (won) {
-    summary = guesses.length > 1
-      ? 'Your guesses closed in from ' + fmtKm(guessInfo(guesses[0]).km) + ' to ' + escHtml(target.name) + '.'
-      : 'First guess, straight to ' + escHtml(target.name) + '.';
-  } else {
-    const best = guesses.map(c => [c, guessInfo(c)]).sort((a, b) => a[1].km - b[1].km)[0];
-    summary = 'Closest guess: ' + escHtml(best[0].name) + ', ' + fmtKm(best[1].km) + ' away. '
-      + escHtml(target.name) + ' lay to its ' + DIR_NAMES[best[1].dir] + '.';
-  }
+  // Win: no sentence (the chart and its key say it). Loss: how far the final guess was.
+  const summary = won ? '' : 'Your final guess was ' + chartKm(guessInfo(guesses[guesses.length - 1]).km) + ' away.';
   const tagline = MODE === 'practice' ? escHtml(practiceSubtitle().replace(/ · \d+ countries$/, '') || 'Practice') : 'Puzzle #' + getDayNumber();
   const foot = MODE === 'practice'
     ? '<span class="go-next">Practice round</span>'
@@ -1811,10 +1820,11 @@ function renderResultCard(won, animate = true) {
       + '<div class="go-actions"><button type="button" class="go-btn" onclick="showStatsModal(true)">Stats</button>'
       + '<button type="button" class="go-btn go-btn--dark" onclick="copyShare(this)">Share</button></div>';
   host.innerHTML = '<div class="go-card ' + (won ? 'go-card--won' : 'go-card--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
-    + '<div class="go-head"><span class="go-title">' + (won ? 'Your path to ' + escHtml(target.name) : 'Out of guesses. It was ' + escHtml(target.name) + '.') + '</span>'
+    + '<div class="go-head"><span class="go-title">' + (won ? 'Your path to ' + escHtml(target.name)
+        : (MODE === 'practice' ? 'The country was ' : 'Today\u2019s country was ') + escHtml(target.name) + '.') + '</span>'
     + '<span class="go-tag">' + tagline + '</span></div>'
     + p.html
-    + '<p class="go-summary">' + summary + '</p>'
+    + (summary ? '<p class="go-summary">' + summary + '</p>' : '')
     + '<div class="go-foot">' + foot + '</div></div>';
   if (won && animate) glowBattery(p.doneAt);
   addAveragePath(won);
