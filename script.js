@@ -117,7 +117,8 @@ function mulberry32(seed) {
   };
 }
 
-function getDailyTarget(countries) {
+// The original rule (every country equally likely, every day), kept only as a fallback
+function legacyDailyTarget(countries) {
   const rng = mulberry32(getDayNumber() * 2654435761);
   const arr = [...countries];
   for (let i = arr.length - 1; i > 0; i--) {
@@ -125,6 +126,60 @@ function getDailyTarget(countries) {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr[0];
+}
+
+// ------------------------------------------------------------
+//  DAILY LINE-UP
+//  puzzles.json lists every answer by puzzle number (ISO3 codes). Played puzzles never change.
+//  Past the end of that list, the game keeps drawing with the same rule as scripts/make_schedule.py:
+//    weight = generation^(1/3) x (base + signature weight x signature + transition weight x min(change since 2010, cap))
+//    and a country cannot return within gap_days days.
+// ------------------------------------------------------------
+let SCHEDULE = null;
+const LINEUP_SOURCES = ['Coal', 'Gas', 'Other Fossil', 'Nuclear', 'Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables'];
+const LINEUP_LOW_CARBON = ['Nuclear', 'Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables'];
+
+function lineupWeights(rule) {
+  const shares = y => { const t = (y && y.Total) || 0; return t ? LINEUP_SOURCES.map(k => (y[k] || 0) / t) : null; };
+  const rows = [];
+  Object.values(ALL_DATA).forEach(info => {
+    const latest = info.years[String(info.latestYear)], s = shares(latest);
+    if (!s) return;
+    const first = info.years['2010'] || info.years[Object.keys(info.years).sort()[0]];
+    const s0 = shares(first) || s;
+    rows.push({ iso: info.iso3, g: latest.Total || 0, s, change: 0.5 * s.reduce((a, v, k) => a + Math.abs(v - s0[k]), 0) });
+  });
+  const total = rows.reduce((a, r) => a + r.g, 0);
+  const world = LINEUP_SOURCES.map((_, k) => rows.reduce((a, r) => a + r.s[k] * r.g, 0) / total);
+  return rows.map(r => {
+    const sig = Math.max(0, ...LINEUP_LOW_CARBON.map(k => {
+      const i = LINEUP_SOURCES.indexOf(k);
+      return (r.s[i] - world[i]) * (k === 'Hydro' ? rule.hydro_factor : 1);
+    }));
+    const mult = rule.base + rule.signature_weight * sig + rule.transition_weight * Math.min(r.change, rule.transition_cap);
+    return { iso: r.iso, w: Math.max(Math.pow(Math.max(r.g, 0.01), rule.size_exponent) * mult, 1e-9) };
+  }).sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0));
+}
+
+function lineupDraw(day, W, last, gap) {
+  let pool = W.filter(o => last[o.iso] === undefined || day - last[o.iso] > gap);
+  if (!pool.length) pool = W;
+  let x = mulberry32(day * 2654435761)() * pool.reduce((a, o) => a + o.w, 0);
+  for (const o of pool) { x -= o.w; if (x <= 0) return o.iso; }
+  return pool[pool.length - 1].iso;
+}
+
+function getDailyTarget(countries) {
+  if (!SCHEDULE || !Array.isArray(SCHEDULE.puzzles) || !SCHEDULE.rule) return legacyDailyTarget(countries);
+  const day = getDayNumber(), list = SCHEDULE.puzzles, rule = SCHEDULE.rule;
+  const byIso = iso => countries.find(c => c.iso3 === iso);
+  if (byIso(list[day - 1])) return byIso(list[day - 1]);
+  // Past the end of the list (or a country missing from the data): continue the list with the same rule
+  const W = lineupWeights(rule).filter(o => byIso(o.iso));
+  const last = {};
+  list.forEach((iso, i) => { if (i + 1 < day) last[iso] = i + 1; });
+  for (let d = list.length + 1; d < day; d++) last[lineupDraw(d, W, last, rule.gap_days)] = d;
+  return byIso(lineupDraw(day, W, last, rule.gap_days)) || legacyDailyTarget(countries);
 }
 
 // ============================================================
@@ -251,6 +306,22 @@ const ISO3_CONTINENT = {
 //  STATE
 // ============================================================
 let ALL_DATA = null, WORLD_DPC = null, WORLD_GEN = {}, COUNTRIES = [], POOL = [];
+let NAME_ALIAS = {};
+const DISPLAY_NAMES = {
+  'Bahamas (the)': 'Bahamas', 'Bosnia Herzegovina': 'Bosnia and Herzegovina', 'Brunei Darussalam': 'Brunei',
+  'Central African Republic (the)': 'Central African Republic', 'Comoros (the)': 'Comoros',
+  'Congo (the Democratic Republic of the)': 'DR Congo', 'Congo (the)': 'Congo', 'Dominican Republic (the)': 'Dominican Republic',
+  'Gambia (the)': 'Gambia', 'Iran (Islamic Republic of)': 'Iran', "Korea (the Democratic People's Republic of)": 'North Korea',
+  "Lao People's Democratic Republic (the)": 'Laos', 'Niger (the)': 'Niger', 'Palestine, State of': 'Palestine',
+  'Philippines (the)': 'Philippines', 'Russian Federation (the)': 'Russia', 'Sudan (the)': 'Sudan',
+  'Syrian Arab Republic (the)': 'Syria', 'Tanzania, the United Republic of': 'Tanzania',
+  'United States of America': 'United States', 'Venezuela (Bolivarian Republic of)': 'Venezuela', 'Viet Nam': 'Vietnam',
+};
+// A typed name matches the everyday name or the official one from the data
+function nameMatches(c, typed) {
+  const v = typed.trim().toLowerCase();
+  return c.name.toLowerCase() === v || (NAME_ALIAS[c.name] || '').toLowerCase() === v;
+}
 
 // World average total generation per country, by year: the simple mean of every
 // country's Total (TWh) in that year. Built once from the loaded data.
@@ -286,11 +357,21 @@ function practiceUnlocked() {
 async function loadData() {
   document.getElementById('app').innerHTML = '<div id="loading">Loading data…</div>';
   try {
-    const res = await fetch('energle_data.json');
+    const [res, sched] = await Promise.all([
+      fetch('energle_data.json'),
+      fetch('puzzles.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null),
+    ]);
     const raw = await res.json();
+    SCHEDULE = sched;
     WORLD_DPC = raw['__world_dpc__'];
     delete raw['__world_dpc__'];
-    ALL_DATA = raw;
+    // Everyday names for the official-style ones in the data; the official name still works as a guess
+    NAME_ALIAS = {};
+    ALL_DATA = Object.fromEntries(Object.entries(raw).map(([k, v]) => {
+      const nice = DISPLAY_NAMES[k] || k;
+      if (nice !== k) NAME_ALIAS[nice] = k;
+      return [nice, v];
+    }));
     buildWorldGen();
     COUNTRIES = Object.entries(ALL_DATA).map(([name, info]) => {
       const latest = info.latestYear, yd = info.years[latest] ?? {}, total = yd.Total ?? 0;
@@ -343,7 +424,8 @@ function pageSubtitleHTML(lead, rest = '', extra = '') {
 // Footer: where the data comes from, credited as Ember asks (CC BY 4.0)
 function footerHTML() {
   return '<footer><p><span>Data: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a></span>'
-    + '<span class="ft-sep" aria-hidden="true">·</span><span>CC BY 4.0</span></p></footer>';
+    + '<span class="ft-sep" aria-hidden="true">·</span><span>CC BY 4.0</span>'
+    + '<span class="ft-sep" aria-hidden="true">·</span><button type="button" class="ft-link" onclick="showNotice()">What’s new</button></p></footer>';
 }
 function todayLabel() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -517,6 +599,46 @@ function renderPracticePickerScreen() {
 function initApp() {
   POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
   scheduleAmbientPulse();
+  maybeShowNotice();
+}
+
+// ============================================================
+//  WHAT'S NEW: shown once to returning players, and from the footer link
+// ============================================================
+const NOTICE_KEY = 'energle_notice_lineup_v1';
+function maybeShowNotice() {
+  let seen = true, returning = false;
+  try {
+    seen = !!localStorage.getItem(NOTICE_KEY);
+    returning = !!(localStorage.getItem(LS_KEY) || localStorage.getItem(LS_STATS_KEY));
+    if (!seen && !returning) localStorage.setItem(NOTICE_KEY, '1');      // first visit: nothing changed for them
+  } catch (e) { return; }
+  if (!seen && returning) setTimeout(showNotice, REDUCED_MOTION ? 0 : 700);
+}
+function showNotice() {
+  if (document.getElementById('notice-modal')) return;
+  try { localStorage.setItem(NOTICE_KEY, '1'); } catch (e) {}
+  const modal = document.createElement('div'); modal.id = 'notice-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="nt-box" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
+    + '<span class="nt-eyebrow">What’s new</span>'
+    + '<h2 class="nt-title" id="nt-title">A smarter daily line-up</h2>'
+    + '<p>From puzzle #146 (Sunday 25 October), Energle picks each day’s country by the size of its power system and by how much its mix has to teach.</p>'
+    + '<ul class="nt-list">'
+    +   '<li>You’ll meet the grids that shape the energy world, like Canada, France, Brazil or India, more often.</li>'
+    +   '<li>Smaller and more surprising grids still come up along the way.</li>'
+    +   '<li>A country never comes back within 50 days.</li>'
+    + '</ul>'
+    + '<p class="nt-keep">Past puzzles, your streak and the leaderboard stay exactly as they are.</p>'
+    + '<button type="button" class="nt-btn" id="nt-ok">Got it</button>'
+    + '</div>';
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  document.body.appendChild(modal);
+  document.getElementById('nt-ok').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  document.getElementById('nt-ok').focus();
 }
 
 // ============================================================
@@ -1545,7 +1667,7 @@ function submitGuess() {
   const input = document.getElementById('guess-input'), error = document.getElementById('error');
   const val = input.value.trim();
   if (!val) { error.textContent = 'Please type a country name.'; return; }
-  const match = COUNTRIES.find(c => c.name.toLowerCase() === val.toLowerCase());
+  const match = COUNTRIES.find(c => nameMatches(c, val));
   if (!match) { error.textContent = '"' + val + '" not found — check spelling.'; return; }
   if (guesses.find(g => g.iso3 === match.iso3)) { error.textContent = 'Already guessed!'; return; }
   error.textContent = '';
@@ -1765,6 +1887,59 @@ function averagePath(stats) {
   return others1 >= 3 && avg.length ? { avg, common, players: others1 } : null;
 }
 
+// Keeps each distance label clear of the average line: lift it a little higher above its flag, or else move it
+// under, right of or left of the flag; failing all, the spot with the least overlap (the white halo keeps it readable)
+function dodgeAverage(dc) {
+  const inn = dc && dc.querySelector('.dc-in'), avg = dc && dc.querySelector('.dc-avgline');
+  if (!inn || !avg) return;
+  const R = inn.getBoundingClientRect(), D = dc.getBoundingClientRect();
+  const toPx = poly => poly.getAttribute('points').trim().split(/\s+/).map(t => t.split(',').map(Number))
+    .map(([x, y]) => [R.left + x / 100 * R.width, R.top + y / 100 * R.height]);
+  const avgP = toPx(avg), own = [...dc.querySelectorAll('.dc-line')].map(toPx);
+  const lineY = (P, x) => {
+    for (let i = 1; i < P.length; i++) {
+      const [x0, y0] = P[i - 1], [x1, y1] = P[i];
+      if (x >= x0 - 0.5 && x <= x1 + 0.5) return x1 === x0 ? y0 : y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+    }
+    return null;
+  };
+  const hits = (P, r) => { let h = 0; for (let x = r.left - 3; x <= r.right + 3; x += 2) { const y = lineY(P, x); if (y !== null && y > r.top - 4 && y < r.bottom + 4) h++; } return h; };
+  const nodes = [...dc.querySelectorAll('.dc-node .go-node')].map(n => n.getBoundingClientRect());
+  const score = (r, bound) => {
+    if (r.bottom > R.bottom - 2 || r.top < bound || r.left < R.left - 14 || r.right > R.right + 14) return Infinity;  // 0 km line or the chart's edge
+    let sc = 3 * hits(avgP, r);
+    own.forEach(P => { sc += hits(P, r); });
+    nodes.forEach(n => { if (r.left < n.right + 2 && r.right > n.left - 2 && r.top < n.bottom + 2 && r.bottom > n.top - 2) sc += 20; });
+    return sc;
+  };
+  const SPOTS = ['dc-lbl--below', 'dc-lbl--right', 'dc-lbl--left'];
+  dc.querySelectorAll('.dc-lbl').forEach(l => {
+    SPOTS.forEach(k => l.classList.remove(k)); l.style.removeProperty('--lift');
+    const r0 = l.getBoundingClientRect(), bound = Math.min(D.top, r0.top) - 0.5;
+    const s0 = score(r0, bound);
+    if (!s0) return;
+    const tries = [];
+    // 1. a little higher: just above the average line where it crosses the label
+    let top = Infinity;
+    for (let x = r0.left - 3; x <= r0.right + 3; x += 2) { const y = lineY(avgP, x); if (y !== null) top = Math.min(top, y); }
+    const lift = r0.bottom - top + 5;
+    if (lift > 0 && lift <= 30) tries.push(['', lift]);
+    SPOTS.forEach(k => tries.push([k, 0]));
+    let best = ['', 0], bestScore = s0;
+    for (const [k, lf] of tries) {
+      if (k) l.classList.add(k); if (lf) l.style.setProperty('--lift', lf.toFixed(1) + 'px');
+      const sc = score(l.getBoundingClientRect(), bound);
+      if (k) l.classList.remove(k); l.style.removeProperty('--lift');
+      if (sc < bestScore) { best = [k, lf]; bestScore = sc; }
+      if (!sc) break;
+    }
+    if (best[0]) l.classList.add(best[0]);
+    if (best[1]) l.style.setProperty('--lift', best[1].toFixed(1) + 'px');
+  });
+}
+let dodgeTimer = null;
+window.addEventListener('resize', () => { clearTimeout(dodgeTimer); dodgeTimer = setTimeout(() => dodgeAverage(document.querySelector('#banner .go-card .dc')), 150); });
+
 async function addAveragePath(won) {
   if (MODE !== 'normal') return;
   await new Promise(r => setTimeout(r, 0));          // let endGame() finish first
@@ -1785,6 +1960,7 @@ async function addAveragePath(won) {
       '<div class="dc-avg"><svg class="dc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
       + '<polyline class="dc-avgline" points="' + line + '"/></svg>' + dots + '</div>');
   }
+  dodgeAverage(dc);
   // most common guess at each step, under the guess numbers
   const steps = Math.min(res.common.length, n);
   let row = '';
@@ -1896,7 +2072,7 @@ function setupAutocomplete() {
     // Empty query: show the full eligible pool (alphabetical, scrollable).
     // POOL is the active country set, so practice categories are filtered automatically.
     const source = [...POOL].sort((a,b) => a.name.localeCompare(b.name));
-    const matches = q.length === 0 ? source : source.filter(c => c.name.toLowerCase().includes(q));
+    const matches = q.length === 0 ? source : source.filter(c => c.name.toLowerCase().includes(q) || (NAME_ALIAS[c.name] || '').toLowerCase().includes(q));
     if (!matches.length) { list.style.display = 'none'; return; }
     list.innerHTML = '';
     matches.forEach(c => {
@@ -1931,7 +2107,7 @@ function syncInputFlag() {
   const input = document.getElementById('guess-input'), slot = document.getElementById('guess-flag');
   if (!input || !slot) return;
   const val = input.value.trim().toLowerCase();
-  const match = val ? COUNTRIES.find(c => c.name.toLowerCase() === val) : null;
+  const match = val ? COUNTRIES.find(c => nameMatches(c, val)) : null;
   const key = match ? match.iso3 : '';
   if (slot.dataset.iso3 === key) return;
   slot.dataset.iso3 = key;

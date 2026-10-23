@@ -2731,3 +2731,34 @@ footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10p
 .dc--common .dc-plot { bottom: 74px; }
 .dc--common .dc-x { bottom: 38px; }
 @media (max-width: 600px) { .dc.dc--common { height: 194px; } }
+
+/* distance labels stay readable where the average line passes, and move under the flag when it runs through them */
+.dc-lbl { text-shadow: 0 0 2px #fff, 0 0 3px #fff, 0 0 4px #fff; z-index: 1; }
+.dc-lbl.dc-lbl--below { translate: -50% 15px; }
+.dc-lbl.dc-lbl--l.dc-lbl--below { translate: -13px 15px; }
+.dc-lbl.dc-lbl--right { translate: 16px -50%; }
+.dc-lbl.dc-lbl--left { translate: calc(-100% - 16px) -50%; }
+/* lifted label (clears the average line): --lift is set by the script */
+.dc-lbl { translate: -50% calc(-100% - 15px - var(--lift, 0px)); }
+.dc-lbl.dc-lbl--l { translate: -13px calc(-100% - 15px - var(--lift, 0px)); }
+.dc-lbl.dc-lbl--below { translate: -50% 15px; }
+.dc-lbl.dc-lbl--l.dc-lbl--below { translate: -13px 15px; }
+.dc-lbl.dc-lbl--right { translate: 16px -50%; }
+.dc-lbl.dc-lbl--left { translate: calc(-100% - 16px) -50%; }
+
+/* footer link that reopens the What's new notice */
+.ft-link { padding: 0; border: 0; background: none; font: inherit; color: #888; cursor: pointer; }
+.ft-link:hover { text-decoration: underline; }
+
+/* What's new notice */
+#notice-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#notice-modal .st-backdrop { position: absolute; inset: 0; }
+.nt-box { position: relative; width: 100%; max-width: 440px; background: #fff; border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.18); padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 10px; color: #1a1a1a; }
+.nt-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #b98a12; }
+.nt-title { margin: 0; font-size: 1.25rem; font-weight: 700; }
+.nt-box p { margin: 0; font-size: .92rem; line-height: 1.5; color: #333; }
+.nt-list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: .92rem; line-height: 1.45; color: #333; }
+.nt-keep { color: #666 !important; font-size: .85rem !important; }
+.nt-btn { align-self: flex-end; min-height: 42px; padding: 0 22px; margin-top: 4px; border: 0; border-radius: 6px; background: #1a1a1a; color: #fff; font: inherit; font-size: .95rem; font-weight: 600; cursor: pointer; }
+.nt-btn:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+@media (max-width: 600px) { .nt-box { padding: 18px 18px 16px; } }
