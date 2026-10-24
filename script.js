@@ -993,7 +993,7 @@ function barStackAnimation() {
 let lineChartBornAt = 0;
 function scheduleAmbientPulse() {
   if (REDUCED_MOTION) return;
-  setTimeout(() => { runAmbientPulse(); scheduleAmbientPulse(); }, 4000 + Math.random() * 5000);
+  setTimeout(() => { runAmbientPulse(); scheduleAmbientPulse(); }, 8000 + Math.random() * 5000);
 }
 
 function runAmbientPulse() {
