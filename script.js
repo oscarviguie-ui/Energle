@@ -60,6 +60,18 @@ async function sbFetchToday(day) {
   } catch { return []; }
 }
 
+// This player's own results, by puzzle number (first row per day)
+async function sbFetchMine(username) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/scores?username=eq.' + encodeURIComponent(username)
+      + '&select=day,guesses,won,created_at&order=created_at.asc&limit=2000', { headers: SB_HEADERS });
+    if (!res.ok) return {};
+    const out = {};
+    (await res.json()).forEach(r => { if (!out[r.day]) out[r.day] = { n: r.guesses, won: r.won }; });
+    return out;
+  } catch { return {}; }
+}
+
 // All-time stats are aggregated in Postgres by the `leaderboard_alltime` view
 // (one row per player, first attempt per day only). Ranked by Weighted Score
 // (lower is better), ties broken by more puzzles played. The podium uses the same order.
@@ -73,21 +85,42 @@ async function sbFetchAllTime(limit = 500) {
   } catch { return []; }
 }
 
+// Since 2010 (or the first year with data): how much the mix and the output changed; and trade in the latest year
+function trendFacts(info, yd, total) {
+  const SRC = ['Coal','Gas','Other Fossil','Nuclear','Hydro','Wind','Solar','Bioenergy','Other Renewables'];
+  const first = info.years['2010'] || info.years[Object.keys(info.years).sort()[0]] || {};
+  const t0 = first.Total || 0;
+  const mixChange = total > 0 && t0 > 0 ? 0.5 * SRC.reduce((a, k) => a + Math.abs((yd[k] || 0) / total - (first[k] || 0) / t0), 0) : null;
+  const ni = yd.NetImports, dem = yd.Demand;
+  return {
+    mixChange,                                                              // 0 to 1: share of the mix that switched source
+    growth:      t0 > 0 ? total / t0 : null,                                // latest generation / 2010 generation
+    importShare: ni > 0 && dem > 0 ? ni / dem : 0,                          // net imports as a share of demand
+    exportShare: ni < 0 && total > 0 ? -ni / total : 0,                     // net exports as a share of generation
+  };
+}
+
 // ============================================================
 //  PRACTICE CATEGORIES
 // ============================================================
 const PRACTICE_CATEGORIES = [
-  { id:'all',      label:'All Countries',  filter: c => true },
-  { id:'europe',   label:'Europe',         filter: c => c.continent === 'Europe' },
-  { id:'africa',   label:'Africa',         filter: c => c.continent === 'Africa' },
-  { id:'asia',     label:'Asia & Pacific', filter: c => c.continent === 'Asia' || c.continent === 'Oceania' },
-  { id:'americas', label:'Americas',       filter: c => c.continent === 'North America' || c.continent === 'South America' },
-  { id:'major',    label:'Major Producers',filter: c => c.latestTotal >= 100 },
-  { id:'highcap',  label:'High Per-Capita',filter: c => (c.latestDpc ?? 0) >= 7 },
-  { id:'green',    label:'Green Leaders',  filter: c => (c.renewablePct ?? 0) >= 70 },
-  { id:'fossil',   label:'Fossil Heavy',   filter: c => (c.fossilPct ?? 0) >= 90 },
-  { id:'lowcap',   label:'Low Per-Capita', filter: c => (c.latestDpc ?? 0) > 0 && (c.latestDpc ?? 0) < 0.5 },
+  { id:'all',      group:'region',  label:'All countries',          rule:'Every country in the game',          filter: c => true },
+  { id:'europe',   group:'region',  label:'Europe',                 rule:'',                                   filter: c => c.continent === 'Europe' },
+  { id:'africa',   group:'region',  label:'Africa',                 rule:'',                                   filter: c => c.continent === 'Africa' },
+  { id:'asia',     group:'region',  label:'Asia & Pacific',         rule:'',                                   filter: c => c.continent === 'Asia' || c.continent === 'Oceania' },
+  { id:'americas', group:'region',  label:'Americas',               rule:'',                                   filter: c => c.continent === 'North America' || c.continent === 'South America' },
+  { id:'major',    group:'profile', label:'Major producers',        rule:'Generate 100 TWh or more a year',     filter: c => c.latestTotal >= 100 },
+  { id:'highcap',  group:'profile', label:'High use per person',    rule:'Use 7 MWh or more per person',        filter: c => (c.latestDpc ?? 0) >= 7 },
+  { id:'green',    group:'profile', label:'Green leaders',          rule:'70% or more from renewables',         filter: c => (c.renewablePct ?? 0) >= 70 },
+  { id:'fossil',   group:'profile', label:'Fossil heavy',           rule:'90% or more from fossil fuels',       filter: c => (c.fossilPct ?? 0) >= 90 },
+  { id:'lowcap',   group:'profile', label:'Low use per person',     rule:'Use under 0.5 MWh per person',        filter: c => (c.latestDpc ?? 0) > 0 && (c.latestDpc ?? 0) < 0.5 },
+  { id:'movers',   group:'trend',   label:'Fast movers',            rule:'Mix changed by 30+ points since 2010',  filter: c => (c.mixChange ?? 0) >= 0.30 },
+  { id:'growing',  group:'trend',   label:'Growing fast',           rule:'Generation at least doubled since 2010', filter: c => (c.growth ?? 0) >= 2 },
+  { id:'falling',  group:'trend',   label:'Generating less',        rule:'Generation down 10%+ since 2010',       filter: c => c.growth != null && c.growth <= 0.9 },
+  { id:'importers',group:'trend',   label:'Big importers',          rule:'Imports cover 20%+ of demand',          filter: c => c.importShare >= 0.20 },
+  { id:'exporters',group:'trend',   label:'Power exporters',        rule:'Export 10%+ of what they generate',     filter: c => c.exportShare >= 0.10 },
 ];
+const REGION_LABEL = { 'Europe': 'Europe', 'Africa': 'Africa', 'Asia': 'Asia', 'Oceania': 'Oceania', 'North America': 'N. America', 'South America': 'S. America' };
 
 const CAT_EMOJIS = {
   all: '🌐', europe: '🇪🇺', africa: '🌍', asia: '🌏',
@@ -118,8 +151,8 @@ function mulberry32(seed) {
 }
 
 // The original rule (every country equally likely, every day), kept only as a fallback
-function legacyDailyTarget(countries) {
-  const rng = mulberry32(getDayNumber() * 2654435761);
+function legacyDailyTarget(countries, day = getDayNumber()) {
+  const rng = mulberry32(day * 2654435761);
   const arr = [...countries];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
@@ -169,9 +202,9 @@ function lineupDraw(day, W, last, gap) {
   return pool[pool.length - 1].iso;
 }
 
-function getDailyTarget(countries) {
-  if (!SCHEDULE || !Array.isArray(SCHEDULE.puzzles) || !SCHEDULE.rule) return legacyDailyTarget(countries);
-  const day = getDayNumber(), list = SCHEDULE.puzzles, rule = SCHEDULE.rule;
+function getDailyTarget(countries, day = getDayNumber()) {
+  if (!SCHEDULE || !Array.isArray(SCHEDULE.puzzles) || !SCHEDULE.rule) return legacyDailyTarget(countries, day);
+  const list = SCHEDULE.puzzles, rule = SCHEDULE.rule;
   const byIso = iso => countries.find(c => c.iso3 === iso);
   if (byIso(list[day - 1])) return byIso(list[day - 1]);
   // Past the end of the list (or a country missing from the data): continue the list with the same rule
@@ -179,7 +212,7 @@ function getDailyTarget(countries) {
   const last = {};
   list.forEach((iso, i) => { if (i + 1 < day) last[iso] = i + 1; });
   for (let d = list.length + 1; d < day; d++) last[lineupDraw(d, W, last, rule.gap_days)] = d;
-  return byIso(lineupDraw(day, W, last, rule.gap_days)) || legacyDailyTarget(countries);
+  return byIso(lineupDraw(day, W, last, rule.gap_days)) || legacyDailyTarget(countries, day);
 }
 
 // ============================================================
@@ -199,11 +232,36 @@ function loadDailyState() {
 }
 
 function saveDailyState() {
+  if (MODE === 'archive') {
+    const prev = loadHistory()[ARCHIVE_DAY];
+    if (prev && prev.done) return;                     // a finished puzzle is never overwritten
+    saveHistoryEntry(ARCHIVE_DAY, { g: guesses.map(g => g.iso3), done: gameOver, src: 'archive' });
+    return;
+  }
   if (MODE !== 'normal') return;
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
       day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver, submitted: scoreSubmitted, pathSent,
     }));
+  } catch {}
+  saveHistoryEntry(getDayNumber(), { g: guesses.map(g => g.iso3), done: gameOver, src: 'daily', ps: pathSent });
+}
+
+// Every puzzle played on this device: { day: { g: [ISO3 guesses], done, src: 'daily' | 'archive', ps: added to the average path } }.
+// Kept from 25 Oct 2026; older days are known only from the scores table (result, not the guesses).
+const LS_HISTORY_KEY = 'energle_history_v1';
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(LS_HISTORY_KEY)) || {}; } catch { return {}; }
+}
+function saveHistoryEntry(day, entry) {
+  try { const h = loadHistory(); h[day] = entry; localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(h)); } catch {}
+}
+// The last daily game saved before the history existed (often yesterday's) goes into it once
+function migrateDailyToHistory() {
+  try {
+    const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    if (!st || !st.day || !Array.isArray(st.guesses) || !st.guesses.length) return;
+    if (!loadHistory()[st.day]) saveHistoryEntry(st.day, { g: st.guesses, done: !!st.gameOver, src: 'daily', ps: st.pathSent === true });
   } catch {}
 }
 
@@ -341,6 +399,8 @@ function buildWorldGen() {
 let target = null, guesses = [], gameOver = false;
 let lineChart = null, barChart = null;
 let MODE = 'normal', PRACTICE_CAT = null;
+let ARCHIVE_DAY = null, MY_SCORES = null;      // past puzzle on screen; this player's results from the scores table
+function currentDay() { return MODE === 'archive' ? ARCHIVE_DAY : getDayNumber(); }
 let scoreSubmitted = false; // has today's daily result reached Supabase?
 let pathSent = false, pathSending = null; // has today's game been added to the average-path totals?
 
@@ -383,6 +443,7 @@ async function loadData() {
         latestYear:   latest, latestDpc: info.latestDpc, latestTotal: total,
         renewablePct: total > 0 ? renSum / total * 100 : 0,
         fossilPct:    total > 0 ? fosSum / total * 100 : 0,
+        ...trendFacts(info, yd, total),
       };
     });
     POOL = COUNTRIES;
@@ -399,12 +460,13 @@ function modeSwitcherHTML() {
   const locked = !practiceUnlocked();
   const dA = MODE === 'normal'   ? 'active' : '';
   const pA = MODE === 'practice' ? 'active' : '';
+  const aA = MODE === 'archive'  ? 'active' : '';
   const lC = locked ? 'locked' : '';
   const lI = locked ? ' 🔒' : '';
   return `<div class="mode-switcher" id="mode-nav">
     <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
+    <button class="mode-btn ${aA}" onclick="switchMode('archive')">Archive</button>
     <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
-    <button class="mode-btn" onclick="showStatsModal(false)">Stats</button>
   </div>`;
 }
 
@@ -414,7 +476,7 @@ function pageHeaderHTML() {
   return '<header><div class="hd-grid"><div class="hd-brand">' + logoHTML()
     + '<span class="hd-by">by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span></div>'
     + podiumHTML() + modeSwitcherHTML()
-    + '<div class="mode-switcher lb-switcher"><button class="mode-btn" onclick="showLeaderboardModal()">Leaderboard</button></div>'
+    + '<div class="mode-switcher lb-switcher"><button class="mode-btn" onclick="showStatsModal(false)">Stats &amp; Leaderboard</button></div>'
     + '</div></header>';
 }
 function pageSubtitleHTML(lead, rest = '', extra = '') {
@@ -464,8 +526,10 @@ function switchMode(mode) {
   }
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
+  clearInterval(resultTicker);
   MODE = mode;
   if (mode === 'normal') { POOL = COUNTRIES; PRACTICE_CAT = null; renderGameScreen(); restoreDailyGame(); }
+  else if (mode === 'archive') { renderArchiveScreen(); }
   else { renderPracticePickerScreen(); }
 }
 
@@ -473,6 +537,7 @@ function startPractice(catId) {
   const cat = PRACTICE_CATEGORIES.find(c => c.id === catId); if (!cat) return;
   PRACTICE_CAT = catId;
   POOL = COUNTRIES.filter(cat.filter);
+  practiceSession = { played: 0, solved: 0 };
   if (POOL.length === 0) { alert('No countries match this category.'); return; }
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
@@ -489,17 +554,25 @@ function showCountryList(catId) {
   const modal = document.createElement('div'); modal.id = 'cl-modal';
   modal.innerHTML =
     '<div class="cl-backdrop"></div>'
-    + '<div class="cl-box">'
-    + '<div class="cl-header"><span>' + catEmoji(catId) + ' ' + cat.label
-    + ' <span class="cl-count">(' + countries.length + ' countries)</span></span>'
-    + '<button class="cl-close" id="cl-close-btn">×</button></div>'
+    + '<div class="cl-box" role="dialog" aria-modal="true" aria-labelledby="cl-title">'
+    + '<div class="cl-header"><span class="cl-titles"><span class="cl-title" id="cl-title">' + cat.label + '</span>'
+    + '<span class="cl-count">' + countries.length + ' countries' + (cat.rule ? ' · ' + cat.rule.toLowerCase() : '') + '</span></span>'
+    + '<button type="button" class="cl-close" id="cl-close-btn" aria-label="Close">×</button></div>'
     + '<div class="cl-body">'
-    + countries.map(c => '<div class="cl-row"><span class="cl-name">' + c.name + '</span><span class="cl-meta">' + (c.continent || '') + '</span></div>').join('')
-    + '</div></div>';
-  modal.querySelector('.cl-backdrop').addEventListener('click', () => modal.remove());
+    + countries.map(c => '<div class="cl-row">' + flagImg(c.iso3, 'cl-flag') + '<span class="cl-name">' + c.name + '</span>'
+      + mixBarHTML(sharesOf(c), 'cl-mix') + '<span class="cl-meta">' + fmtTwh(c.latestTotal) + '</span></div>').join('')
+    + '</div>'
+    + '<div class="cl-foot"><button type="button" class="cl-play" id="cl-play">Practise this group</button></div>'
+    + '</div>';
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  modal.querySelector('.cl-backdrop').addEventListener('click', close);
   document.body.appendChild(modal);
-  document.getElementById('cl-close-btn').addEventListener('click', () => modal.remove());
+  document.getElementById('cl-close-btn').addEventListener('click', close);
+  document.getElementById('cl-play').addEventListener('click', () => { close(); startPractice(catId); });
+  document.addEventListener('keydown', onKey);
 }
+function fmtTwh(v) { return (v >= 100 ? Math.round(v).toLocaleString('en-US') : v >= 10 ? v.toFixed(0) : v.toFixed(1)) + ' TWh'; }
 
 // ============================================================
 //  BROWSE GATE + BROWSE MODE
@@ -517,30 +590,61 @@ function tryBrowse() {
   renderBrowseScreen();
 }
 
+let ATLAS = { q: '', region: 'all', sort: 'name' };
 function renderBrowseScreen() {
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
-  const sorted = [...COUNTRIES].sort((a,b) => a.name.localeCompare(b.name));
-  const rows = sorted.map(c => {
-    const fn = "browseCountry('" + c.iso3 + "')";
-    return '<button class="browse-row" onclick="' + fn + '">'
-      + '<span class="browse-name">' + c.name + '</span>'
-      + '<span class="browse-meta">' + (c.continent || '') + ' · ' + c.latestTotal.toFixed(1) + ' TWh</span>'
+  const regions = [['all', 'All'], ['europe', 'Europe'], ['africa', 'Africa'], ['asia', 'Asia & Pacific'], ['americas', 'Americas']];
+  const rows = COUNTRIES.map(c => {
+    const sh = sharesOf(c), ren = sh.find(x => x.k === 'Renewables').p;
+    return '<button type="button" class="browse-row at-row" onclick="browseCountry(\'' + c.iso3 + '\')"'
+      + ' data-name="' + escHtml(c.name.toLowerCase()) + '" data-alias="' + escHtml((NAME_ALIAS[c.name] || '').toLowerCase()) + '"'
+      + ' data-g="' + c.latestTotal + '" data-dpc="' + (c.latestDpc || 0) + '" data-ren="' + ren.toFixed(4) + '" data-cont="' + (c.continent || '') + '">'
+      + '<span class="at-who">' + flagImg(c.iso3, 'at-flag') + '<span class="at-names"><span class="browse-name">' + c.name + '</span>'
+      + '<span class="at-region">' + (REGION_LABEL[c.continent] || '') + '</span></span></span>'
+      + mixBarHTML(sh, 'at-mix')
+      + '<span class="at-num">' + fmtTwh(c.latestTotal) + '</span>'
+      + '<span class="at-num at-dpc">' + (c.latestDpc != null ? c.latestDpc.toFixed(1) + ' MWh' : '–') + '</span>'
       + '</button>';
   }).join('');
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
-    + pageSubtitleHTML('Browse', 'every country\u2019s electricity profile', '<button id="back-to-cats">← Categories</button>')
-    + '<div class="browse-search-wrap"><input id="browse-search" type="text" placeholder="Search countries…" autocomplete="off" /></div>'
-    + '<div class="browse-list">' + rows + '</div>'
+    + pageSubtitleHTML('Country atlas', 'every country’s electricity profile', '<button type="button" id="back-to-cats">← Practice</button>')
+    + '<div class="at-tools">'
+    +   '<label class="cr-sr" for="browse-search">Search countries</label>'
+    +   '<input id="browse-search" type="search" placeholder="Search a country…" autocomplete="off" />'
+    +   '<div class="at-chips" role="group" aria-label="Region">' + regions.map(([id, l]) => '<button type="button" class="at-chip" data-r="' + id + '">' + l + '</button>').join('') + '</div>'
+    +   '<label class="at-sort"><span>Sort</span><select id="at-sort">'
+    +     '<option value="name">A–Z</option><option value="g">Generation</option><option value="dpc">Use per person</option><option value="ren">Renewable share</option>'
+    +   '</select></label>'
+    + '</div>'
+    + '<div class="at-head" aria-hidden="true"><span>Country</span><span class="at-keyhead">' + CATEGORIES.map(g => '<span class="pc-key-i"><span class="pc-key-sw" style="background:' + g.color + '80;box-shadow:inset 0 0 0 1px ' + g.color + 'b3"></span>' + g.key + '</span>').join('') + '</span><span>Generation</span><span>Per person</span></div>'
+    + '<div class="browse-list at-list" id="at-list">' + rows + '</div>'
+    + '<p class="at-empty" id="at-empty" hidden>No country matches.</p>'
     + footerHTML();
   document.getElementById('back-to-cats').addEventListener('click', renderPracticePickerScreen);
-  document.getElementById('browse-search').addEventListener('input', function () {
-    const q = this.value.toLowerCase().trim();
-    document.querySelectorAll('.browse-row').forEach(b => {
-      b.style.display = b.querySelector('.browse-name').textContent.toLowerCase().includes(q) ? '' : 'none';
-    });
+  const search = document.getElementById('browse-search'), sort = document.getElementById('at-sort');
+  search.value = ATLAS.q; sort.value = ATLAS.sort;
+  search.addEventListener('input', () => { ATLAS.q = search.value.toLowerCase().trim(); applyAtlas(); });
+  sort.addEventListener('change', () => { ATLAS.sort = sort.value; applyAtlas(); });
+  document.querySelectorAll('.at-chip').forEach(b => b.addEventListener('click', () => { ATLAS.region = b.dataset.r; applyAtlas(); }));
+  applyAtlas();
+}
+function applyAtlas() {
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === ATLAS.region);
+  const inRegion = cont => !cat || cat.filter({ continent: cont });
+  const list = document.getElementById('at-list'); if (!list) return;
+  const rows = [...list.children];
+  const key = ATLAS.sort;
+  rows.sort((a, b) => key === 'name' ? a.dataset.name.localeCompare(b.dataset.name) : (+b.dataset[key]) - (+a.dataset[key]));
+  let shown = 0;
+  rows.forEach(r => {
+    const ok = inRegion(r.dataset.cont) && (!ATLAS.q || r.dataset.name.includes(ATLAS.q) || r.dataset.alias.includes(ATLAS.q));
+    r.hidden = !ok; if (ok) shown++;
+    list.appendChild(r);
   });
+  document.getElementById('at-empty').hidden = shown > 0;
+  document.querySelectorAll('.at-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === ATLAS.region)));
 }
 
 function browseCountry(iso3) {
@@ -550,7 +654,7 @@ function browseCountry(iso3) {
   const prevTarget = target; target = country;
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
-    + pageSubtitleHTML(escHtml(country.name), country.continent || '', '<button id="back-to-browse">← Browse</button>')
+    + pageSubtitleHTML(escHtml(country.name), country.continent || '', '<button type="button" id="back-to-browse">← Atlas</button>')
     + balanceCardHTML()
     + '<div id="charts-section">'
     + '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
@@ -570,33 +674,216 @@ function browseCountry(iso3) {
 //  PRACTICE PICKER
 // ============================================================
 function renderPracticePickerScreen() {
+  MODE = 'practice'; clearInterval(resultTicker);
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
-  const cards = PRACTICE_CATEGORIES.map(cat => {
-    const count    = COUNTRIES.filter(cat.filter).length;
-    const startFn  = "startPractice('" + cat.id + "')";
-    const listFn   = "showCountryList('" + cat.id + "')";
-    return '<div class="cat-card-wrap">'
-      + '<button class="cat-card" onclick="' + startFn + '">'
-      + '<span class="cat-emoji">' + catEmoji(cat.id) + '</span>'
-      + '<span class="cat-label">' + cat.label + '</span>'
-      + '<span class="cat-desc">' + count + ' countries</span>'
+  const card = cat => {
+    const list = COUNTRIES.filter(cat.filter);
+    return '<div class="pc-card">'
+      + '<button type="button" class="pc-main" onclick="startPractice(\'' + cat.id + '\')">'
+      +   '<span class="pc-top"><span class="pc-name">' + cat.label + '</span><span class="pc-count">' + list.length + '</span></span>'
+      +   '<span class="pc-rule">' + (cat.rule || topSourceText(list)) + '</span>'
+      +   mixBarHTML(groupShares(list), 'pc-mix')
       + '</button>'
-      + '<button class="cat-list-btn" onclick="' + listFn + '" title="See country list">☰</button>'
+      + '<button type="button" class="pc-list" onclick="showCountryList(\'' + cat.id + '\')">See the ' + list.length + ' countries</button>'
       + '</div>';
-  }).join('');
+  };
+  const section = (group, title, sub) => '<section class="pc-section" aria-label="' + title + '">'
+    + '<div class="pc-head"><span class="pc-h">' + title + '</span><span class="pc-sub">' + sub + '</span></div>'
+    + '<div class="pc-grid">' + PRACTICE_CATEGORIES.filter(c => c.group === group).map(card).join('') + '</div></section>';
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
-    + pageSubtitleHTML('Practice', 'choose a category of countries to train on')
-    + '<div class="cat-grid">' + cards + '</div>'
-    + '<div class="browse-btn-wrap"><button class="browse-all-btn" onclick="tryBrowse()">🔍 Browse all countries</button></div>'
+    + pageSubtitleHTML('Practice', 'pick a group of countries to train on', '<span class="sub-date">No score, no streak</span>')
+    + '<div class="pc-key" aria-label="Colour key for the mix bars"><span class="pc-key-lbl">Bars show each group’s combined mix</span>'
+    +   CATEGORIES.map(g => '<span class="pc-key-i"><span class="pc-key-sw" style="background:' + g.color + '80;box-shadow:inset 0 0 0 1px ' + g.color + 'b3"></span>' + g.key + '</span>').join('') + '</div>'
+    + section('region', 'By region', '')
+    + section('profile', 'By profile', 'Countries that share a trait')
+    + section('trend', 'By trend & trade', 'How each grid changed since 2010, and what crosses its borders')
+    + '<button type="button" class="pc-atlas" onclick="tryBrowse()">'
+    +   '<span class="pc-atlas-txt"><span class="pc-atlas-title">Country atlas</span>'
+    +   '<span class="pc-atlas-sub">Look up any country’s charts, compare their mixes, no guessing</span></span>'
+    +   '<span class="pc-atlas-cta">Open the atlas →</span></button>'
     + footerHTML();
+}
+
+// ============================================================
+//  PAST PUZZLES (archive): replay, or look back at your own path. Never touches stats, streak or leaderboard.
+// ============================================================
+function lastPastDay() { return getDayNumber() - 1; }
+function puzzleDate(day, opts) {
+  return new Date(EPOCH_DATE.getTime() + (day - 1) * 86400000)
+    .toLocaleDateString('en-GB', Object.assign({ timeZone: 'UTC' }, opts || { weekday: 'long', day: 'numeric', month: 'long' }));
+}
+// What this player did on a past puzzle.
+//   onDay:  the daily game on its own day (this device's history, else the scores table, which only holds daily games)
+//   replay: a game played later from the archive (never counted anywhere)
+function archiveStatus(day) {
+  const h = loadHistory()[day], t = getDailyTarget(COUNTRIES, day), ans = t && t.iso3;
+  const sc = MY_SCORES && MY_SCORES[day];
+  let onDay = null, replay = null;
+  if (h && h.src === 'daily' && h.done && h.g.length) onDay = { won: h.g[h.g.length - 1] === ans, n: h.g.length };
+  else if (sc) onDay = { won: !!sc.won, n: sc.n };
+  if (h && h.g.length && !(h.src === 'daily' && h.done)) replay = { done: !!h.done, won: !!h.done && h.g[h.g.length - 1] === ans, n: h.g.length };
+  const kind = onDay ? (onDay.won ? 'solved' : 'missed') : replay ? (replay.done ? 'replayed' : 'started') : 'new';
+  return { kind, onDay, replay };
+}
+function archiveStatusText(st) {
+  const rp = st.replay;
+  const rpText = rp ? (rp.done ? (rp.won ? 'replay solved in ' + rp.n : 'replay missed') : rp.n + ' guess' + (rp.n > 1 ? 'es' : '') + ' so far') : '';
+  if (st.kind === 'solved') return 'Solved in ' + st.onDay.n;
+  if (st.kind === 'missed') return 'Missed' + (rpText ? ' · ' + rpText : '');
+  if (st.kind === 'new') return 'Not played';
+  return rpText.charAt(0).toUpperCase() + rpText.slice(1);
+}
+function loadMyScores() {
+  const u = getUsername();
+  if (!u || MY_SCORES) return Promise.resolve(MY_SCORES);
+  return sbFetchMine(u).then(r => { MY_SCORES = r; return r; });
+}
+
+function renderArchiveScreen(focusDay) {
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  MODE = 'archive'; ARCHIVE_DAY = null;
+  const today = getDayNumber(), last = today - 1;
+  const sts = {}; let solved = 0, missed = 0, open = 0;
+  for (let d = 1; d <= last; d++) {
+    const st = sts[d] = archiveStatus(d);
+    if (st.kind === 'solved') solved++; else if (st.kind === 'missed') missed++; else if (!(st.replay && st.replay.done)) open++;
+  }
+  const row = (d, st, isToday) => '<button type="button" class="ax-row ax-row--' + st.kind + (isToday ? ' ax-row--today' : '') + '" id="ax-' + d + '" onclick="'
+    + (isToday ? 'switchMode(\'normal\')' : 'openArchive(' + d + ')') + '">'
+    + '<span class="ax-num">#' + d + '</span>'
+    + '<span class="ax-date">' + (isToday ? 'Today' : puzzleDate(d, { weekday: 'short', day: 'numeric', month: 'short' }).replace(',', '')) + '</span>'
+    + '<span class="ax-status">' + (isToday && st.kind === 'new' ? 'Play it in Daily' : archiveStatusText(st)) + '</span>'
+    + '<svg class="ax-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+  // today: your daily result, or a way into it (its answer is never listed here)
+  const ds = loadDailyState(), dWon = ds && ds.gameOver && ds.guesses.length && ds.guesses[ds.guesses.length - 1] === getDailyTarget(COUNTRIES).iso3;
+  const todaySt = ds && ds.gameOver ? { kind: dWon ? 'solved' : 'missed', onDay: { won: dWon, n: ds.guesses.length } } : { kind: 'new' };
+  let html = '', d = today;
+  while (d >= 1) {
+    const key = puzzleDate(d, { month: 'long', year: 'numeric' });
+    let rows = '', n = 0, ok = 0;
+    while (d >= 1 && puzzleDate(d, { month: 'long', year: 'numeric' }) === key) {
+      if (d === today) rows += row(d, todaySt, true);
+      else { rows += row(d, sts[d]); n++; if (sts[d].kind === 'solved') ok++; }
+      d--;
+    }
+    html += '<section class="ax-month"><div class="ax-mhead"><span class="pc-h">' + key + '</span><span class="pc-sub">' + (n ? ok + ' of ' + n + ' solved on the day' : '') + '</span></div>'
+      + '<div class="ax-list">' + rows + '</div></section>';
+  }
+  document.getElementById('app').innerHTML =
+    pageHeaderHTML()
+    + pageSubtitleHTML('Archive', 'every daily puzzle since 2 June', '<span class="sub-date">Replays don’t count in stats or the leaderboard</span>')
+    + '<div class="ax-sum"><span><strong>' + solved + '</strong> solved on the day</span><span><strong>' + missed + '</strong> missed</span>'
+    +   '<span><strong>' + open + '</strong> left to play</span>'
+    +   '<span class="ax-key"><span class="ax-sw ax-sw--solved"></span>Shaded: solved on the day</span></div>'
+    + html
+    + footerHTML();
+  const f = focusDay && document.getElementById('ax-' + focusDay);
+  if (f) f.scrollIntoView({ block: 'center' });
+  if (!MY_SCORES && getUsername()) loadMyScores().then(() => { if (MODE === 'archive' && ARCHIVE_DAY === null) renderArchiveScreen(); });
+}
+
+function openArchive(day) {
+  const last = lastPastDay();
+  if (last < 1) return;
+  day = Math.max(1, Math.min(last, day));
+  if (MODE === 'archive' && day === ARCHIVE_DAY && document.getElementById('ar-nav')) return;
+  if (!MY_SCORES && getUsername()) loadMyScores().then(() => { if (MODE === 'archive' && ARCHIVE_DAY === day) refreshArchiveStatus(); });
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  clearInterval(resultTicker);
+  MODE = 'archive'; ARCHIVE_DAY = day; POOL = COUNTRIES; PRACTICE_CAT = null;
+  renderGameScreen(); restoreArchiveGame();
+  window.scrollTo({ top: 0 });
+}
+function archiveNavHTML() {
+  const d = ARCHIVE_DAY, last = lastPastDay(), st = archiveStatus(d);
+  return '<div class="subtitle-row ar-row"><div class="ar-nav" id="ar-nav">'
+    + '<button type="button" class="ar-arrow" aria-label="Previous puzzle"' + (d <= 1 ? ' disabled' : '') + ' onclick="openArchive(' + (d - 1) + ')">'
+    +   '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+    + '<span class="ar-title"><span class="ar-num">Puzzle #' + d + '</span><span class="ar-date">' + puzzleDate(d) + '</span></span>'
+    + '<button type="button" class="ar-arrow" aria-label="Next puzzle"' + (d >= last ? ' disabled' : '') + ' onclick="openArchive(' + (d + 1) + ')">'
+    +   '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'
+    + '</div><span class="pr-extra"><span class="ar-status ar-status--' + st.kind + '" id="ar-status">' + archiveStatusText(st) + '</span>'
+    + '<button type="button" id="back-to-archive">← Archive</button></span></div>';
+}
+function refreshArchiveStatus() {
+  const el = document.getElementById('ar-status'); if (!el) return;
+  const st = archiveStatus(ARCHIVE_DAY);
+  el.className = 'ar-status ar-status--' + st.kind; el.textContent = archiveStatusText(st);
+}
+function restoreArchiveGame() {
+  const day = ARCHIVE_DAY;
+  target = getDailyTarget(COUNTRIES, day); guesses = []; gameOver = false;
+  const h = loadHistory()[day];
+  pathSent = !!(h && h.src === 'daily' && h.ps);      // (see below)      // your own daily game is already inside that day's average
+  document.getElementById('guesses').innerHTML = '';
+  document.getElementById('banner').innerHTML  = '';
+  document.getElementById('error').textContent = '';
+  document.getElementById('input-area').style.display = 'flex';
+  document.getElementById('guess-input').value = ''; syncInputFlag();
+  renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
+  if (h && h.g.length) {
+    for (const iso3 of h.g) {
+      const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) continue;
+      guesses.push(country); addGuessRow(country, country.iso3 === target.iso3, false);
+    }
+    renderLives();
+    if (h.done) {
+      gameOver = true;
+      renderResultCard(guesses[guesses.length - 1].iso3 === target.iso3, false);
+      document.getElementById('input-area').style.display = 'none';
+    }
+    return;
+  }
+  const st = archiveStatus(day);
+  if (st.onDay)
+    document.getElementById('banner').innerHTML = '<p class="ar-note">You ' + (st.onDay.won ? 'solved this one in ' + st.onDay.n : 'missed this one')
+      + ' on the day. Guesses from before 25 October weren’t saved, so you can play it again here: it won’t change your stats.</p>';
+}
+document.addEventListener('keydown', e => {
+  if (MODE !== 'archive' || ARCHIVE_DAY === null || e.altKey || e.ctrlKey || e.metaKey) return;
+  const t = e.target;
+  if (t && (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) || t.isContentEditable)) return;
+  if (document.querySelector('#cl-modal, #stats-modal, #lb-modal, #notice-modal, #username-modal')) return;
+  if (e.key === 'ArrowLeft') openArchive(ARCHIVE_DAY - 1);
+  else if (e.key === 'ArrowRight') openArchive(ARCHIVE_DAY + 1);
+});
+
+// Combined mix of a group of countries (shares of their total generation, each at its latest year)
+function topSourceText(list) {
+  const top = sourceShares(list).sort((a, b) => b.p - a.p)[0];
+  return top && top.p ? 'Largest source: ' + top.k.toLowerCase() + ', ' + Math.round(top.p * 100) + '%' : '';
+}
+// Bars use the three groups of the "By category" chart view: fossil, nuclear, renewables
+function sourceShares(list) {
+  const sum = {}; let all = 0;
+  list.forEach(c => {
+    const yd = (ALL_DATA[c.name] && ALL_DATA[c.name].years[c.latestYear]) || {};
+    SOURCES.forEach(k => { sum[k] = (sum[k] || 0) + (yd[k] || 0); });
+    all += yd.Total || 0;
+  });
+  return SOURCES.map(k => ({ k, p: all ? sum[k] / all : 0 }));
+}
+function toGroups(src) {
+  return CATEGORIES.map(g => ({ k: g.key, p: src.filter(x => g.members.includes(x.k)).reduce((a, x) => a + x.p, 0) }));
+}
+function sharesOf(c) { return toGroups(sourceShares([c])); }
+function groupShares(list) { return toGroups(sourceShares(list)); }
+function mixBarHTML(shares, cls) {
+  const parts = shares.filter(x => x.p >= 0.005);
+  const title = [...parts].sort((a, b) => b.p - a.p).map(x => x.k + ' ' + Math.round(x.p * 100) + '%').join(', ');
+  return '<span class="mixbar ' + cls + '" role="img" aria-label="' + title + '" title="' + title + '">'
+    + parts.map(x => '<span style="flex:' + x.p.toFixed(4) + ';background:' + CAT_COLORS[x.k] + '80;box-shadow:inset 0 0 0 1px ' + CAT_COLORS[x.k] + 'b3"></span>').join('') + '</span>';
 }
 
 // ============================================================
 //  INIT
 // ============================================================
 function initApp() {
+  migrateDailyToHistory();
   POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
   scheduleAmbientPulse();
   maybeShowNotice();
@@ -647,7 +934,7 @@ function showNotice() {
 // ============================================================
 const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-function logoHTML() { return '<h1><span class="logo-bolt" aria-hidden="true">⚡</span> Energle</h1>'; }
+function logoHTML() { return '<h1><span class="logo-bolt" aria-hidden="true">⚡</span><span class="logo-gap"> </span><span class="logo-word">Energle</span></h1>'; }
 
 // First page load only: logo flickers on, a current runs along the header line.
 function playIntro() {
@@ -802,19 +1089,20 @@ function runLinePulse() {
 function practiceSubtitle() {
   if (MODE !== 'practice' || !PRACTICE_CAT) return '';
   const cat = PRACTICE_CATEGORIES.find(c => c.id === PRACTICE_CAT);
-  return cat ? catEmoji(cat.id) + ' ' + cat.label + ' · ' + POOL.length + ' countries' : '';
+  return cat ? cat.label + ' · ' + POOL.length + ' countries' : '';
 }
 
 function renderGameScreen() {
   const isPractice = MODE === 'practice';
   const cat = isPractice ? PRACTICE_CATEGORIES.find(c => c.id === PRACTICE_CAT) : null;
-  const lead = isPractice ? (cat ? catEmoji(cat.id) + ' ' + cat.label : 'Practice') : 'Puzzle #' + getDayNumber();
-  const rest = 'Guess the country from its electricity generation mix';
-  const backBtn = isPractice ? '<button id="back-to-categories">← Categories</button>' : '';
+  const lead = isPractice ? 'Practice · ' + (cat ? cat.label : 'All countries') : 'Puzzle #' + getDayNumber();
+  const rest = isPractice ? 'guess the country from its mix' : 'Guess the country from its electricity generation mix';
+  const backBtn = isPractice ? '<span class="pr-extra"><span class="pr-session" id="pr-session">' + practiceSessionText() + '</span>'
+    + '<button type="button" id="back-to-categories">Change group</button></span>' : '';
 
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
-    + pageSubtitleHTML(lead, rest, isPractice ? backBtn : '<span class="sub-date">' + todayLabel() + '</span>')
+    + (MODE === 'archive' ? archiveNavHTML() : pageSubtitleHTML(lead, rest, isPractice ? backBtn : '<span class="sub-date">' + todayLabel() + '</span>'))
     + balanceCardHTML()
     + '<div id="charts-section">'
     + '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
@@ -833,6 +1121,10 @@ function renderGameScreen() {
     + footerHTML();
 
   document.getElementById('submit-btn').addEventListener('click', submitGuess);
+  if (MODE === 'archive') {
+    const day = ARCHIVE_DAY;
+    document.getElementById('back-to-archive').addEventListener('click', () => { clearInterval(resultTicker); renderArchiveScreen(day); });
+  }
   if (isPractice) {
     document.getElementById('back-to-categories').addEventListener('click', () => {
       if (lineChart) { lineChart.destroy(); lineChart = null; }
@@ -1120,7 +1412,17 @@ function nextPracticeCountry() {
   return next;
 }
 
-function recordPracticeResult(won) { if (!won) practiceRetry.push(target); }
+let practiceSession = { played: 0, solved: 0 };
+function recordPracticeResult(won) {
+  if (!won) practiceRetry.push(target);
+  practiceSession.played++; if (won) practiceSession.solved++;
+  const el = document.getElementById('pr-session'); if (el) el.textContent = practiceSessionText();
+}
+function practiceSessionText() {
+  const s = practiceSession;
+  return s.played ? s.solved + ' of ' + s.played + ' solved' : PRACTICE_POOL_SIZE() + ' countries';
+}
+function PRACTICE_POOL_SIZE() { return POOL.length; }
 
 // ============================================================
 //  RENDER CHARTS
@@ -1844,7 +2146,7 @@ function pathHTML(won, mini, animate) {
       : '<span style="left:' + X(p) + '%">' + (i + 1) + '</span>').join('') + '</div>';
   }
   const label = 'Distance to the answer, guess by guess: ' + pts.filter(p => !p.isAns).map(p => chartKm(p.h.km)).join(', ')
-    + (won ? ', then the answer' : '. Today’s country was ' + target.name);
+    + (won ? ', then the answer' : (MODE === 'normal' ? '. Today’s country was ' : '. The country was ') + target.name);
   return { html: '<div class="dc' + (mini ? ' dc--mini' : '') + (n === 1 ? ' dc--one' : '') + (won ? '' : ' dc--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '" role="img" aria-label="' + escHtml(label) + '">'
       + '<div class="dc-plot">' + grid + '<div class="dc-in">' + svg + drop + nodes + labels + '</div></div>' + xs + '</div>',
     doneAt: START + RUN + 0.2 };
@@ -1941,10 +2243,12 @@ let dodgeTimer = null;
 window.addEventListener('resize', () => { clearTimeout(dodgeTimer); dodgeTimer = setTimeout(() => dodgeAverage(document.querySelector('#banner .go-card .dc')), 150); });
 
 async function addAveragePath(won) {
-  if (MODE !== 'normal') return;
+  if (MODE !== 'normal' && MODE !== 'archive') return;
+  const day = currentDay(), when = MODE === 'archive' ? 'that day' : 'today';
   await new Promise(r => setTimeout(r, 0));          // let endGame() finish first
   await recordPathOnce();
-  const res = averagePath(await sbFetchPathStats(getDayNumber()));
+  const res = averagePath(await sbFetchPathStats(day));
+  if (currentDay() !== day) return;
   const dc = document.querySelector('#banner .go-card .dc'); if (!res || !dc || dc.dataset.avg) return;
   dc.dataset.avg = '1';
   const mine = guesses.filter(c => c.iso3 !== target.iso3).map(c => Math.max(1, guessInfo(c).km));
@@ -1955,7 +2259,7 @@ async function addAveragePath(won) {
   if (pts.length >= 2) {
     const line = pts.map(p => (p[0] * 100).toFixed(2) + ',' + ((1 - p[1]) * 100).toFixed(2)).join(' ');
     const dots = pts.map(p => '<span class="dc-avgdot" style="left:' + (p[0] * 100).toFixed(2) + '%;top:' + ((1 - p[1]) * 100).toFixed(2)
-      + '%" title="Today’s average: ' + chartKm(p[2]) + '"></span>').join('');
+      + '%" title="Average: ' + chartKm(p[2]) + '"></span>').join('');
     dc.querySelector('.dc-in').insertAdjacentHTML('afterbegin',
       '<div class="dc-avg"><svg class="dc-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
       + '<polyline class="dc-avgline" points="' + line + '"/></svg>' + dots + '</div>');
@@ -1974,10 +2278,10 @@ async function addAveragePath(won) {
   if (row) dc.insertAdjacentHTML('beforeend', '<div class="dc-common"><span class="dc-common-lbl">Most<br>guessed</span>' + row + '</div>');
   // key: placed before the line under the chart (if any)
   // key: just the average line ("Most guessed" is already named beside its row)
-  const key = '<div class="dc-legend" title="Today\u2019s other players: ' + res.players + '">'
+  const key = '<div class="dc-legend" title="Other players ' + when + ': ' + res.players + '">'
     + '<span class="dc-key-avg" aria-hidden="true"><span class="dc-key-avgdot"></span></span>'
-    + '<span class="u-long">Average distance at each guess, across ' + res.players + ' other players today</span>'
-    + '<span class="u-short">Average of ' + res.players + ' other players today</span></div>';
+    + '<span class="u-long">Average distance at each guess, across ' + res.players + ' other players ' + when + '</span>'
+    + '<span class="u-short">Average of ' + res.players + ' other players ' + when + '</span></div>';
   dc.insertAdjacentHTML('afterend', key);
   if (row) dc.classList.add('dc--common');
 }
@@ -1988,8 +2292,13 @@ function renderResultCard(won, animate = true) {
   const p = pathHTML(won, false, animate);
   // Win: no sentence (the chart and its key say it). Loss: how far the final guess was.
   const summary = won ? '' : 'Your final guess was ' + chartKm(guessInfo(guesses[guesses.length - 1]).km) + ' away.';
-  const tagline = MODE === 'practice' ? escHtml(practiceSubtitle().replace(/ · \d+ countries$/, '') || 'Practice') : 'Puzzle #' + getDayNumber();
-  const foot = MODE === 'practice'
+  const tagline = MODE === 'practice' ? escHtml(practiceSubtitle().replace(/ · \d+ countries$/, '') || 'Practice') : 'Puzzle #' + currentDay();
+  const d = ARCHIVE_DAY, last = lastPastDay();
+  const foot = MODE === 'archive'
+    ? '<span class="go-next">From the archive · not counted in your stats</span>'
+      + '<div class="go-actions"><button type="button" class="go-btn" onclick="openArchive(' + (d - 1) + ')"' + (d <= 1 ? ' disabled' : '') + '>← #' + Math.max(1, d - 1) + '</button>'
+      + '<button type="button" class="go-btn go-btn--dark" onclick="openArchive(' + (d + 1) + ')"' + (d >= last ? ' disabled' : '') + '>#' + Math.min(last, d + 1) + ' →</button></div>'
+    : MODE === 'practice'
     ? '<span class="go-next">Practice round</span>'
       + '<div class="go-actions"><button type="button" class="go-btn go-btn--dark" onclick="newGame()">Next puzzle ↺</button></div>'
     : '<span class="go-next">Next puzzle in <strong id="go-countdown">' + getCountdown() + '</strong></span>'
@@ -1997,7 +2306,7 @@ function renderResultCard(won, animate = true) {
       + '<button type="button" class="go-btn go-btn--dark" onclick="copyShare(this)">Share</button></div>';
   host.innerHTML = '<div class="go-card ' + (won ? 'go-card--won' : 'go-card--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
     + '<div class="go-head"><span class="go-title">' + (won ? 'Your path to ' + escHtml(target.name)
-        : (MODE === 'practice' ? 'The country was ' : 'Today\u2019s country was ') + escHtml(target.name) + '.') + '</span>'
+        : (MODE === 'normal' ? 'Today\u2019s country was ' : 'The country was ') + escHtml(target.name) + '.') + '</span>'
     + '<span class="go-tag">' + tagline + '</span></div>'
     + p.html
     + (summary ? '<p class="go-summary">' + summary + '</p>' : '')
@@ -2005,7 +2314,7 @@ function renderResultCard(won, animate = true) {
   if (won && animate) glowBattery(p.doneAt);
   addAveragePath(won);
   clearInterval(resultTicker);
-  if (MODE !== 'practice') resultTicker = setInterval(() => {
+  if (MODE === 'normal') resultTicker = setInterval(() => {
     const el = document.getElementById('go-countdown'); if (!el) { clearInterval(resultTicker); return; }
     el.textContent = getCountdown();
   }, 1000);
@@ -2014,6 +2323,7 @@ function renderResultCard(won, animate = true) {
 function endGame() {
   gameOver = true; saveDailyState();
   if (MODE === 'practice') recordPracticeResult(guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3);
+  if (MODE === 'archive') refreshArchiveStatus();
   if (MODE === 'normal') {
     const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
     recordDailyResult(won, guesses.length);
@@ -2211,6 +2521,30 @@ function avatarColor(name) {
   return AVATAR_COLORS[h % AVATAR_COLORS.length];
 }
 
+// Stats and the leaderboard share one window. Top: Stats | Leaderboard. Under Leaderboard: Today / All time.
+let HUB_LB_TAB = 'today';
+function hubBarHTML(active, closeId) {
+  const lb = active !== 'you';
+  const top = (k, l, on) => '<button type="button" class="hub-tab' + (on ? ' is-on' : '') + '" role="tab" aria-selected="' + on + '" onclick="hubGo(\'' + k + '\')">' + l + '</button>';
+  const sub = (k, l) => '<button type="button" class="hub-sub-btn' + (active === k ? ' is-on' : '') + '" data-tab="' + k + '" aria-pressed="' + (active === k)
+    + '" onclick="hubGo(\'' + k + '\')">' + l + '</button>';
+  return '<div class="hub-bar"><div class="hub-tabs" role="tablist">' + top('you', 'Stats', !lb) + top('lb', 'Leaderboard', lb) + '</div>'
+    + '<button type="button" class="hub-close" id="' + closeId + '" aria-label="Close">×</button></div>'
+    + (lb ? '<div class="hub-subbar"><div class="hub-sub" role="group" aria-label="Leaderboard period">' + sub('today', 'Today') + sub('alltime', 'All time') + '</div>'
+      + '<span class="hub-cap" id="hub-cap">' + hubCaption(active) + '</span></div>' : '');
+}
+function hubCaption(tab) {
+  return tab === 'today' ? 'Puzzle #' + getDayNumber() + ' · fewest guesses first' : 'Every daily puzzle so far · best weighted score first';
+}
+function hubGo(tab) {
+  const st = document.getElementById('stats-modal'), lb = document.getElementById('lb-modal');
+  if (tab === 'lb') tab = HUB_LB_TAB;
+  if (tab === 'you') { if (!st) { showStatsModal(false); if (lb) lb.remove(); } return; }
+  HUB_LB_TAB = tab;
+  if (lb) lbSwitchTab(tab);
+  else { showLeaderboardModal(tab); if (st) st.remove(); }
+}
+
 function showStatsModal(afterGame) {
   const existing = document.getElementById('stats-modal'); if (existing) existing.remove();
   const stats = loadStats();
@@ -2226,8 +2560,7 @@ function showStatsModal(afterGame) {
     + '<span class="sx-avatar" aria-hidden="true" style="background:' + (name ? avatarColor(name) : '#c9c9c6') + '">'
     +   (name ? escHtml(name.charAt(0).toUpperCase()) : '?') + '</span>'
     + '<div class="sx-who"><span class="sx-name">' + (name ? escHtml(name) : 'Guest') + '</span>'
-    +   '<span class="sx-sub" id="sx-rank">' + (name ? 'Looking up your rank…' : 'Not on the leaderboard yet. You pick a name after your first daily.') + '</span></div>'
-    + '<button class="sx-close" id="st-close-btn" aria-label="Close">×</button></div>';
+    +   '<span class="sx-sub" id="sx-rank">' + (name ? 'Looking up your rank…' : 'Not on the leaderboard yet. You pick a name after your first daily.') + '</span></div></div>';
 
   // Today's result, only right after the daily
   let today = '';
@@ -2261,7 +2594,9 @@ function showStatsModal(afterGame) {
   const modal = document.createElement('div'); modal.id = 'stats-modal';
   modal.innerHTML =
     '<div class="st-backdrop"></div>'
-    + '<div class="sx-box" role="dialog" aria-label="Statistics">'
+    + '<div class="sx-box hub-box" role="dialog" aria-label="Stats and leaderboard">'
+    + hubBarHTML('you', 'st-close-btn')
+    + '<div class="hub-scroll">'
     + header + today
     + '<div class="sx-tiles">' + tiles + '</div>'
     + '<div class="sx-dist-head"><span>Guesses to solve</span><span>avg ' + avg + '</span></div>'
@@ -2275,7 +2610,7 @@ function showStatsModal(afterGame) {
     + '</div>'
     + (afterGame && MODE === 'normal' && gameOver
         ? '<div class="sx-share"><span class="sx-share-lbl">Share copies</span><pre class="sx-share-txt">' + escHtml(buildShareText()) + '</pre></div>' : '')
-    + '</div>';
+    + '</div></div>';
 
   modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
   document.body.appendChild(modal);
@@ -2301,17 +2636,14 @@ function showStatsModal(afterGame) {
 //  LEADERBOARD MODAL
 // ============================================================
 function showLeaderboardModal(tab = 'today') {
+  HUB_LB_TAB = tab;
   const existing = document.getElementById('lb-modal'); if (existing) existing.remove();
   const modal = document.createElement('div'); modal.id = 'lb-modal';
   modal.innerHTML =
     '<div class="st-backdrop"></div>'
     // `lb-box` makes this modal larger than the shared .st-box (see style.css)
-    + '<div class="st-box lb-box">'
-    + '<div class="st-header"><span class="st-title">Leaderboard</span><button class="st-close" id="lb-close-btn">×</button></div>'
-    + '<div class="lb-tabs">'
-    + '<button class="lb-tab' + (tab === 'today' ? ' lb-tab--active' : '') + '" id="lb-tab-today" onclick="lbSwitchTab(\'today\')">Today</button>'
-    + '<button class="lb-tab' + (tab === 'alltime' ? ' lb-tab--active' : '') + '" id="lb-tab-alltime" onclick="lbSwitchTab(\'alltime\')">All Time</button>'
-    + '</div>'
+    + '<div class="st-box lb-box hub-box" role="dialog" aria-label="Stats and leaderboard">'
+    + hubBarHTML(tab, 'lb-close-btn')
     + '<div class="lb-body" id="lb-body"><div class="lb-loading">Loading…</div></div>'
     + '</div>';
   modal.querySelector('.st-backdrop').addEventListener('click', () => modal.remove());
@@ -2321,8 +2653,9 @@ function showLeaderboardModal(tab = 'today') {
 }
 
 function lbSwitchTab(tab) {
-  document.querySelectorAll('.lb-tab').forEach(b => b.classList.remove('lb-tab--active'));
-  document.getElementById('lb-tab-' + tab).classList.add('lb-tab--active');
+  HUB_LB_TAB = tab;
+  document.querySelectorAll('#lb-modal .hub-sub-btn').forEach(b => { b.classList.toggle('is-on', b.dataset.tab === tab); b.setAttribute('aria-pressed', String(b.dataset.tab === tab)); });
+  const cap = document.getElementById('hub-cap'); if (cap) cap.textContent = hubCaption(tab);
   document.getElementById('lb-body').innerHTML = '<div class="lb-loading">Loading…</div>';
   lbLoadTab(tab);
 }
