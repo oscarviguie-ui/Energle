@@ -141,78 +141,27 @@ function getDayNumber() {
   ) + 1;
 }
 
-function mulberry32(seed) {
-  return function () {
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-// The original rule (every country equally likely, every day), kept only as a fallback
-function legacyDailyTarget(countries, day = getDayNumber()) {
-  const rng = mulberry32(day * 2654435761);
-  const arr = [...countries];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr[0];
-}
-
 // ------------------------------------------------------------
-//  DAILY LINE-UP
-//  puzzles.json lists every answer by puzzle number (ISO3 codes). Played puzzles never change.
-//  Past the end of that list, the game keeps drawing with the same rule as scripts/make_schedule.py:
-//    weight = generation^(1/3) x (base + signature weight x signature + transition weight x min(change since 2010, cap))
-//    and a country cannot return within gap_days days.
+//  DAILY ANSWERS
+//  The answers live in a locked Supabase table. The website can only call released_puzzles(),
+//  which returns the puzzles that have already started (up to today, by the database's own clock).
+//  Nothing in this file or in the repository can tell a future answer.
 // ------------------------------------------------------------
-let SCHEDULE = null;
-const LINEUP_SOURCES = ['Coal', 'Gas', 'Other Fossil', 'Nuclear', 'Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables'];
-const LINEUP_LOW_CARBON = ['Nuclear', 'Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables'];
+let RELEASED = null;           // { day: ISO3 } for every puzzle up to today; null = could not be loaded
 
-function lineupWeights(rule) {
-  const shares = y => { const t = (y && y.Total) || 0; return t ? LINEUP_SOURCES.map(k => (y[k] || 0) / t) : null; };
-  const rows = [];
-  Object.values(ALL_DATA).forEach(info => {
-    const latest = info.years[String(info.latestYear)], s = shares(latest);
-    if (!s) return;
-    const first = info.years['2010'] || info.years[Object.keys(info.years).sort()[0]];
-    const s0 = shares(first) || s;
-    rows.push({ iso: info.iso3, g: latest.Total || 0, s, change: 0.5 * s.reduce((a, v, k) => a + Math.abs(v - s0[k]), 0) });
-  });
-  const total = rows.reduce((a, r) => a + r.g, 0);
-  const world = LINEUP_SOURCES.map((_, k) => rows.reduce((a, r) => a + r.s[k] * r.g, 0) / total);
-  return rows.map(r => {
-    const sig = Math.max(0, ...LINEUP_LOW_CARBON.map(k => {
-      const i = LINEUP_SOURCES.indexOf(k);
-      return (r.s[i] - world[i]) * (k === 'Hydro' ? rule.hydro_factor : 1);
-    }));
-    const mult = rule.base + rule.signature_weight * sig + rule.transition_weight * Math.min(r.change, rule.transition_cap);
-    return { iso: r.iso, w: Math.max(Math.pow(Math.max(r.g, 0.01), rule.size_exponent) * mult, 1e-9) };
-  }).sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0));
-}
-
-function lineupDraw(day, W, last, gap) {
-  let pool = W.filter(o => last[o.iso] === undefined || day - last[o.iso] > gap);
-  if (!pool.length) pool = W;
-  let x = mulberry32(day * 2654435761)() * pool.reduce((a, o) => a + o.w, 0);
-  for (const o of pool) { x -= o.w; if (x <= 0) return o.iso; }
-  return pool[pool.length - 1].iso;
+async function sbReleasedPuzzles() {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/released_puzzles', { method: 'POST', headers: SB_HEADERS, body: '{}', cache: 'no-store' });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    return Object.fromEntries(rows.map(r => [r.day, r.iso3]));
+  } catch { return null; }
 }
 
 function getDailyTarget(countries, day = getDayNumber()) {
-  if (!SCHEDULE || !Array.isArray(SCHEDULE.puzzles) || !SCHEDULE.rule) return legacyDailyTarget(countries, day);
-  const list = SCHEDULE.puzzles, rule = SCHEDULE.rule;
-  const byIso = iso => countries.find(c => c.iso3 === iso);
-  if (byIso(list[day - 1])) return byIso(list[day - 1]);
-  // Past the end of the list (or a country missing from the data): continue the list with the same rule
-  const W = lineupWeights(rule).filter(o => byIso(o.iso));
-  const last = {};
-  list.forEach((iso, i) => { if (i + 1 < day) last[iso] = i + 1; });
-  for (let d = list.length + 1; d < day; d++) last[lineupDraw(d, W, last, rule.gap_days)] = d;
-  return byIso(lineupDraw(day, W, last, rule.gap_days)) || legacyDailyTarget(countries, day);
+  const iso = RELEASED && RELEASED[day];
+  return (iso && countries.find(c => c.iso3 === iso)) || null;
 }
 
 // ============================================================
@@ -417,12 +366,9 @@ function practiceUnlocked() {
 async function loadData() {
   document.getElementById('app').innerHTML = '<div id="loading">Loading data…</div>';
   try {
-    const [res, sched] = await Promise.all([
-      fetch('energle_data.json'),
-      fetch('puzzles.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).catch(() => null),
-    ]);
+    const [res, released] = await Promise.all([fetch('energle_data.json'), sbReleasedPuzzles()]);
     const raw = await res.json();
-    SCHEDULE = sched;
+    RELEASED = released;
     WORLD_DPC = raw['__world_dpc__'];
     delete raw['__world_dpc__'];
     // Everyday names for the official-style ones in the data; the official name still works as a guess
@@ -741,10 +687,33 @@ function loadMyScores() {
   return sbFetchMine(u).then(r => { MY_SCORES = r; return r; });
 }
 
+// Shown when the answers can't be fetched (offline, or the puzzle server is down),
+// or when today's puzzle isn't out yet (a device clock ahead of midnight UTC)
+function renderUnavailable(where) {
+  if (lineChart) { lineChart.destroy(); lineChart = null; }
+  if (barChart)  { barChart.destroy();  barChart  = null; }
+  const early = !!RELEASED, day = getDayNumber();
+  document.getElementById('app').innerHTML =
+    pageHeaderHTML()
+    + pageSubtitleHTML(where === 'archive' ? 'Archive' : 'Puzzle #' + day, '', '<span class="sub-date">' + todayLabel() + '</span>')
+    + '<div class="un-card" role="status">'
+    +   '<p class="un-title">' + (early ? 'Puzzle #' + day + ' is on its way' : 'Couldn’t reach the puzzle server') + '</p>'
+    +   '<p class="un-text">' + (early ? 'A new puzzle opens every day at midnight UTC. Try again in a moment.' : 'Check your connection and try again.') + '</p>'
+    +   '<button type="button" class="un-btn" onclick="retryRelease(\'' + where + '\')">Try again</button>'
+    + '</div>'
+    + footerHTML();
+}
+async function retryRelease(where) {
+  const btn = document.querySelector('.un-btn'); if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  RELEASED = (await sbReleasedPuzzles()) || RELEASED;
+  if (where === 'archive') renderArchiveScreen(); else switchMode('normal');
+}
+
 function renderArchiveScreen(focusDay) {
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
   MODE = 'archive'; ARCHIVE_DAY = null;
+  if (!RELEASED) { renderUnavailable('archive'); return; }
   const today = getDayNumber(), last = today - 1;
   const sts = {}; let solved = 0, missed = 0, open = 0;
   for (let d = 1; d <= last; d++) {
@@ -758,7 +727,8 @@ function renderArchiveScreen(focusDay) {
     + '<span class="ax-status">' + (isToday && st.kind === 'new' ? 'Play it in Daily' : archiveStatusText(st)) + '</span>'
     + '<svg class="ax-chev" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
   // today: your daily result, or a way into it (its answer is never listed here)
-  const ds = loadDailyState(), dWon = ds && ds.gameOver && ds.guesses.length && ds.guesses[ds.guesses.length - 1] === getDailyTarget(COUNTRIES).iso3;
+  const todayTarget = getDailyTarget(COUNTRIES);
+  const ds = loadDailyState(), dWon = !!(ds && ds.gameOver && ds.guesses.length && todayTarget && ds.guesses[ds.guesses.length - 1] === todayTarget.iso3);
   const todaySt = ds && ds.gameOver ? { kind: dWon ? 'solved' : 'missed', onDay: { won: dWon, n: ds.guesses.length } } : { kind: 'new' };
   let html = '', d = today;
   while (d >= 1) {
@@ -817,6 +787,7 @@ function refreshArchiveStatus() {
 function restoreArchiveGame() {
   const day = ARCHIVE_DAY;
   target = getDailyTarget(COUNTRIES, day); guesses = []; gameOver = false;
+  if (!target) { renderUnavailable('archive'); return; }
   const h = loadHistory()[day];
   pathSent = !!(h && h.src === 'daily' && h.ps);      // (see below)      // your own daily game is already inside that day's average
   document.getElementById('guesses').innerHTML = '';
@@ -1443,11 +1414,7 @@ const LINE_END_LABELS = {
       items.push({ src: d.label, x, y, ly: y, v: d.data[d.data.length - 1] || 0 });
     });
     items.sort((a, b) => a.y - b.y);
-    const GAP = narrow ? 12 : 14;
-    for (let k = 1; k < items.length; k++) if (items[k].ly - items[k - 1].ly < GAP) items[k].ly = items[k - 1].ly + GAP;
-    const over = items.length ? items[items.length - 1].ly - (area.bottom + 4) : 0;
-    if (over > 0) items.forEach(it => { it.ly -= over; });
-    for (let k = items.length - 2; k >= 0; k--) if (items[k + 1].ly - items[k].ly < GAP) items[k].ly = items[k + 1].ly - GAP;
+    spreadLabels(items, narrow ? 12 : 14, area.top + 2, area.bottom + 4);
     ctx.save();
     const font = getComputedStyle(document.body).fontFamily;
     items.forEach(it => {
@@ -1473,6 +1440,22 @@ const LINE_END_LABELS = {
     ctx.restore();
   },
 };
+
+// Spreads labels (sorted top to bottom, each with a wanted position `ly`) so none are closer than `gap`,
+// keeping them between minY and maxY. Only labels that are actually crowded move: a label with room
+// to spare stays beside its own point (shifting the whole column used to push a lone top label off the chart).
+function spreadLabels(list, gap, minY, maxY) {
+  const n = list.length; if (!n) return;
+  for (let k = 1; k < n; k++) if (list[k].ly - list[k - 1].ly < gap) list[k].ly = list[k - 1].ly + gap;
+  if (list[n - 1].ly > maxY) {
+    list[n - 1].ly = maxY;
+    for (let k = n - 2; k >= 0; k--) if (list[k + 1].ly - list[k].ly < gap) list[k].ly = list[k + 1].ly - gap;
+  }
+  if (list[0].ly < minY) {
+    list[0].ly = minY;
+    for (let k = 1; k < n; k++) if (list[k].ly - list[k - 1].ly < gap) list[k].ly = list[k - 1].ly + gap;
+  }
+}
 
 // Room to keep on the right of the line chart for the end labels (measured, so long names never get cut)
 function endLabelRoom(keys, latestValues) {
@@ -1520,14 +1503,7 @@ const BAR_SHARE_LABELS = {
     const sides = [[], []];
     segs.forEach((sg, k) => { sg.side = k % 2 === 0 ? 1 : -1; sg.ly = sg.cy - 8; sides[k % 2].push(sg); });   // labels sit a little above: "_/"
     const GAP = 14;
-    sides.forEach(list => {
-      for (let k = 1; k < list.length; k++) if (list[k].ly - list[k - 1].ly < GAP) list[k].ly = list[k - 1].ly + GAP;
-      const over = list.length ? list[list.length - 1].ly - (area.bottom - 4) : 0;
-      if (over > 0) list.forEach(o => { o.ly -= over; });
-      const under = list.length ? (area.top + 4) - list[0].ly : 0;
-      if (under > 0) list.forEach(o => { o.ly += under; });
-      for (let k = list.length - 2; k >= 0; k--) if (list[k + 1].ly - list[k].ly < GAP) list[k].ly = list[k + 1].ly - GAP;
-    });
+    sides.forEach(list => spreadLabels(list, GAP, area.top + 4, area.bottom - 4));
     ctx.save(); ctx.textBaseline = 'middle'; ctx.lineWidth = 1; ctx.lineJoin = 'round';
     segs.forEach(o => {
       const s = o.side, e = o.x + s * o.half;                // segment edge on this side
@@ -2430,6 +2406,7 @@ function syncInputFlag() {
 // ============================================================
 function restoreDailyGame() {
   target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false; pathSent = false;
+  if (!target) { renderUnavailable('normal'); return; }
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
