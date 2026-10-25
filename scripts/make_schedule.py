@@ -1,50 +1,81 @@
 """
-Keeps puzzles.json, the list of daily answers (one ISO3 code per puzzle number), topped up.
+Keeps the daily answers topped up in Supabase (table public.puzzles, one ISO3 code per puzzle number).
+
+The answers are not in this repository: the table is locked, and the website can only ask Supabase
+for puzzles that have already started. This script runs in the monthly GitHub workflow with the
+service key (GitHub secret SUPABASE_SERVICE_KEY) and never prints an answer, because workflow logs
+of a public repository are public.
 
 The list is never redrawn. Each run only:
-- adds another stretch of puzzles at the end when fewer than MIN_AHEAD are left after today;
+- adds puzzles at the end when fewer than MIN_AHEAD are left after today;
 - replaces a future puzzle whose country is no longer in energle_data.json (that day only).
-Played puzzles, today and anything edited by hand stay exactly as they are.
+Played puzzles and today stay exactly as they are.
 
-New puzzles are drawn day by day with the same seeded random number as the game:
+New puzzles are drawn with a secure random generator (so nobody can recompute them from this code):
     weight = generation^(1/3) x (base + signature_weight x signature + transition_weight x min(change since 2010, cap))
 where signature = how far the country's strongest low-carbon source sits above the world share,
-and a country cannot come back within `gap_days` days. Past the last entry, the game draws with the same rule.
+and a country cannot come back within GAP_DAYS days.
 
 Run after refresh_data.py:  python scripts/make_schedule.py
 """
-import json, datetime, os
+import datetime
+import json
+import os
+import random
+import sys
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, 'energle_data.json')
-OUT = os.path.join(ROOT, 'puzzles.json')
+SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://chjipjiaemwfvwgdhccn.supabase.co').rstrip('/')
+KEY = os.environ.get('SUPABASE_SERVICE_KEY', '').strip()
 EPOCH = datetime.date(2026, 6, 2)          # puzzle #1
 MIN_AHEAD = 365                            # top up when fewer puzzles than this are left after today
 HORIZON = 730                              # a top-up extends the list to about two years after today
 
+RULE = {'gap_days': 50, 'size_exponent': 1 / 3, 'base': 0.7, 'signature_weight': 0.6,
+        'hydro_factor': 1, 'transition_weight': 0.6, 'transition_cap': 0.7}
+
 SOURCES = ['Coal', 'Gas', 'Other Fossil', 'Nuclear', 'Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables']
 LOW_CARBON = ['Nuclear', 'Hydro', 'Wind', 'Solar', 'Bioenergy', 'Other Renewables']
+RNG = random.SystemRandom()
 
 
-# ---- the game's random number (mulberry32, first draw only), in 32-bit integer arithmetic ----
-def _i32(x):
-    x &= 0xFFFFFFFF
-    return x - 0x100000000 if x & 0x80000000 else x
-
-def _u32(x):
-    return x & 0xFFFFFFFF
-
-def _imul(a, b):
-    return _i32(a * b)
-
-def day_random(day):
-    seed = _i32(day * 2654435761)
-    seed = _i32(seed + 0x6D2B79F5)
-    t = _imul(_i32(seed ^ (_u32(seed) >> 15)), _i32(1 | seed))
-    t = _i32(_i32(t + _imul(_i32(t ^ (_u32(t) >> 7)), _i32(61 | t))) ^ t)
-    return _u32(t ^ (_u32(t) >> 14)) / 4294967296
+# ---- Supabase (REST, service key) ----
+def _headers():
+    h = {'apikey': KEY, 'Content-Type': 'application/json'}
+    if KEY.startswith('eyJ'):                # legacy service_role JWT; new sb_secret_ keys go in apikey only
+        h['Authorization'] = 'Bearer ' + KEY
+    return h
 
 
+def _request(method, path, body=None, extra=None):
+    req = urllib.request.Request(SUPABASE_URL + '/rest/v1/' + path, method=method,
+                                 data=None if body is None else json.dumps(body).encode(),
+                                 headers={**_headers(), **(extra or {})})
+    with urllib.request.urlopen(req, timeout=60) as res:
+        raw = res.read()
+        return json.loads(raw) if raw else None
+
+
+def load_puzzles():
+    out, offset = {}, 0
+    while True:                              # Supabase returns at most 1000 rows per request
+        rows = _request('GET', 'puzzles?select=day,iso3&order=day.asc&limit=1000&offset=%d' % offset)
+        for r in rows:
+            out[r['day']] = r['iso3']
+        if len(rows) < 1000:
+            return out
+        offset += 1000
+
+
+def save_puzzles(rows):
+    for i in range(0, len(rows), 500):
+        _request('POST', 'puzzles?on_conflict=day', [{'day': d, 'iso3': iso} for d, iso in rows[i:i + 500]],
+                 {'Prefer': 'resolution=merge-duplicates,return=minimal'})
+
+
+# ---- weights ----
 def shares(year):
     total = (year or {}).get('Total') or 0
     if not total:
@@ -52,7 +83,7 @@ def shares(year):
     return [(year.get(k) or 0) / total for k in SOURCES]
 
 
-def weights(data, rule):
+def weights(data):
     rows = []
     for name, info in data.items():
         if name.startswith('__'):
@@ -69,60 +100,55 @@ def weights(data, rule):
     world = [sum(r['s'][k] * r['g'] for r in rows) / total for k in range(len(SOURCES))]
     out = {}
     for r in rows:
-        sig = max([0.0] + [(r['s'][SOURCES.index(k)] - world[SOURCES.index(k)]) * (rule['hydro_factor'] if k == 'Hydro' else 1)
+        sig = max([0.0] + [(r['s'][SOURCES.index(k)] - world[SOURCES.index(k)]) * (RULE['hydro_factor'] if k == 'Hydro' else 1)
                            for k in LOW_CARBON])
-        mult = rule['base'] + rule['signature_weight'] * sig + rule['transition_weight'] * min(r['change'], rule['transition_cap'])
-        out[r['iso']] = max(max(r['g'], 0.01) ** rule['size_exponent'] * mult, 1e-9)
-    return dict(sorted(out.items()))        # fixed order: by ISO3 code, as in the game
+        mult = RULE['base'] + RULE['signature_weight'] * sig + RULE['transition_weight'] * min(r['change'], RULE['transition_cap'])
+        out[r['iso']] = max(max(r['g'], 0.01) ** RULE['size_exponent'] * mult, 1e-9)
+    return out
 
 
-def draw(day, w, last, gap, blocked=()):
-    pool = [iso for iso in w if (iso not in last or day - last[iso] > gap) and iso not in blocked] or list(w)
-    x = day_random(day) * sum(w[i] for i in pool)
-    for iso in pool:
-        x -= w[iso]
-        if x <= 0:
-            return iso
-    return pool[-1]
+def draw(day, w, puzzles, gap):
+    """A country that is not within `gap` days of this day, on either side."""
+    near = {puzzles.get(d) for d in range(day - gap, day + gap + 1) if d != day}
+    pool = [iso for iso in w if iso not in near] or list(w)
+    return RNG.choices(pool, weights=[w[i] for i in pool])[0]
 
 
 def main():
+    if not KEY:
+        print('make_schedule: SUPABASE_SERVICE_KEY is not set, nothing to do')
+        return
     data = json.load(open(DATA, encoding='utf-8'))
-    sched = json.load(open(OUT, encoding='utf-8'))
-    rule, puzzles = sched['rule'], sched['puzzles']
-    gap = rule['gap_days']
+    w = weights(data)
+    gap = RULE['gap_days']
     today = (datetime.datetime.now(datetime.timezone.utc).date() - EPOCH).days + 1
-    w = weights(data, rule)
-    changes = []
+    puzzles = load_puzzles()
+    if not puzzles:
+        sys.exit('make_schedule: the puzzles table is empty or unreadable; refusing to start a new list')
+    last_day = max(puzzles)
+    changed = []
 
     # 1. a future puzzle whose country left the data: draw that day again, keeping the gap on both sides
-    for i, iso in enumerate(puzzles):
-        day = i + 1
-        if day <= max(today, sched.get('frozen', 0)) or iso in w:
-            continue
-        last = {p: k + 1 for k, p in enumerate(puzzles[:i])}
-        near = {p for p in puzzles[i + 1:i + 1 + gap]}
-        puzzles[i] = draw(day, w, last, gap, near)
-        changes.append('#%d %s -> %s' % (day, iso, puzzles[i]))
+    replaced = 0
+    for day in sorted(d for d in puzzles if d > today and puzzles[d] not in w):
+        puzzles[day] = draw(day, w, puzzles, gap)
+        changed.append(day)
+        replaced += 1
 
     # 2. running low: add puzzles at the end
-    if len(puzzles) - today < MIN_AHEAD:
-        last = {p: k + 1 for k, p in enumerate(puzzles)}
-        start = len(puzzles) + 1
-        for day in range(start, today + HORIZON + 1):
-            iso = draw(day, w, last, gap)
-            puzzles.append(iso)
-            last[iso] = day
-        changes.append('added #%d to #%d' % (start, len(puzzles)))
+    added = 0
+    if last_day - today < MIN_AHEAD:
+        for day in range(last_day + 1, today + HORIZON + 1):
+            puzzles[day] = draw(day, w, puzzles, gap)
+            changed.append(day)
+            added += 1
 
-    if not changes:
-        print('puzzles.json: %d puzzles, %d left after today, nothing to change' % (len(puzzles), len(puzzles) - today))
+    if not changed:
+        print('make_schedule: %d puzzles, %d after today, nothing to change' % (len(puzzles), last_day - today))
         return
-    sched['puzzles'] = puzzles
-    sched['updated'] = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d')
-    with open(OUT, 'w', encoding='utf-8') as f:
-        json.dump(sched, f, separators=(',', ':'))
-    print('puzzles.json: ' + '; '.join(changes))
+    save_puzzles([(d, puzzles[d]) for d in sorted(set(changed))])
+    # counts only: never print an answer (public logs)
+    print('make_schedule: replaced %d future puzzle(s), added %d; the list now ends at #%d' % (replaced, added, max(puzzles)))
 
 
 if __name__ == '__main__':
