@@ -2971,3 +2971,10 @@ footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10p
   .hd-grid h1 .logo-word { margin-left: .08em; }
   .hd-brand .hd-by { padding-left: calc(2.2rem * .85 * 1.1 + 2.2rem * .08 - .2rem); }
 }
+
+/* puzzle server unreachable, or today's puzzle not out yet */
+.un-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 20px; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; text-align: center; }
+.un-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #1a1a1a; }
+.un-text { margin: 0; font-size: .9rem; color: #666; }
+.un-btn { margin-top: 8px; min-height: 40px; padding: 0 20px; border: 0; border-radius: 4px; background: #1a1a1a; color: #fff; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.un-btn:disabled { opacity: .6; cursor: default; }
