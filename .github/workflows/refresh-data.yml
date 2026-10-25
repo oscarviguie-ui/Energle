@@ -29,13 +29,15 @@ jobs:
       - name: Rebuild energle_data.json
         run: python scripts/refresh_data.py
 
-      - name: Top up the daily line-up (never redraws existing puzzles)
+      - name: Top up the daily answers in Supabase (never redraws existing puzzles)
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python scripts/make_schedule.py
 
       - name: Commit updated data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add energle_data.json puzzles.json
+          git add energle_data.json
           git diff --staged --quiet || git commit -m "Auto-refresh: Ember data $(date +'%Y-%m')"
           git push
