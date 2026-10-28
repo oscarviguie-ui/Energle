@@ -3213,3 +3213,25 @@ header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
 /* Ember credit inside the legend card */
 .og-src--in { margin: 2px 0 0; font-size: 10.5px; color: #aaa7a0; text-align: right; }
 #legend-shared { padding-bottom: 8px; }
+
+/* ============================================================
+   TOP CARDS: the flow chart sits in the middle of its card (also when there is no trade),
+   headline stats a size smaller and centred
+   ============================================================ */
+.bc-flow { display: flex; flex-direction: column; }
+#flow-chart { margin-block: auto; }
+.bc-stats { justify-content: center; gap: 14px; }
+.bc-stats .stat-label { font-size: .64rem; }
+#balance-card .stat-value { font-size: 1.2rem; }
+.bc-world { font-size: .66rem; }
+@media (max-width: 600px) {
+  .bc-stats { gap: 8px; }
+  .bc-stats .stat-label { font-size: .6rem; }
+  #balance-card .stat-value { font-size: 1rem; }
+  .bc-world { font-size: .62rem; }
+}
+/* phone: the two stats side by side keep their values on one line, even when a label wraps */
+@media (max-width: 600px) {
+  .bc-stats { align-items: flex-end; }
+  .bc-stat .stat-label { line-height: 1.15; }
+}
