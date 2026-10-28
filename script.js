@@ -402,27 +402,37 @@ async function loadData() {
 // ============================================================
 //  MODE SWITCHER
 // ============================================================
+// small line icons (stroke = text colour), sized to the button text
+const HD_SVG = (d, extra = '') => '<svg class="hd-ico' + extra + '" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>';
+const HD_ICO = {
+  daily:   HD_SVG('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M12 13.2v3.6M10.2 15h3.6" stroke-width="1.8"/>'),
+  archive: HD_SVG('<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/>'),
+  stats:   HD_SVG('<path d="M4 20h16M6.5 20v-6M11 20V8M15.5 20v-9M20 20V5" stroke-width="2.2"/>', ' ico-stats'),
+  trophy:  HD_SVG('<path d="M7.5 4h9v5a4.5 4.5 0 0 1-9 0z"/><path d="M7.5 6H4.5v1.2A3 3 0 0 0 7.7 10.2M16.5 6h3v1.2a3 3 0 0 1-3.2 3M12 13.5v3.5M8.5 20.5h7M9.5 20.5l.6-3.5h3.8l.6 3.5"/>', ' ico-trophy')
+};
+
+// Daily / Archive / Practice: a pill like the By source / By category toggle; the active mode is dark, the others dimmed
 function modeSwitcherHTML() {
   const locked = !practiceUnlocked();
-  const dA = MODE === 'normal'   ? 'active' : '';
-  const pA = MODE === 'practice' ? 'active' : '';
-  const aA = MODE === 'archive'  ? 'active' : '';
-  const lC = locked ? 'locked' : '';
-  const lI = locked ? ' 🔒' : '';
-  return `<div class="mode-switcher" id="mode-nav">
-    <button class="mode-btn ${dA}" onclick="switchMode('normal')">Daily</button>
-    <button class="mode-btn ${aA}" onclick="switchMode('archive')">Archive</button>
-    <button class="mode-btn ${pA} ${lC}" onclick="switchMode('practice')">Practice${lI}</button>
-  </div>`;
+  const b = (mode, label, extra = '') => '<button type="button" class="mode-btn' + (MODE === mode ? ' active' : '') + extra + '" aria-pressed="' + (MODE === mode)
+    + '"' + (extra ? ' aria-disabled="true"' : '') + ' onclick="switchMode(\'' + mode + '\')">' + label + '</button>';
+  return '<div class="mode-switcher hd-modes" id="mode-nav" role="group" aria-label="Game mode">'
+    + b('normal', HD_ICO.daily + 'Daily') + b('archive', HD_ICO.archive + 'Archive')
+    + b('practice', 'Practice' + (locked ? '<span class="hd-lockemo" aria-label="locked">🔒</span>' : ''), locked ? ' locked' : '') + '</div>';
 }
 
 // Page header, above the line: title, podium, Daily / Practice / Stats and Leaderboard (the parts that never change).
 // Below the line: the puzzle number and task, which change every day (pageSubtitleHTML).
+// Stats & Leaderboard is one button with two halves: the left half opens your stats, the right half today's leaderboard.
 function pageHeaderHTML() {
   return '<header><div class="hd-grid"><div class="hd-brand">' + logoHTML()
     + '<span class="hd-by">by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span></div>'
     + podiumHTML() + modeSwitcherHTML()
-    + '<div class="mode-switcher lb-switcher"><button class="mode-btn" onclick="showStatsModal(false)">Stats &amp; Leaderboard</button></div>'
+    + '<div class="mode-switcher lb-switcher lb-split" role="group" aria-label="Stats and leaderboard">'
+    +   '<button type="button" class="mode-btn" onclick="showStatsModal(false)" title="Your stats">' + HD_ICO.stats + 'Stats</button>'
+    +   '<span class="lb-amp" aria-hidden="true">&amp;</span>'
+    +   '<button type="button" class="mode-btn" onclick="HUB_LB_TAB = \'today\'; showLeaderboardModal(\'today\')" title="Today’s leaderboard">Leaderboard' + HD_ICO.trophy + '</button>'
+    + '</div>'
     + '</div></header>';
 }
 function pageSubtitleHTML(lead, rest = '', extra = '') {
@@ -466,10 +476,11 @@ async function loadPodium() {
 
 function switchMode(mode) {
   if (mode === 'practice' && !practiceUnlocked()) {
-    const btn = document.querySelector('.mode-btn.locked');
-    if (btn) { btn.classList.add('locked-flash'); setTimeout(() => btn.classList.remove('locked-flash'), 500); }
+    const btn = document.querySelector('#mode-nav .mode-btn.locked');
+    if (btn) lockTip(btn, '<strong>Finish today’s daily to unlock Practice.</strong> Then play as many extra rounds as you like.', true);
     return;
   }
+  hideLockTip();
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
   clearInterval(resultTicker);
@@ -478,6 +489,53 @@ function switchMode(mode) {
   else if (mode === 'archive') { renderArchiveScreen(); }
   else { renderPracticePickerScreen(); }
 }
+
+// ============================================================
+//  LOCKED BUTTONS: a short "no" wiggle and a bubble saying why
+// ============================================================
+let lockTipTimer = null;
+function hideLockTip() { clearTimeout(lockTipTimer); const t = document.getElementById('lock-tip'); if (t) t.remove(); }
+// below = true puts the bubble under the button (near the top of the page), otherwise above it
+function lockTip(btn, msg, below) {
+  hideLockTip();
+  const r = btn.getBoundingClientRect();
+  const tip = document.createElement('div');
+  tip.id = 'lock-tip'; tip.className = below ? 'is-below' : ''; tip.setAttribute('role', 'status');
+  tip.innerHTML = '<span class="lt-lock" aria-hidden="true"></span><span>' + msg + '</span>';
+  if (below) tip.style.top = (r.bottom + 10) + 'px'; else tip.style.bottom = (window.innerHeight - r.top + 10) + 'px';
+  tip.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  tip.style.setProperty('--arrow', Math.max(10, r.width / 2 - 6) + 'px');
+  document.body.appendChild(tip);
+  btn.classList.remove('is-denied'); void btn.offsetWidth; btn.classList.add('is-denied');
+  lockTipTimer = setTimeout(hideLockTip, 4000);
+}
+window.addEventListener('scroll', hideLockTip, { passive: true });
+window.addEventListener('resize', hideLockTip);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideLockTip(); });
+document.addEventListener('click', e => { if (!e.target.closest('#lock-tip, .mode-btn.locked, #shop-btn')) hideLockTip(); });
+
+// ============================================================
+//  CLUE SHOP TEASER (the shop itself ships with the clue-card data)
+// ============================================================
+const SHOP_ICON = '<svg class="shop-ico" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M5 13h22v14H5z" fill="#fff" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 7h24l-1.5 6.2a3 3 0 0 1-5.6.6 3 3 0 0 1-5.6 0 3 3 0 0 1-5.6 0 3 3 0 0 1-5.6-.6z" fill="var(--awn)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 7l-.9 6.8M16 7v6.8M22.4 7l.9 6.8" stroke="currentColor" stroke-width="1.4"/><path d="M13 27v-7h6v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+const LS_SHOP_TEASER = 'energle_shop_teaser_v1';
+function shopTeaserSeen() { try { return localStorage.getItem(LS_SHOP_TEASER) === '1'; } catch (e) { return false; } }
+function shopTeaserHTML() {
+  return MODE === 'normal'
+    ? '<button type="button" id="shop-btn" class="shop-btn is-soon" aria-label="Clue Shop: coming soon">' + SHOP_ICON + '<span class="shop-lbl">Clue Shop</span><span class="shop-soon">Soon</span></button>'
+    : '';
+}
+// after the first guess of the daily, the little shop jolts a couple of times, until the player has opened the teaser once
+function updateShopTeaser() {
+  const btn = document.getElementById('shop-btn'); if (!btn) return;
+  btn.classList.toggle('is-calling', MODE === 'normal' && guesses.length >= 1 && !gameOver && !shopTeaserSeen());
+}
+document.addEventListener('click', e => {
+  const btn = e.target.closest('#shop-btn'); if (!btn) return;
+  try { localStorage.setItem(LS_SHOP_TEASER, '1'); } catch (err) {}
+  btn.classList.remove('is-calling');
+  lockTip(btn, '<strong>The Clue Shop is coming soon.</strong> Trade spare guesses for clue cards: renewables potential, underground riches, fuel and power trade, people and power.', false);
+});
 
 function startPractice(catId) {
   const cat = PRACTICE_CATEGORIES.find(c => c.id === catId); if (!cat) return;
@@ -498,12 +556,19 @@ function showCountryList(catId) {
   const countries = COUNTRIES.filter(cat.filter).sort((a,b) => a.name.localeCompare(b.name));
   const existing = document.getElementById('cl-modal'); if (existing) existing.remove();
   const modal = document.createElement('div'); modal.id = 'cl-modal';
+  // the group's picture, and its combined mix with the key, on top of the list
+  const art = typeof PRACTICE_ART !== 'undefined' ? PRACTICE_ART[cat.id] : null;
+  const shares = groupShares(countries);
+  const key = CATEGORIES.map(g => { const s = shares.find(x => x.k === g.key); return '<span class="pc-key-i"><span class="pc-key-sw" style="background:' + g.color + '80;box-shadow:inset 0 0 0 1px ' + g.color + 'b3"></span>'
+    + g.key + ' <strong>' + Math.round((s ? s.p : 0) * 100) + '%</strong></span>'; }).join('');
   modal.innerHTML =
     '<div class="cl-backdrop"></div>'
     + '<div class="cl-box" role="dialog" aria-modal="true" aria-labelledby="cl-title">'
-    + '<div class="cl-header"><span class="cl-titles"><span class="cl-title" id="cl-title">' + cat.label + '</span>'
+    + '<div class="cl-header">' + (art ? '<span class="pc-art pc-art--sm" style="--pa:' + art.col + '">' + art.svg() + '</span>' : '')
+    + '<span class="cl-titles"><span class="cl-title" id="cl-title">' + cat.label + '</span>'
     + '<span class="cl-count">' + countries.length + ' countries' + (cat.rule ? ' · ' + cat.rule.toLowerCase() : '') + '</span></span>'
     + '<button type="button" class="cl-close" id="cl-close-btn" aria-label="Close">×</button></div>'
+    + '<div class="cl-group"><span class="cl-group-lbl">Combined mix of the group</span>' + mixBarHTML(shares, 'cl-gmix') + '<span class="pc-key cl-gkey">' + key + '</span></div>'
     + '<div class="cl-body">'
     + countries.map(c => '<div class="cl-row">' + flagImg(c.iso3, 'cl-flag') + '<span class="cl-name">' + c.name + '</span>'
       + mixBarHTML(sharesOf(c), 'cl-mix') + '<span class="cl-meta">' + fmtTwh(c.latestTotal) + '</span></div>').join('')
@@ -623,13 +688,14 @@ function renderPracticePickerScreen() {
   MODE = 'practice'; clearInterval(resultTicker);
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
+  // one picture per group (practice-art.js); the group's combined mix lives in "See the N countries"
   const card = cat => {
-    const list = COUNTRIES.filter(cat.filter);
-    return '<div class="pc-card">'
+    const list = COUNTRIES.filter(cat.filter), art = typeof PRACTICE_ART !== 'undefined' ? PRACTICE_ART[cat.id] : null;
+    return '<div class="pc-card pc-card--art">'
       + '<button type="button" class="pc-main" onclick="startPractice(\'' + cat.id + '\')">'
-      +   '<span class="pc-top"><span class="pc-name">' + cat.label + '</span><span class="pc-count">' + list.length + '</span></span>'
-      +   '<span class="pc-rule">' + (cat.rule || topSourceText(list)) + '</span>'
-      +   mixBarHTML(groupShares(list), 'pc-mix')
+      +   (art ? '<span class="pc-art" style="--pa:' + art.col + '">' + art.svg() + '</span>' : '')
+      +   '<span class="pc-txt"><span class="pc-top"><span class="pc-name">' + cat.label + '</span><span class="pc-count">' + list.length + '</span></span>'
+      +   '<span class="pc-rule">' + (cat.rule || topSourceText(list)) + '</span></span>'
       + '</button>'
       + '<button type="button" class="pc-list" onclick="showCountryList(\'' + cat.id + '\')">See the ' + list.length + ' countries</button>'
       + '</div>';
@@ -640,8 +706,6 @@ function renderPracticePickerScreen() {
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
     + pageSubtitleHTML('Practice', 'pick a group of countries to train on', '<span class="sub-date">No score, no streak</span>')
-    + '<div class="pc-key" aria-label="Colour key for the mix bars"><span class="pc-key-lbl">Bars show each group’s combined mix</span>'
-    +   CATEGORIES.map(g => '<span class="pc-key-i"><span class="pc-key-sw" style="background:' + g.color + '80;box-shadow:inset 0 0 0 1px ' + g.color + 'b3"></span>' + g.key + '</span>').join('') + '</div>'
     + section('region', 'By region', '')
     + section('profile', 'By profile', 'Countries that share a trait')
     + section('trend', 'By trend & trade', 'How each grid changed since 2010, and what crosses its borders')
@@ -1085,6 +1149,7 @@ function renderGameScreen() {
     + '<span id="guess-flag" aria-hidden="true"></span>'
     + '<input id="guess-input" type="text" placeholder="Type a country name…" autocomplete="off" />'
     + '<div id="autocomplete-list"></div></div>'
+    + shopTeaserHTML()
     + '<button id="submit-btn">Guess</button></div>'
     + '<p id="error"></p>'
     + '<div id="banner"></div>'
@@ -1157,11 +1222,11 @@ function renderStatBar() {
 function balanceCardHTML() {
   return '<div id="balance-card">'
     + '<div class="bc-stats">'
-    +   '<div class="bc-stat"><span class="stat-label">Total generation</span><span class="stat-value" id="stat-total">—</span><span class="bc-world bc-world--gen" id="stat-world-gen"></span></div>'
-    +   '<div class="bc-stat"><span class="stat-label">Demand per capita</span><span class="stat-value" id="stat-dpc">—</span><span class="bc-world bc-world--dem" id="stat-world"></span></div>'
+    +   '<div class="bc-stat"><span class="stat-label">Electricity generated</span><span class="stat-value" id="stat-total">—</span><span class="bc-world bc-world--gen" id="stat-world-gen"></span></div>'
+    +   '<div class="bc-stat"><span class="stat-label">Electricity demand per capita</span><span class="stat-value" id="stat-dpc">—</span><span class="bc-world bc-world--dem" id="stat-world"></span></div>'
     + '</div>'
     + '<div class="bc-flow">'
-    +   '<span class="stat-label">Energy balance — <span id="bc-year"></span></span>'
+    +   '<span class="stat-label">Electricity generation &amp; net trade — <span id="bc-year"></span></span>'
     +   '<div id="flow-chart"></div>'
     + '</div>'
     + '</div>';
@@ -1214,14 +1279,14 @@ function renderFlowBar(animate = true) {
     pTrade = link(xL, cI - tI / 2, cI + tI / 2, xR, d0, d0 + tI);
     pMain  = link(xL, cG - tG / 2, cG + tG / 2, xR, d0 + tI, d0 + tI + tG);
     tradeFrom = tradeTo = FLOW_COLORS.imp;
-    box('L', 0, hI, tI, FLOW_COLORS.imp, 'IMPORTED', imp);
+    box('L', 0, hI, tI, FLOW_COLORS.imp, 'NET IMPORTS', imp);
     box('L', yG, hG, tG, FLOW_COLORS.gen, 'GENERATED', gen);
     box('R', yD, hD, tI + tG, FLOW_COLORS.dem, 'DEMAND', use);
     tag(tI >= FIT ? cI : cI - tI / 2 - 9, pct(imp / use * 100), '#b0126b');          // too thin: just above
     tag(tG >= FIT ? cG : cG + tG / 2 + 9, pct(gen / use * 100), '#1f2937');          // too thin: just below
     H = totL + 2;
     mainTip  = fmtTWh(gen) + ' generated · ' + pct(gen / use * 100) + ' of demand';
-    tradeTip = fmtTWh(imp) + ' imported · ' + pct(imp / use * 100) + ' of demand';
+    tradeTip = fmtTWh(imp) + ' net imports · ' + pct(imp / use * 100) + ' of demand';
   } else if (exp > 0) {
     let tU = use / gen * HMAX, tE = exp / gen * HMAX;
     if (tE < MIN) { tE = MIN; tU = HMAX - MIN; }
@@ -1234,12 +1299,12 @@ function renderFlowBar(animate = true) {
     tradeFrom = FLOW_COLORS.gen; tradeTo = FLOW_COLORS.exp;
     box('L', yG, hG, tU + tE, FLOW_COLORS.gen, 'GENERATED', gen);
     box('R', 0, hU, tU, FLOW_COLORS.dem, 'DEMAND', use);
-    box('R', yE, hE, tE, FLOW_COLORS.exp, 'EXPORTED', exp);
+    box('R', yE, hE, tE, FLOW_COLORS.exp, 'NET EXPORTS', exp);
     tag(tU >= FIT ? s0 + tU / 2 : s0 - 9, pct(use / gen * 100), '#1f2937');
     tag(tE >= FIT ? s0 + tU + tE / 2 : s0 + tU + tE + 9, pct(exp / gen * 100), '#2f2c9a');   // too thin: just below
     H = Math.max(totR, tE >= FIT ? 0 : s0 + tU + tE + 18) + 2;
     mainTip  = fmtTWh(use) + ' used at home · ' + pct(use / gen * 100) + ' of generation';
-    tradeTip = fmtTWh(exp) + ' exported · ' + pct(exp / gen * 100) + ' of generation';
+    tradeTip = fmtTWh(exp) + ' net exports · ' + pct(exp / gen * 100) + ' of generation';
   } else {
     const t = HMAX * 0.6, h = boxH(t), c = h / 2;
     pMain = link(xL, c - t / 2, c + t / 2, xR, c - t / 2, c + t / 2);
@@ -1276,8 +1341,8 @@ function renderFlowBar(animate = true) {
     + '</g></svg>' + boxes + tags;
   host.setAttribute('role', 'img');
   host.setAttribute('aria-label', imp > 0
-    ? fmtTWh(gen) + ' generated plus ' + fmtTWh(imp) + ' imported gives ' + fmtTWh(use) + ' of demand'
-    : exp > 0 ? fmtTWh(gen) + ' generated: ' + fmtTWh(use) + ' used at home and ' + fmtTWh(exp) + ' exported'
+    ? fmtTWh(gen) + ' generated plus ' + fmtTWh(imp) + ' of net imports gives ' + fmtTWh(use) + ' of demand'
+    : exp > 0 ? fmtTWh(gen) + ' generated: ' + fmtTWh(use) + ' used at home and ' + fmtTWh(exp) + ' of net exports'
     : fmtTWh(gen) + ' generated, all used at home');
 }
 
@@ -1598,9 +1663,9 @@ function renderCharts() {
   const V = {}; years.forEach(y => { V[y] = viewYear(info.years[y]); });
   const latest = years[years.length-1], latestData = V[latest], ordered = viewKeys(target.name);
 
-  document.getElementById('bar-label').textContent = 'Latest mix (' + latest + ')';
+  document.getElementById('bar-label').textContent = 'Electricity mix (' + latest + ')';
   const lineLabel = document.getElementById('line-label');
-  if (lineLabel) lineLabel.textContent = 'Generation by ' + (CHART_VIEW === 'category' ? 'category' : 'source') + ' over time (TWh)';
+  if (lineLabel) lineLabel.textContent = 'Electricity generation by ' + (CHART_VIEW === 'category' ? 'category' : 'source') + ' (TWh)';
   closeAllTips();
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
@@ -1760,7 +1825,8 @@ function renderLegend(keys) {
           + '<span class="legend-swatch" style="background:' + colorOf(k) + '"></span><span class="legend-name">' + k + '</span>'
           + (group ? '<span class="legend-members">' + group.members.join(' · ') + '</span>' : '') + '</div>';
       })
-      .join('') + '</div>';
+      .join('') + '</div>'
+    + '<p class="og-src og-src--in">Source: Ember, Yearly Electricity Data (CC BY 4.0)</p>';
   bindLegendFocus();
 }
 let lockedSource = null;
@@ -2002,6 +2068,7 @@ function renderLives(drain = false) {
     +   '<span class="battery-body">' + cells + '</span><span class="battery-cap"></span></span>';
   const count = document.getElementById('lives-count');
   if (count) count.textContent = left + '/' + MAX_GUESSES;
+  updateShopTeaser();
 }
 function glowBattery(delay) {
   if (REDUCED_MOTION) return;
@@ -2370,7 +2437,7 @@ function renderResultCard(won, animate = true) {
 }
 
 function endGame() {
-  gameOver = true; saveDailyState();
+  gameOver = true; saveDailyState(); updateShopTeaser();
   if (MODE === 'practice') recordPracticeResult(guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3);
   if (MODE === 'archive') refreshArchiveStatus();
   if (MODE === 'normal') {

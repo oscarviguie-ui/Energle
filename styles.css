@@ -3040,3 +3040,176 @@ footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10p
   #bar-wrapper { flex: 1 0 300px; min-height: 300px; }
   #line-wrapper { flex: 1 0 300px; height: auto; min-height: 300px; }
 }
+
+
+/* ============================================================
+   OCT 2026 REFRESH: header (mode pill, split Stats & Leaderboard), practice pictures,
+   locked-button bubble, Clue Shop teaser
+   ============================================================ */
+/* Stats & Leaderboard: one button, each half opens its own page */
+.lb-split { align-items: stretch; background: #fff; }
+.lb-split .mode-btn + .mode-btn { border-left: 0; }
+.lb-split .mode-btn:first-child { padding-right: 4px; }
+.lb-split .mode-btn:last-child { padding-left: 4px; }
+.lb-split .lb-amp { display: grid; place-items: center; font-size: .82rem; font-weight: 600; color: #888; pointer-events: none; }
+.lb-split .mode-btn:hover { background: #f5f5f5; color: #1a1a1a; }
+.hd-grid .lb-split { justify-self: end; }
+@media (max-width: 600px) {
+  .lb-split .mode-btn { flex: 1 1 auto; }
+  .lb-split .mode-btn:first-child { text-align: right; }
+  .lb-split .mode-btn:last-child { text-align: left; }
+}
+
+/* Daily / Archive / Practice pill */
+header .hd-modes { display: inline-flex; gap: 0; padding: 3px; border: 1px solid #e0dfdb; border-radius: 999px; background: #f7f7f5; overflow: visible; }
+header .hd-modes .mode-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; padding: 6px 16px; border: 0; border-radius: 999px; background: none; color: #777; font: inherit; font-size: .82rem; font-weight: 600; letter-spacing: 0; cursor: pointer; transition: background .15s, color .15s; }
+header .hd-modes .mode-btn + .mode-btn { border-left: 0; }
+header .hd-modes .mode-btn:hover:not(.locked):not(.active) { background: #ecebe7; color: #1a1a1a; }
+header .hd-modes .mode-btn.active { background: #1a1a1a; color: #fff; }
+header .hd-modes .mode-btn.locked { color: #b5b4b0; background: none; cursor: pointer; }
+header .hd-modes .mode-btn.is-denied { animation: shopDeny .38s ease-in-out; }
+header .hd-modes .mode-btn:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+/* the bubble under a button near the top of the page */
+#lock-tip.is-below::after { bottom: auto; top: -5px; border-radius: 2px 0 0 0; }
+
+/* layout: modes under the title (left), Stats & Leaderboard under the medals (right) */
+.hd-grid { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title podium" "modes lb"; row-gap: 12px; }
+.hd-grid #mode-nav.hd-modes { justify-self: start; width: auto; margin: 0; }
+.hd-grid .lb-split { justify-self: end; align-self: center; width: auto; }
+/* smaller pill */
+header .hd-modes { padding: 2px; }
+header .hd-modes .mode-btn, .hd-grid #mode-nav.hd-modes .mode-btn { flex: none; gap: 5px; padding: 4px 11px; font-size: .75rem; border-bottom: 0; }
+.hd-ico { display: block; flex-shrink: 0; }
+header .hd-modes .mode-btn .hd-ico { opacity: .85; }
+header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
+.hd-lockemo { font-size: .7rem; margin-left: 1px; }
+/* Stats & Leaderboard with icons */
+.lb-split .mode-btn { display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 600px) {
+  .hd-grid { grid-template-areas: "title podium" "title lb" "modes modes"; row-gap: 8px; }
+  .hd-grid #mode-nav.hd-modes { margin-top: 2px; }
+  header .hd-modes .mode-btn, .hd-grid #mode-nav.hd-modes .mode-btn { padding: 4px 10px; font-size: .72rem; }
+  .hd-grid .lb-split { width: 100%; }
+  .lb-split .mode-btn { gap: 4px; justify-content: center; }
+  .lb-split .mode-btn .hd-ico { width: 12px; height: 12px; }
+}
+.lb-split .lb-amp { align-self: center; }
+
+/* right column: medals level with the title, Stats & Leaderboard centred under them */
+.hd-grid .podium { justify-self: center; align-self: center; }
+.hd-grid .lb-split { justify-self: center; }
+.lb-split .mode-btn { gap: 7px; padding: 8px 16px; font-size: .86rem; }
+.lb-split .mode-btn:first-child { padding-right: 5px; }
+.lb-split .mode-btn:last-child { padding-left: 5px; }
+.lb-split .lb-amp { font-size: .86rem; }
+.lb-split .hd-ico { width: 16px; height: 16px; }
+.lb-split .ico-stats { color: #4a90c4; }
+.lb-split .ico-trophy { color: #c9971c; }
+.lb-split .ico-trophy path:first-child { fill: #f5c842; }
+@media (max-width: 600px) {
+  .lb-split .mode-btn { padding: 7px 10px; font-size: .78rem; }
+  .lb-split .lb-amp { font-size: .78rem; }
+  .lb-split .hd-ico { width: 14px; height: 14px; }
+}
+.hd-grid .podium { position: relative; top: 7px; }
+@media (max-width: 600px) { .hd-grid .hd-brand { align-self: start; } }
+/* the & and the two labels: same font and line box, so they sit on one line */
+.lb-split .mode-btn, .lb-split .lb-amp { font-family: inherit; line-height: 1.2; }
+
+/* Stats & Leaderboard: icon · Stats · & · Leaderboard · icon, evenly spaced */
+.lb-split .mode-btn { gap: 7px; }
+.lb-split .mode-btn:first-child { padding: 8px 6px 8px 14px; }
+.lb-split .mode-btn:last-child { padding: 8px 14px 8px 6px; }
+@media (max-width: 600px) {
+  .lb-split .mode-btn:first-child { padding: 7px 5px 7px 10px; }
+  .lb-split .mode-btn:last-child { padding: 7px 10px 7px 5px; }
+}
+/* the bolt sits as close to "Energle" as "Energle" sits to "by Oscar Viguié" (measured on the drawn ink) */
+@media (min-width: 601px) { .hd-grid h1 .logo-bolt { margin-right: -5px; } }
+
+
+/* ============================================================
+   PRACTICE PICKER: picture + name, no mix bar (the mix is in "See the N countries")
+   ============================================================ */
+.pc-card--art .pc-main { position: relative; flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 14px 13px; }
+.pc-art { --pa: #777; flex-shrink: 0; display: grid; place-items: center; width: 60px; height: 60px; border-radius: 14px;
+  background: color-mix(in srgb, var(--pa) 11%, #fff); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pa) 26%, #fff); transition: transform .15s; }
+.pc-art-svg { display: block; width: 46px; height: 46px; }
+.pc-card--art:hover .pc-art { transform: scale(1.05) rotate(-2deg); }
+.pc-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
+.pc-card--art .pc-top { display: block; }
+.pc-card--art .pc-count { position: absolute; top: 13px; right: 14px; }
+.pc-card--art .pc-rule { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .pc-card--art:hover .pc-art { transform: none; } }
+@media (max-width: 600px) {
+  .pc-card--art .pc-main { gap: 9px; padding: 12px 11px 11px; }
+  .pc-card--art .pc-count { top: 11px; right: 11px; }
+  .pc-art { width: 52px; height: 52px; border-radius: 12px; }
+  .pc-art-svg { width: 40px; height: 40px; }
+}
+
+/* country list: the group's picture and combined mix on top */
+.pc-art--sm { width: 40px; height: 40px; border-radius: 10px; margin-right: 10px; }
+.pc-art--sm .pc-art-svg { width: 30px; height: 30px; }
+#cl-modal .cl-header { align-items: center; }
+#cl-modal .cl-header .cl-titles { flex: 1; min-width: 0; }
+.cl-group { display: flex; flex-direction: column; gap: 6px; padding: 10px 18px 12px; border-bottom: 1px solid #f0efeb; }
+.cl-group-lbl { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #9a9a96; }
+.cl-gmix { display: flex; height: 12px; gap: 2px; }
+.cl-gkey { margin: 0; }
+.cl-gkey strong { color: #1a1a1a; font-weight: 700; margin-left: 2px; }
+
+/* ============================================================
+   LOCKED BUTTONS: "no" wiggle + bubble saying why (Practice, Clue Shop teaser)
+   ============================================================ */
+@keyframes shopDeny { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-4px); } 40% { transform: translateX(4px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+#lock-tip { position: fixed; z-index: 260; max-width: 260px; display: flex; gap: 8px; align-items: flex-start; padding: 9px 11px; border-radius: 8px; background: #1a1a1a; color: #e9e8e4; font-size: 12.5px; line-height: 1.4; box-shadow: 0 6px 18px rgba(0,0,0,.18); animation: tipIn .18s ease-out; }
+#lock-tip strong { color: #fff; font-weight: 700; }
+#lock-tip::after { content: ""; position: absolute; bottom: -5px; right: var(--arrow, 20px); width: 10px; height: 10px; background: #1a1a1a; transform: rotate(45deg); border-radius: 0 0 2px 0; }
+.lt-lock { flex-shrink: 0; width: 14px; height: 14px; margin-top: 1px; background: #f5c842;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 7V5a3.5 3.5 0 0 1 7 0v2h.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zm1.8 0h3.4V5a1.7 1.7 0 0 0-3.4 0z'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 7V5a3.5 3.5 0 0 1 7 0v2h.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zm1.8 0h3.4V5a1.7 1.7 0 0 0-3.4 0z'/%3E%3C/svg%3E") center / contain no-repeat; }
+@keyframes tipIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ============================================================
+   CLUE SHOP TEASER: shop-sign button left of Guess, "Soon" tag
+   ============================================================ */
+#input-area { align-items: stretch; }
+#input-area > #autocomplete-wrapper, #input-area > #submit-btn, #input-area > .shop-btn { height: 44px; }
+#guess-input { height: 100%; box-sizing: border-box; }
+.shop-btn { --awn: #f5c842; position: relative; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 14px 0 10px; border: 1.5px solid #1a1a1a; border-radius: 6px; background: #fff; color: #1a1a1a; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; transition: background .15s, transform .1s; }
+.shop-btn:hover { background: #fff8df; }
+.shop-btn:active { transform: scale(.97); }
+.shop-btn:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+.shop-ico { display: block; }
+.shop-lbl { white-space: nowrap; }
+.shop-soon { position: absolute; top: -8px; right: -8px; padding: 1px 6px; border-radius: 999px; background: #f5c842; color: #1a1a1a; box-shadow: 0 0 0 2px #f7f7f5, inset 0 0 0 1px #1a1a1a; font-size: 9.5px; font-weight: 800; letter-spacing: .04em; line-height: 15px; text-transform: uppercase; }
+.shop-btn.is-denied { animation: shopDeny .38s ease-in-out; }
+/* after the first guess, until the teaser has been opened once: a slow shimmer and the little shop jolts, twice */
+.shop-btn.is-calling::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(245, 200, 66, .55) 50%, transparent 62%) no-repeat;
+  background-size: 260% 100%; background-position: 130% 0; animation: shopShimmer 5.5s ease-in-out .8s 2; }
+.shop-btn.is-calling > * { position: relative; }
+.shop-btn.is-calling .shop-soon { position: absolute; }
+.shop-btn.is-calling .shop-ico { transform-origin: 50% 100%; animation: shopJolt 5.5s ease-in-out .8s 2; }
+@keyframes shopShimmer { 0%, 52% { background-position: 130% 0; } 72%, 100% { background-position: -30% 0; } }
+@keyframes shopJolt {
+  0%, 70%, 100% { transform: none; }
+  72% { transform: translateY(0) scale(1.1, .86); }
+  75% { transform: translateY(-8px) scale(.92, 1.1) rotate(-7deg); }
+  78% { transform: translateY(0) scale(1.08, .9); }
+  80.5% { transform: translateY(-4px) scale(.97, 1.04) rotate(5deg); }
+  83% { transform: translateY(0) scale(1.03, .97); }
+  85% { transform: none; }
+}
+@media (max-width: 600px) {
+  #input-area > #autocomplete-wrapper, #input-area > #submit-btn, #input-area > .shop-btn { height: 40px; }
+  .shop-btn { height: 40px; padding: 0 8px; }
+  .shop-lbl { display: none; }
+  .shop-btn .shop-ico { width: 24px; height: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .shop-btn.is-calling::before, .shop-btn.is-calling .shop-ico, .shop-btn.is-denied, header .hd-modes .mode-btn.is-denied, #lock-tip { animation: none; } }
+
+/* Ember credit inside the legend card */
+.og-src--in { margin: 2px 0 0; font-size: 10.5px; color: #aaa7a0; text-align: right; }
+#legend-shared { padding-bottom: 8px; }
