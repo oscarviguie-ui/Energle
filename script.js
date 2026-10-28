@@ -1181,8 +1181,8 @@ function renderFlowBar(animate = true) {
   const gen = d.Total ?? 0, net = d.NetImports ?? 0;
   const imp = Math.max(net, 0), exp = Math.max(-net, 0), use = gen + net;   // demand = generation + net imports
   const w = Math.max(260, Math.round(host.clientWidth || 600)), narrow = w < 420;
-  const HMAX = narrow ? 90 : 116, MIN = 10, GAP = 12, FIT = narrow ? 17 : 19;
-  const CW = narrow ? 104 : 142, BH = narrow ? 46 : 52;
+  const HMAX = narrow ? 70 : 86, MIN = 8, GAP = 8, FIT = narrow ? 15 : 17;      // compact: about a quarter shorter
+  const CW = narrow ? 96 : 128, BH = narrow ? 36 : 40;
   const xL = CW, xR = w - CW;
   const r = v => Math.round(v * 10) / 10;
   const pct = v => (v > 0 && v < 10 ? v.toFixed(1) : String(Math.round(v))) + '%';
@@ -1669,6 +1669,79 @@ function renderCharts() {
 
   bindTapTooltip(barChart);
   renderLegend(activeSources);
+  clearTimeout(smokeTimer);
+  smokeTimer = setTimeout(addCarbonSmoke, REDUCED_MOTION ? 0 : 900);   // once the bar has stacked up
+}
+
+// ============================================================
+//  CARBON SMOKE: soft puffs rising from the latest-mix bar, more and darker the dirtier the grid.
+//  Uses Ember's CO2 intensity (gCO2/kWh) when the data has it, otherwise an estimate from the mix.
+// ============================================================
+const CO2_FACTOR = { 'Coal': 820, 'Gas': 490, 'Other Fossil': 650, 'Bioenergy': 230, 'Nuclear': 12, 'Hydro': 24, 'Wind': 11, 'Solar': 41, 'Other Renewables': 38 };
+let smokeTimer = null, WORLD_CO2 = null;
+function co2Intensity(yd) {
+  if (!yd) return null;
+  if (typeof yd.CO2 === 'number' && yd.CO2 > 0) return yd.CO2;
+  const tot = yd.Total || 0; if (!tot) return null;
+  return Object.keys(CO2_FACTOR).reduce((a, k) => a + (yd[k] || 0) * CO2_FACTOR[k], 0) / tot;
+}
+function worldCo2() {
+  if (WORLD_CO2 !== null) return WORLD_CO2;
+  let g = 0, e = 0;
+  Object.values(ALL_DATA).forEach(info => {
+    const yd = info.years[info.latestYear] || {}, i = co2Intensity(yd);
+    if (i !== null) { g += yd.Total; e += i * yd.Total; }
+  });
+  return (WORLD_CO2 = g ? e / g : 0);
+}
+// Soft grey puffs rising from the top of the latest-mix bar. Grids around the world average get a
+// light wisp; only heavy polluters get a thick, dark column, and even then it stops at the top edge
+// of the card (it may just brush the card above, never cover it).
+const PUFF_SVG = '<svg viewBox="0 0 44 32" aria-hidden="true"><path d="M11 27a8 8 0 0 1-1.6-15.8A10 10 0 0 1 28.5 8.6a8 8 0 0 1 7.3 13.1A5.6 5.6 0 0 1 32 27z"/></svg>';
+function addCarbonSmoke() {
+  if (!barChart || !target) return;
+  const info = ALL_DATA[target.name], yd = info.years[info.latestYear] || {};
+  const I = co2Intensity(yd); if (I === null) return;
+  const wrap = document.getElementById('bar-wrapper'), card = document.getElementById('chart-right');
+  if (!wrap || !card) return;
+  wrap.querySelectorAll('.co2-smoke').forEach(n => n.remove());
+  // the figure sits under the chart, out of the smoke's way
+  card.querySelectorAll('.co2-note').forEach(n => n.remove());
+  const w = Math.round(worldCo2() / 10) * 10;
+  // two matching columns: this grid | world average, same label + value layout as the stat cards
+  card.insertAdjacentHTML('beforeend', '<div class="co2-note" title="Grams of CO₂ emitted for each kWh of electricity">'
+    + '<div class="co2-col"><span class="co2-lbl"><svg viewBox="0 0 44 32" width="13" height="10" aria-hidden="true"><path d="M11 27a8 8 0 0 1-1.6-15.8A10 10 0 0 1 28.5 8.6a8 8 0 0 1 7.3 13.1A5.6 5.6 0 0 1 32 27z"/></svg>CO₂ intensity</span>'
+    + '<span class="co2-val"><strong>' + Math.round(I / 10) * 10 + '</strong> g/kWh</span></div>'
+    + '<div class="co2-col co2-world"><span class="co2-lbl">World avg.</span>'
+    + '<span class="co2-val"><strong>' + w + '</strong> g/kWh</span></div></div>');
+  if (I < 80) return;                                         // clean grids: no smoke
+  const metas = barChart.data.datasets.map((d, i) => barChart.getDatasetMeta(i)).filter(m => !m.hidden && m.data[0]);
+  if (!metas.length) return;
+  const pts = metas.map(m => m.data[0].getProps(['x', 'y'], true));
+  const x = pts[0].x, yTop = Math.min(...pts.map(p => p.y));
+  // 0 at 80 g, 1 at 900 g; the curve keeps average grids (about 400 g) light: k ≈ 0.25 there, 0.55 at 620 g
+  const k = Math.pow(Math.min(1, (I - 80) / 820), 1.4);
+  const n = 3 + Math.round(7 * k);
+  const alpha = (0.5 + 0.38 * k).toFixed(2), tone = Math.round(150 - 72 * k);
+  // never higher than the top edge of the card (+ a few pixels for the worst, just brushing the card above)
+  const toCardTop = yTop + (wrap.getBoundingClientRect().top - card.getBoundingClientRect().top);
+  const rise = Math.max(26, Math.min(40 + 150 * k, toCardTop - 8 + 22 * k));
+  const smoke = document.createElement('div');
+  smoke.className = 'co2-smoke'; smoke.setAttribute('aria-hidden', 'true');
+  smoke.style.cssText = 'left:' + x + 'px;top:' + yTop + 'px;--c:' + tone + ',' + tone + ',' + (tone - 4)
+    + ';--l:' + (tone - 40) + ',' + (tone - 40) + ',' + (tone - 46) + ';--a:' + alpha + ';--rise:' + rise.toFixed(0) + 'px';
+  const dur = 3.6 - 0.4 * k;
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement('span');
+    p.className = 'co2-puff';
+    p.innerHTML = PUFF_SVG;
+    p.style.setProperty('--dx', ((i % 2 ? 1 : -1) * (4 + (i * 7) % 14) + 10 * k) + 'px');
+    p.style.setProperty('--s', (1.1 + 1.1 * k + (i % 3) * 0.15).toFixed(2));
+    p.style.animationDuration = dur.toFixed(2) + 's';
+    p.style.animationDelay = (-i * dur / n).toFixed(2) + 's';
+    smoke.appendChild(p);
+  }
+  wrap.appendChild(smoke);
 }
 
 function renderLegend(keys) {

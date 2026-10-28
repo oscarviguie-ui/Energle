@@ -37,6 +37,17 @@ dem_lookup = {}
 for (area, iso3), grp in dem.groupby(['Area','ISO 3 code']):
     dem_lookup[(area, iso3)] = {int(r['Year']): r['Value'] for _, r in grp.iterrows()}
 
+# --- CO2 intensity of electricity (gCO2/kWh), for the smoke on the latest-mix chart ---
+co2 = df[
+    (df['Category'] == 'Power sector emissions') &
+    (df['Area type'] == 'Country or economy') &
+    (df['Variable'] == 'CO2 intensity') &
+    (df['Unit'] == 'gCO2/kWh')
+][['Area','ISO 3 code','Year','Value']].copy()
+co2_lookup = {}
+for (area, iso3), grp in co2.groupby(['Area','ISO 3 code']):
+    co2_lookup[(area, iso3)] = {int(r['Year']): round(float(r['Value']), 1) for _, r in grp.iterrows() if pd.notna(r['Value'])}
+
 # --- Demand per capita ---
 dpc = df[
     (df['Variable'] == 'Demand per capita') &
@@ -113,6 +124,7 @@ for (area, iso3), group in gen.groupby(['Area','ISO 3 code']):
     imp_years   = imp_lookup.get((area, iso3), {})
     dem_years   = dem_lookup.get((area, iso3), {})
     dpc_years   = dpc_lookup.get(iso3, {})
+    co2_years   = co2_lookup.get((area, iso3), {})
 
     years = {}
     for year, ygroup in group.groupby('Year'):
@@ -136,6 +148,8 @@ for (area, iso3), group in gen.groupby(['Area','ISO 3 code']):
                 'NetImports':       round(net_imp, 2),
                 'Demand':           round(demand, 2),
             }
+            if int(year) in co2_years:
+                years[int(year)]['CO2'] = co2_years[int(year)]
     if not years:
         continue
 

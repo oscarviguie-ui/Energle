@@ -2978,3 +2978,65 @@ footer p { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 10p
 .un-text { margin: 0; font-size: .9rem; color: #666; }
 .un-btn { margin-top: 8px; min-height: 40px; padding: 0 20px; border: 0; border-radius: 4px; background: #1a1a1a; color: #fff; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
 .un-btn:disabled { opacity: .6; cursor: default; }
+
+/* ============================================================
+   CARBON SMOKE — soft puffs rising from the latest-mix bar. They stay inside the card
+   (the worst ones just brush the card above). The CO2 figure sits under the chart.
+   ============================================================ */
+#bar-wrapper, #chart-right { overflow: visible; }
+.co2-smoke { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 2; }
+/* soft cloud shapes: rounded and readable as "smoke", but with a soft edge rather than a cartoon outline */
+.co2-puff { position: absolute; left: -15px; top: -20px; width: 30px; height: 22px;
+  opacity: 0; animation: co2Rise 3.4s linear infinite; filter: blur(.5px); }
+.co2-puff svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.co2-puff path { fill: rgb(var(--c)); fill-opacity: var(--a); stroke: rgb(var(--l)); stroke-opacity: .35; stroke-width: 1.4; stroke-linejoin: round; }
+@keyframes co2Rise {
+  0%   { transform: translate(0, 0) scale(.45); opacity: 0; }
+  12%  { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--rise) * -1)) scale(var(--s)); opacity: 0; }
+}
+/* this grid | world average: two equal columns split by a hairline, label above value */
+.co2-note { display: grid; grid-template-columns: 1fr 1fr; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid rgba(31, 41, 55, .08); }
+.co2-col { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.co2-col + .co2-col { border-left: 1px solid rgba(31, 41, 55, .1); }
+.co2-lbl { display: inline-flex; align-items: center; gap: 4px; font-size: .6rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8a919c; white-space: nowrap; }
+.co2-lbl svg path { fill: #9aa1ab; }
+.co2-val { font-size: .7rem; color: #6b7280; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.co2-val strong { font-size: 1rem; font-weight: 700; color: #1a1a1a; }
+.co2-world .co2-val strong { color: #6b7280; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) {
+  .co2-puff { animation: none; opacity: 1; }
+  .co2-puff:nth-child(2) { transform: translate(-4px, -18px) scale(1.3); }
+  .co2-puff:nth-child(3) { transform: translate(6px, -36px) scale(1.7); }
+  .co2-puff:nth-child(n+4) { display: none; }
+}
+
+/* ============================================================
+   TOP CARDS, COMPACT — headline stats and energy balance a bit shorter
+   ============================================================ */
+.bc-stats { gap: 10px; padding: 12px 14px; }
+.bc-stat { gap: 3px; }
+#balance-card .stat-value { font-size: 1.4rem; line-height: 1.1; }
+.bc-world { margin-top: 1px; padding: 2px 9px; font-size: .7rem; }
+.bc-flow { padding: 10px 16px 12px; gap: 8px; }
+.fc-name { font-size: 10px; }
+.fc-val { font-size: 15px; }
+.fc-tag { font-size: 12px; }
+@media (max-width: 600px) {
+  .bc-stats { padding: 10px 8px; gap: 8px; }
+  #balance-card .stat-value { font-size: 1.1rem; }
+  .bc-world { font-size: .64rem; padding: 2px 7px; }
+  .bc-flow { padding: 9px 10px 10px; gap: 6px; }
+  .fc-name { font-size: 9px; }
+  .fc-val { font-size: 12.5px; }
+  .fc-tag { font-size: 11px; }
+}
+
+/* ============================================================
+   CHART HEIGHTS WITH THE CO2 STRIP — the bar keeps its full 300px on laptop:
+   the cards grow instead, and the time series grows with them so both stay level
+   ============================================================ */
+@media (min-width: 601px) {
+  #bar-wrapper { flex: 1 0 300px; min-height: 300px; }
+  #line-wrapper { flex: 1 0 300px; height: auto; min-height: 300px; }
+}
