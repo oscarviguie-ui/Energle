@@ -65,7 +65,7 @@ def main(argv):
             go, fresh = due(name, mod, state, countries)
             if not go and '--all' not in flags and not args:
                 log('== %s: not due (last %s)' % (name, state.get('updated'))); continue
-            if fresh:
+            if fresh or (name in args and name in ('usgs', 'baci', 'entsoe')):   # named on the command line: re-read the release
                 state['refresh'] = True
             log('== %s' % name)
             try:
