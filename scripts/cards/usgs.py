@@ -24,6 +24,7 @@ MINERALS = {
     'Li': ('Lithium', 't'), 'Co': ('Cobalt', 't'), 'Ni': ('Nickel', 't'), 'Cu': ('Copper', 'Mt'),
     'C': ('Graphite (Natural)', 't'), 'REE': ('Rare Earths', 't'), 'Mn': ('Manganese', 'Mt'), 'PGM': ('Platinum-Group Metals', 't'),
 }
+PGM_OUTPUT = ('Platinum', 'Palladium')       # PGM mine output is published under the two metals
 UNIT_T = {'metric tons': 1.0, 'thousand metric tons': 1e3, 'million metric tons': 1e6, 'kilograms': 1e-3}
 NAMES = {
     'burma': 'MMR', 'congo (kinshasa)': 'COD', 'congo (brazzaville)': 'COG', 'korea, north': 'PRK', 'korea, republic of': 'KOR',
@@ -67,7 +68,7 @@ def build(countries, state=None, log=print):
         text = raw.decode('utf-8-sig')
     except UnicodeDecodeError:
         text = raw.decode('cp1252')
-    rows = [row for row in csv.DictReader(io.StringIO(text)) if (row.get('Section') or '').startswith('World Mine Production')]
+    rows = [row for row in csv.DictReader(io.StringIO(text)) if (row.get('Section') or '').startswith('World')]
     log('  usgs MCS %d: %d world production / reserves rows' % (year, len(rows)))
     lookup = {v['name'].lower(): iso for iso, v in countries.items()}
     try:
@@ -87,27 +88,29 @@ def build(countries, state=None, log=print):
 
     out, world = {}, {}
     for sym, (comm, unit) in MINERALS.items():
-        prod, res = {}, {}
+        prod, res = {}, {}                  # iso -> {year: {detail: tonnes}}
+        names = (comm,) + (PGM_OUTPUT if sym == 'PGM' else ())
         for row in rows:
-            if row.get('Commodity') != comm:
+            if row.get('Commodity') not in names:
                 continue
             iso = iso_of(row.get('Country'))
             f = UNIT_T.get((row.get('Unit') or '').strip().lower())
             v = _num(row.get('Value'))
-            if not iso or f is None or v is None:
+            detail = (row.get('Statistics_detail') or '').strip().lower()
+            if not iso or f is None or v is None or 'rounded' in detail:
                 continue
             y = int(re.sub(r'\D', '', row.get('Year') or '0')[:4] or 0)
-            stat, detail = row.get('Statistics') or '', (row.get('Statistics_detail') or '').lower()
-            if stat == 'Production' and 'mine production' in detail:
-                prev = prod.get(iso)
-                if not prev or y > prev[1]:
-                    prod[iso] = (v * f, y)
-                elif y == prev[1]:
-                    prod[iso] = (prev[0] + v * f, y)               # PGM: platinum + palladium rows
-            elif stat == 'Reserves':
-                prev = res.get(iso)
-                if not prev or y >= prev[1]:
-                    res[iso] = (v * f + (prev[0] if prev and y == prev[1] else 0), y)
+            stat = row.get('Statistics') or ''
+            if stat == 'Production' and detail.startswith('mine production'):
+                prod.setdefault(iso, {}).setdefault(y, {})[row['Commodity'] + detail] = v * f
+            elif stat == 'Reserves' and row.get('Commodity') == comm:
+                res.setdefault(iso, {}).setdefault(y, {})[detail] = v * f
+
+        def latest(d, add):
+            y = max(d)
+            return (sum(d[y].values()) if add else max(d[y].values())), y
+        prod = {iso: latest(d, sym == 'PGM') for iso, d in prod.items()}     # platinum + palladium; else one figure
+        res = {iso: latest(d, False) for iso, d in res.items()}
         to_card = 1e-6 if unit == 'Mt' else 1.0
         rk_res = {iso: i + 1 for i, iso in enumerate(sorted(res, key=lambda k: -res[k][0]))}
         rk_out = {iso: i + 1 for i, iso in enumerate(sorted(prod, key=lambda k: -prod[k][0]))}

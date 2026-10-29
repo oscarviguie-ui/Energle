@@ -7,6 +7,7 @@ Feeds:  Underground Riches  proven reserves of crude oil (bn barrels) and natura
 
 The repository is read as one zip (no key). Countries are matched by their short name.
 """
+import html
 import io
 import json
 import re
@@ -21,7 +22,8 @@ ALIASES = {
     'korea, south': 'KOR', 'korea, north': 'PRK', 'congo, democratic republic of the': 'COD', 'congo, republic of the': 'COG',
     'burma': 'MMR', 'turkey (turkiye)': 'TUR', 'turkiye': 'TUR', 'czechia': 'CZE', 'russia': 'RUS', 'iran': 'IRN', 'syria': 'SYR',
     'laos': 'LAO', 'vietnam': 'VNM', 'bolivia': 'BOL', 'venezuela': 'VEN', 'tanzania': 'TZA', 'moldova': 'MDA', 'united states': 'USA',
-    'united kingdom': 'GBR', 'bahamas, the': 'BHS', 'gambia, the': 'GMB', 'cabo verde': 'CPV', "cote d'ivoire": 'CIV', 'eswatini': 'SWZ',
+    'united kingdom': 'GBR', 'bahamas, the': 'BHS', 'gambia, the': 'GMB', 'cabo verde': 'CPV', "cote d'ivoire": 'CIV', "côte d'ivoire": 'CIV', 'eswatini': 'SWZ',
+    'drc': 'COD', 'congo (kinshasa)': 'COD', 'congo (brazzaville)': 'COG', 'gaza': 'PSE', 'macau': 'MAC', 'curacao': 'CUW',
     'north macedonia': 'MKD', 'kosovo': 'XKX', 'west bank': 'PSE', 'gaza strip': 'PSE', 'timor-leste': 'TLS', 'brunei': 'BRN', 'taiwan': 'TWN',
 }
 
@@ -57,7 +59,7 @@ def build(countries, state=None, log=print):
         except ValueError:
             continue
         short = (((d.get('Government') or {}).get('Country name') or {}).get('conventional short form') or {}).get('text', '')
-        short = re.sub(r'<.*?>', '', short).strip()
+        short = html.unescape(re.sub(r'<.*?>', '', short)).strip()
         key = short.lower()
         iso = ALIASES.get(key) or by_name.get(key)
         if not iso and pycountry and short and short.lower() != 'none':
