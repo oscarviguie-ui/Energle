@@ -48,15 +48,42 @@ def flow_twh(series):
     return 0.0 if s.empty else float(s.clip(lower=0).sum()) / 1e6      # MW over hours -> MWh -> TWh
 
 
-def build(countries, state=None, log=print, client=None, year=None):
+def _fetch_raw(raw, src, dst, start, end, log):
+    """One border direction over the whole year: one request (the API takes a year of flows at once),
+    or four quarters if it refuses. A border with no data gives None."""
+    from entsoe.mappings import lookup_area
+    from entsoe.parsers import parse_crossborder_flows
+    from entsoe.exceptions import NoMatchingDataError
+    try:
+        a, b = lookup_area(src), lookup_area(dst)
+    except Exception:                   # noqa: BLE001 - an area the client does not know
+        return None
+    spans = [(start, end)]
+    for attempt in range(2):
+        try:
+            parts = [parse_crossborder_flows(raw.query_crossborder_flows(a, b, start=s0, end=s1)) for s0, s1 in spans]
+            return flow_twh(pd.concat(parts)) if parts else None
+        except NoMatchingDataError:
+            return None
+        except Exception as err:        # noqa: BLE001
+            if attempt == 0 and 'exceed' in str(err).lower():
+                q = pd.date_range(start, end, periods=5)
+                spans = list(zip(q[:-1], q[1:]))
+                continue
+            log('  entsoe flow %s>%s: %s' % (src, dst, str(err)[:90]))
+            return None
+    return None
+
+
+def build(countries, state=None, log=print, client=None, year=None, workers=4):
     state = state or {}
     key = os.environ.get('ENTSOE_API_KEY', '').strip()
     if client is None:
         if not key:
             log('  entsoe: ENTSOE_API_KEY not set, skipped')
             return None, None
-        from entsoe import EntsoePandasClient
-        client = EntsoePandasClient(api_key=key)
+        from entsoe import EntsoeRawClient
+        client = EntsoeRawClient(api_key=key, retry_count=2, retry_delay=5, timeout=90)   # no hanging requests
     year = year or datetime.date.today().year - 1
     if state.get('year') == year and not state.get('refresh') and state.get('updated_month') == datetime.date.today().strftime('%Y-%m'):
         log('  entsoe: %d already read this month, skipped' % year)
@@ -64,15 +91,12 @@ def build(countries, state=None, log=print, client=None, year=None):
     start = pd.Timestamp('%d-01-01' % year, tz='Europe/Brussels')
     end = pd.Timestamp('%d-01-01' % (year + 1), tz='Europe/Brussels')
     in_game = {cc for cc, iso in ISO3.items() if iso in countries}
-    flows = {}
-    for a, b in country_pairs():
-        if a not in in_game and b not in in_game:
-            continue
-        for src, dst in ((a, b), (b, a)):
-            try:
-                flows[(src, dst)] = flow_twh(client.query_crossborder_flows(src, dst, start=start, end=end))
-            except Exception as err:        # noqa: BLE001 - no data for this border
-                log('  entsoe flow %s>%s: %s' % (src, dst, str(err)[:80]))
+    jobs = [(s0, d0) for a, b in country_pairs() if a in in_game or b in in_game for s0, d0 in ((a, b), (b, a))]
+    log('  entsoe %d: %d border directions to read' % (year, len(jobs)))
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        got = list(pool.map(lambda j: _fetch_raw(client, j[0], j[1], start, end, log), jobs))
+    flows = {j: v for j, v in zip(jobs, got) if v is not None}
     if not flows:
         raise RuntimeError('no ENTSO-E flows could be read')
     out = {}
