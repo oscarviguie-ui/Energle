@@ -472,9 +472,10 @@ async function recordCardsOnce(won) {
 // ============================================================
 const LS_SHOP_INTRO = 'energle_shop_intro_v1';
 function maybeShowShopIntro() {
-  if (!SHOP.on() || SHOP_LAUNCH_DAY == null) return;
+  if (!SHOP.on()) return;
+  // the preview link (?shop=on) shows it straight away; after launch, during the 7 days from SHOP_LAUNCH_DAY
   const d = getDayNumber();
-  if (d < SHOP_LAUNCH_DAY || d > SHOP_LAUNCH_DAY + 6) return;
+  if (!SHOP_TEST && (SHOP_LAUNCH_DAY == null || d < SHOP_LAUNCH_DAY || d > SHOP_LAUNCH_DAY + 6)) return;
   try { if (localStorage.getItem(LS_SHOP_INTRO)) return; } catch (e) { return; }
   // wait for any other "What's new" window to close first
   let tries = 0;
