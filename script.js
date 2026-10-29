@@ -495,6 +495,7 @@ function switchMode(mode) {
   if (mode === 'normal') { POOL = COUNTRIES; PRACTICE_CAT = null; renderGameScreen(); restoreDailyGame(); }
   else if (mode === 'archive') { renderArchiveScreen(); }
   else { renderPracticePickerScreen(); }
+  updateDonePill();
 }
 
 // ============================================================
@@ -836,8 +837,8 @@ function refreshArchiveStatus() {
 }
 function restoreArchiveGame() {
   const day = ARCHIVE_DAY;
-  target = getDailyTarget(COUNTRIES, day); guesses = []; gameOver = false; SHOP.reset();
-  if (!target) { renderUnavailable('archive'); return; }
+  target = getDailyTarget(COUNTRIES, day); guesses = []; gameOver = false; SHOP.reset(); CARDS_RESTORING = true; updateDonePill();
+  if (!target) { renderUnavailable('archive'); CARDS_RESTORING = false; return; }
   const h = loadHistory()[day];
   pathSent = !!(h && h.src === 'daily' && h.ps);      // (see below)      // your own daily game is already inside that day's average
   document.getElementById('guesses').innerHTML = '';
@@ -859,10 +860,11 @@ function restoreArchiveGame() {
       renderResultCard(guesses[guesses.length - 1].iso3 === target.iso3, false);
       document.getElementById('input-area').style.display = 'none';
     }
-    renderClueCards(); updateShopButton();
+    renderClueCards(); updateShopButton(); CARDS_RESTORING = false;
+    if (gameOver) { window.scrollTo(0, 0); updateDonePill(); }
     return;
   }
-  renderClueCards(); updateShopButton();
+  renderClueCards(); updateShopButton(); CARDS_RESTORING = false;
   const st = archiveStatus(day);
   if (st.onDay)
     document.getElementById('banner').innerHTML = '<p class="ar-note">You ' + (st.onDay.won ? 'solved this one in ' + st.onDay.n : 'missed this one')
@@ -908,6 +910,7 @@ function mixBarHTML(shares, cls) {
 //  INIT
 // ============================================================
 function initApp() {
+  try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}   // a reload opens at the top, not mid-page
   migrateDailyToHistory();
   POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
   scheduleAmbientPulse();
@@ -2442,6 +2445,7 @@ function renderResultCard(won, animate = true) {
     + '<div class="go-foot">' + foot + '</div></div>';
   if (won && animate) glowBattery(p.doneAt);
   addAveragePath(won);
+  requestAnimationFrame(updateDonePill);
   clearInterval(resultTicker);
   if (MODE === 'normal') resultTicker = setInterval(() => {
     const el = document.getElementById('go-countdown'); if (!el) { clearInterval(resultTicker); return; }
@@ -2560,6 +2564,7 @@ function syncInputFlag() {
 // ============================================================
 function restoreDailyGame() {
   target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false; pathSent = false; SHOP.reset();
+  CARDS_RESTORING = true; updateDonePill();
   if (!target) { renderUnavailable('normal'); return; }
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
@@ -2594,13 +2599,45 @@ function restoreDailyGame() {
     }
   }
   renderClueCards(); updateShopButton();
+  CARDS_RESTORING = false;
+  if (gameOver) { window.scrollTo(0, 0); updateDonePill(); }     // a finished game reopens at the top, with the reminder pill
 }
 
 // ============================================================
-//  PRACTICE GAME
+//  RESULT REMINDER: once a game is over, a small pill at the bottom of the screen recalls the answer
+//  and the score, follows the page as it scrolls, and slides into the result card when that comes into view
+// ============================================================
+let donePillRaf = 0;
+function updateDonePill() {
+  let pill = document.getElementById('done-pill');
+  const card = document.querySelector('#banner .go-card');
+  if (!gameOver || !card || !target || !guesses.length) { if (pill) pill.remove(); return; }
+  if (!pill) {
+    pill = document.createElement('button'); pill.type = 'button'; pill.id = 'done-pill'; pill.className = 'is-merged';
+    pill.addEventListener('click', () => { const c = document.querySelector('#banner .go-card'); if (c) c.scrollIntoView({ behavior: REDUCED_MOTION ? 'auto' : 'smooth', block: 'center' }); });
+    document.body.appendChild(pill);
+  }
+  const won = guesses[guesses.length - 1].iso3 === target.iso3, n = cellsUsed();
+  const key = MODE + ':' + currentDay() + ':' + target.iso3 + ':' + n + ':' + won;
+  if (pill.dataset.key !== key) {
+    pill.dataset.key = key;
+    const tag = MODE === 'practice' ? 'Practice' : '#' + currentDay();
+    pill.innerHTML = '<span class="dp-tag">' + tag + '</span>' + flagImg(target.iso3, 'dp-flag') + '<span class="dp-name">' + escHtml(target.name) + '</span>'
+      + '<span class="dp-score dp-score--' + (won ? 'won' : 'lost') + '">' + (won ? n + '/' + MAX_GUESSES : 'X/' + MAX_GUESSES) + '</span>'
+      + '<svg class="dp-arrow" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    pill.setAttribute('aria-label', (won ? 'Solved: ' + target.name + ' in ' + n : 'Missed: the country was ' + target.name) + '. Go to your result');
+  }
+  // hidden (merged) as soon as the result card reaches the screen, or once it has been scrolled past
+  const r = card.getBoundingClientRect();
+  pill.classList.toggle('is-merged', r.top < window.innerHeight - 24);
+}
+['scroll', 'resize'].forEach(ev => window.addEventListener(ev, () => {
+  if (donePillRaf) return;
+  donePillRaf = requestAnimationFrame(() => { donePillRaf = 0; updateDonePill(); });
+}, { passive: true }));
 // ============================================================
 function newGame() {
-  target = nextPracticeCountry(); guesses = []; gameOver = false; SHOP.reset();
+  target = nextPracticeCountry(); guesses = []; gameOver = false; SHOP.reset(); updateDonePill();
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';

@@ -258,6 +258,7 @@ function buyCard(k) {
 
 // ---------- clue cards under the charts ----------
 let CARD_SCOPE = null, CARD_SCOPE_ISO = null;
+let CARDS_RESTORING = false;          // while a saved game is rebuilt: no scroll anchoring (the page opens at the top)
 // stand-in figures for the parts a country has no data for: they are only ever drawn as an empty card
 const CARD_BLANK = { sun: Array(12).fill(0), wind: Array(12).fill(0), rain: 0, flow: 0, terr: [[0, 0], [1, 0]], elevMean: 0,
   fossil: { oil: [0, null, null], gas: [0, null, null], coal: [0, null, null] }, minerals: {}, rents: { oil: 0, gas: 0, coal: 0, min: 0 },
@@ -300,7 +301,7 @@ function renderClueCards() {
     : nOwned + ' opened';
   host.innerHTML = '<div class="ic-sechead"><span class="section-title">Clue cards</span><span class="ic-secsub">' + sub + '</span></div><div class="ic-slot">' + html + '</div>';
   packCards(host);
-  if (anchor && before !== null && !SHOP.justBought) { const d = anchor.getBoundingClientRect().top - before; if (Math.abs(d) > 1) window.scrollBy(0, d); }
+  if (anchor && before !== null && !SHOP.justBought && !CARDS_RESTORING) { const d = anchor.getBoundingClientRect().top - before; if (Math.abs(d) > 1) window.scrollBy(0, d); }
   SHOP.justBought = null;
 }
 // a card with no data for today's country: unmistakably empty
