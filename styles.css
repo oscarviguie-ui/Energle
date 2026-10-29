@@ -3230,10 +3230,12 @@ header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
   #balance-card .stat-value { font-size: 1rem; }
   .bc-world { font-size: .62rem; }
 }
-/* phone: the two stats side by side keep their values on one line, even when a label wraps */
+/* phone: the two stats side by side share three rows (label, value, world average),
+   so labels, values and pills each sit on one line even when a label wraps */
 @media (max-width: 600px) {
-  .bc-stats { align-items: flex-end; }
-  .bc-stat .stat-label { line-height: 1.15; }
+  .bc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto; align-items: center; column-gap: 12px; row-gap: 3px; }
+  .bc-stat { display: grid; grid-row: 1 / 4; grid-template-rows: subgrid; justify-items: center; gap: 0; min-width: 0; }
+  .bc-stat .stat-label { line-height: 1.2; align-self: center; }
 }
 
 /* ============================================================
