@@ -3235,3 +3235,27 @@ header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
   .bc-stats { align-items: flex-end; }
   .bc-stat .stat-label { line-height: 1.15; }
 }
+
+/* ============================================================
+   PHONE HEADER, SCALED DOWN: title, medals with names and the Stats & Leaderboard button
+   fit side by side without crowding (down to 320 px)
+   ============================================================ */
+@media (max-width: 600px) {
+  .hd-grid h1 { font-size: 1.85rem; }
+  .hd-grid .hd-by { font-size: .66rem; }
+  .hd-grid .podium-slot { width: 44px; }
+  .hd-grid .podium-medal { font-size: .95rem; }
+  .hd-grid .podium-name { font-size: .58rem; }
+  .lb-split .mode-btn { font-size: .7rem; gap: 4px; }
+  .lb-split .lb-amp { font-size: .7rem; }
+  .lb-split .hd-ico { width: 12px; height: 12px; }
+  .lb-split .mode-btn:first-child { padding: 6px 4px 6px 9px; }
+  .lb-split .mode-btn:last-child { padding: 6px 9px 6px 4px; }
+  .hd-grid .lb-split { width: auto; }
+}
+@media (max-width: 360px) {
+  .hd-grid h1 { font-size: 1.6rem; }
+  .hd-grid .podium-slot { width: 40px; }
+  .lb-split .mode-btn { font-size: .66rem; }
+  .lb-split .lb-amp { font-size: .66rem; }
+}
