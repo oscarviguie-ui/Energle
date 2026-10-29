@@ -9,7 +9,7 @@ Published: **yes**
 - factbook: {'countries': 123, 'updated': '2026-10-29'}
 - entsoe: never fetched
 - baci: {'countries': 167, 'release': 'BACI_HS96_V202601.zip', 'updated': '2026-10-29', 'year': 2024}
-- usgs: {'countries': 42, 'release': 2026, 'updated': '2026-10-29'}
+- usgs: {'release': 2026, 'updated': '2026-10-29', 'countries': 42}
 - power: {'countries': 173, 'updated': '2026-10-29'}
 - elevation: {'countries': 173, 'updated': '2026-10-29'}
 
@@ -40,4 +40,15 @@ No shop (fewer than 3 cards): PRK, TWN, XKX
 ## Log
 
 ```
+== usgs
+  usgs MCS 2026: 3303 world production / reserves rows
+  usgs Li  Lithium                9 producers, 10 with reserves
+  usgs Co  Cobalt                 12 producers, 12 with reserves
+  usgs Ni  Nickel                 9 producers, 9 with reserves
+  usgs Cu  Copper                 14 producers, 14 with reserves
+  usgs C   Graphite (Natural)     18 producers, 15 with reserves
+  usgs REE Rare Earths            12 producers, 11 with reserves
+  usgs Mn  Manganese              8 producers, 7 with reserves
+  usgs PGM Platinum-Group Metals  5 producers, 5 with reserves
+  -> 42 countries
 ```
