@@ -26,10 +26,10 @@ import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from cards import assemble, baci, checks, eia, elevation, entsoe, power, usgs, wdi   # noqa: E402
+from cards import assemble, baci, checks, eia, elevation, entsoe, factbook, power, usgs, wdi   # noqa: E402
 from cards.common import CARDS_FILE, RAW_FILE, REPORT_FILE, days_since, game_countries, game_data, load_json, save_json, today   # noqa: E402
 
-SOURCES = {'wdi': wdi, 'eia': eia, 'entsoe': entsoe, 'baci': baci, 'usgs': usgs, 'power': power, 'elevation': elevation}
+SOURCES = {'wdi': wdi, 'eia': eia, 'factbook': factbook, 'entsoe': entsoe, 'baci': baci, 'usgs': usgs, 'power': power, 'elevation': elevation}
 
 
 def due(name, mod, state, countries):

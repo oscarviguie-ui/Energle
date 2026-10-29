@@ -72,11 +72,12 @@ def sig(v, n=2):
 def build(raw, game, log=print):
     countries = {v['iso3']: k for k, v in game.items() if not k.startswith('__') and isinstance(v, dict) and v.get('iso3')}
     iso2, cont = _script_maps()
-    data = {s: (raw.get(s) or {}).get('data', {}) for s in ('wdi', 'power', 'elevation', 'eia', 'usgs', 'baci', 'entsoe')}
+    data = {s: (raw.get(s) or {}).get('data', {}) for s in ('wdi', 'power', 'elevation', 'eia', 'factbook', 'usgs', 'baci', 'entsoe')}
     out, why = {}, {}
     for iso, gname in countries.items():
         w, pw, el = data['wdi'].get(iso, {}), data['power'].get(iso, {}), data['elevation'].get(iso)
         e, u, b, en = data['eia'].get(iso, {}), data['usgs'].get(iso, {}), data['baci'].get(iso, {}), data['entsoe'].get(iso)
+        fb = data['factbook'].get(iso, {})
         wv = lambda k: (w.get(k) or [None])[0]
         C, cards, missing = {'europe': cont.get(iso) == 'Europe'}, [], {}
 
@@ -93,24 +94,30 @@ def build(raw, game, log=print):
             missing['nature'] = [k for k, v in need.items() if v is None]
 
         # ---- Underground Riches ----
-        fos = {}
+        # reserves: oil and gas from the CIA World Factbook, coal from EIA (Factbook when EIA has none);
+        # output rank from EIA. [reserves, reserves band, output band]
+        fos, years = {}, {}
         for f in ('oil', 'gas', 'coal'):
-            x = e.get(f)
-            fos[f] = [sig(x['value'], 2) if x and x.get('value') else 0, band(x and x.get('rank')), band(x and x.get('prod_rank'))]
+            ex = e.get(f) or {}
+            res = (ex if f == 'coal' and ex.get('value') else None) or fb.get(f) or {}
+            fos[f] = [sig(res['value'], 2) if res.get('value') else 0, band(res.get('rank')), band(ex.get('prod_rank'))]
+            p = ex.get('prod')
+            if res.get('value') and p:
+                per_year = {'oil': p * 365 / 1e6, 'gas': p / 1000, 'coal': p / 1e6}[f]   # bn bbl, tcm, bn t a year
+                years[f] = res['value'] / per_year
         mins = {}
         for sym in MINERALS:
             m = u.get(sym)
             if m and (band(m.get('rank_reserves')) or band(m.get('rank_output'))):
                 mins[sym] = [sig(m['reserves'], 2) if m.get('reserves') else 0, m['unit'], band(m.get('rank_reserves')), band(m.get('rank_output'))]
         rents = {k: wv('rent_' + k) for k in ('oil', 'gas', 'coal', 'min')}
-        if data['eia'] and any(v is not None for v in rents.values()):
+        if (data['eia'] or data['factbook']) and any(v is not None for v in rents.values()):
             C.update({'fossil': fos, 'minerals': mins, 'rents': {k: r(v or 0, 2) for k, v in rents.items()}})
-            coal = e.get('coal')
-            if coal and coal.get('years_left') and fos['coal'][0]:
-                C['coalYears'] = sig(coal['years_left'], 2)
+            if years.get('coal') and fos['coal'][0]:
+                C['coalYears'] = sig(min(years['coal'], 999), 2)
             cards.append('under')
         else:
-            missing['under'] = [k for k, bad in (('eia', not data['eia']), ('rents', all(v is None for v in rents.values()))) if bad]
+            missing['under'] = [k for k, bad in (('eia+factbook', not (data['eia'] or data['factbook'])), ('rents', all(v is None for v in rents.values()))) if bad]
 
         # ---- Fuel Trade ----
         imp, exp = b.get('imports'), b.get('exports')
