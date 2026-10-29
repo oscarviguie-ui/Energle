@@ -191,6 +191,7 @@ function saveDailyState() {
   try {
     localStorage.setItem(LS_KEY, JSON.stringify({
       day: getDayNumber(), guesses: guesses.map(g => g.iso3), gameOver, submitted: scoreSubmitted, pathSent,
+      cards: SHOP.saveData(), cardsSent: SHOP.sent,
     }));
   } catch {}
   saveHistoryEntry(getDayNumber(), { g: guesses.map(g => g.iso3), done: gameOver, src: 'daily', ps: pathSent });
@@ -366,7 +367,7 @@ function practiceUnlocked() {
 async function loadData() {
   document.getElementById('app').innerHTML = '<div id="loading">Loading data…</div>';
   try {
-    const [res, released] = await Promise.all([fetch('energle_data.json'), sbReleasedPuzzles()]);
+    const [res, released] = await Promise.all([fetch('energle_data.json'), sbReleasedPuzzles(), shopLoadData()]);
     const raw = await res.json();
     RELEASED = released;
     WORLD_DPC = raw['__world_dpc__'];
@@ -513,29 +514,6 @@ window.addEventListener('scroll', hideLockTip, { passive: true });
 window.addEventListener('resize', hideLockTip);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') hideLockTip(); });
 document.addEventListener('click', e => { if (!e.target.closest('#lock-tip, .mode-btn.locked, #shop-btn')) hideLockTip(); });
-
-// ============================================================
-//  CLUE SHOP TEASER (the shop itself ships with the clue-card data)
-// ============================================================
-const SHOP_ICON = '<svg class="shop-ico" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M5 13h22v14H5z" fill="#fff" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 7h24l-1.5 6.2a3 3 0 0 1-5.6.6 3 3 0 0 1-5.6 0 3 3 0 0 1-5.6 0 3 3 0 0 1-5.6-.6z" fill="var(--awn)" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 7l-.9 6.8M16 7v6.8M22.4 7l.9 6.8" stroke="currentColor" stroke-width="1.4"/><path d="M13 27v-7h6v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
-const LS_SHOP_TEASER = 'energle_shop_teaser_v1';
-function shopTeaserSeen() { try { return localStorage.getItem(LS_SHOP_TEASER) === '1'; } catch (e) { return false; } }
-function shopTeaserHTML() {
-  return MODE === 'normal'
-    ? '<button type="button" id="shop-btn" class="shop-btn is-soon" aria-label="Clue Shop: coming soon">' + SHOP_ICON + '<span class="shop-lbl">Clue Shop</span><span class="shop-soon">Soon</span></button>'
-    : '';
-}
-// after the first guess of the daily, the little shop jolts a couple of times, until the player has opened the teaser once
-function updateShopTeaser() {
-  const btn = document.getElementById('shop-btn'); if (!btn) return;
-  btn.classList.toggle('is-calling', MODE === 'normal' && guesses.length >= 1 && !gameOver && !shopTeaserSeen());
-}
-document.addEventListener('click', e => {
-  const btn = e.target.closest('#shop-btn'); if (!btn) return;
-  try { localStorage.setItem(LS_SHOP_TEASER, '1'); } catch (err) {}
-  btn.classList.remove('is-calling');
-  lockTip(btn, '<strong>The Clue Shop is coming soon.</strong> Trade spare guesses for clue cards: renewables potential, underground riches, fuel and power trade, people and power.', false);
-});
 
 function startPractice(catId) {
   const cat = PRACTICE_CATEGORIES.find(c => c.id === catId); if (!cat) return;
@@ -793,7 +771,7 @@ function renderArchiveScreen(focusDay) {
   // today: your daily result, or a way into it (its answer is never listed here)
   const todayTarget = getDailyTarget(COUNTRIES);
   const ds = loadDailyState(), dWon = !!(ds && ds.gameOver && ds.guesses.length && todayTarget && ds.guesses[ds.guesses.length - 1] === todayTarget.iso3);
-  const todaySt = ds && ds.gameOver ? { kind: dWon ? 'solved' : 'missed', onDay: { won: dWon, n: ds.guesses.length } } : { kind: 'new' };
+  const todaySt = ds && ds.gameOver ? { kind: dWon ? 'solved' : 'missed', onDay: { won: dWon, n: savedCells(ds) } } : { kind: 'new' };
   let html = '', d = today;
   while (d >= 1) {
     const key = puzzleDate(d, { month: 'long', year: 'numeric' });
@@ -922,6 +900,7 @@ function initApp() {
   POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
   scheduleAmbientPulse();
   maybeShowNotice();
+  maybeShowShopIntro();
 }
 
 // ============================================================
@@ -1144,12 +1123,13 @@ function renderGameScreen() {
     + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
     + '</div>'
     + '<div id="legend-shared"></div>'
+    + '<section id="clue-cards" class="fg-clues" aria-label="Clue cards"></section>'
     + '<div id="guess-head"><span class="section-title">Guesses</span><span id="lives-count"></span><span id="lives-container"></span></div>'
     + '<div id="input-area"><div id="autocomplete-wrapper">'
     + '<span id="guess-flag" aria-hidden="true"></span>'
     + '<input id="guess-input" type="text" placeholder="Type a country name…" autocomplete="off" />'
     + '<div id="autocomplete-list"></div></div>'
-    + shopTeaserHTML()
+    + shopButtonHTML()
     + '<button id="submit-btn">Guess</button></div>'
     + '<p id="error"></p>'
     + '<div id="banner"></div>'
@@ -2074,7 +2054,7 @@ function compassHTML(deg) {
 // ============================================================
 function renderLives(drain = false) {
   const container = document.getElementById('lives-container'); if (!container) return;
-  const left = MAX_GUESSES - guesses.length;
+  const left = MAX_GUESSES - cellsUsed();
   const color = left >= 4 ? 'is-high' : left >= 2 ? 'is-mid' : 'is-low';
   let cells = '';
   for (let i = 0; i < MAX_GUESSES; i++) {
@@ -2085,7 +2065,7 @@ function renderLives(drain = false) {
     +   '<span class="battery-body">' + cells + '</span><span class="battery-cap"></span></span>';
   const count = document.getElementById('lives-count');
   if (count) count.textContent = left + '/' + MAX_GUESSES;
-  updateShopTeaser();
+  updateShopButton();
 }
 function glowBattery(delay) {
   if (REDUCED_MOTION) return;
@@ -2106,14 +2086,15 @@ function submitGuess() {
   if (!match) { error.textContent = '"' + val + '" not found — check spelling.'; return; }
   if (guesses.find(g => g.iso3 === match.iso3)) { error.textContent = 'Already guessed!'; return; }
   error.textContent = '';
-  guesses.push(match);
+  guesses.push(match); shopNoteGuess(match);
   const isCorrect = match.iso3 === target.iso3;
   renderLives(!isCorrect);
   addGuessRow(match, isCorrect);
   input.value = ''; syncInputFlag(); document.getElementById('autocomplete-list').style.display = 'none';
   saveDailyState();
   if (isCorrect)                          { renderResultCard(true);  endGame(); }
-  else if (guesses.length >= MAX_GUESSES) { renderResultCard(false); endGame(); }
+  else if (cellsUsed() >= MAX_GUESSES)   { renderResultCard(false); endGame(); }
+  else renderClueCards();
 }
 
 // One slim row per guess, newest on top.
@@ -2121,7 +2102,8 @@ function submitGuess() {
 //   right: the hint toward the answer: compass and direction as one piece, the distance (in the closeness colour) under it
 //   under: a thin "live wire" energised up to the closeness level; the ambient pulse sometimes runs along one
 function addGuessRow(country, isCorrect, animate = true) {
-  const num = guesses.length; // this guess's number (1-based, set after the push)
+  const num = cellsUsed();    // this guess's number (1-based, set after the push; cells spent on clue cards count too)
+  const onCards = SHOP.cardCells();
   const row = document.createElement('div');
   row.className = 'gr-row' + (isCorrect ? ' gr-row--win' : '') + (animate && !REDUCED_MOTION ? ' gr-anim' : '');
   const name = escHtml(country.name);
@@ -2129,7 +2111,7 @@ function addGuessRow(country, isCorrect, animate = true) {
     row.innerHTML = '<span class="gr-sweep" aria-hidden="true"></span><span class="gr-current" aria-hidden="true"></span>'
       + '<div class="gr-winline"><span class="gr-badge">' + num + '</span>'
       + '<span class="gr-name">' + flagImg(country.iso3) + '<span>' + name + '</span></span>'
-      + '<span class="gr-wintxt">Puzzle solved in ' + num + '</span>'
+      + '<span class="gr-wintxt">Puzzle solved in ' + num + (onCards ? '<span class="u-long"> · ' + onCards + ' on clue cards</span>' : '') + '</span>'
       + '<span class="gr-check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>';
   } else {
     const h = guessInfo(country), col = closeRGB(h.prox);
@@ -2216,6 +2198,7 @@ function chartNum(km) { return Math.round(km).toLocaleString('en-US'); }
 function chartKm(km) { return chartNum(km) + ' km'; }
 
 function pathHTML(won, mini, animate) {
+  if (SHOP.cardCells()) return shopPathHTML(won, mini, animate);
   // Win: every wrong guess, then the answer on the 0 km line.
   // Loss: the six guesses only, and a straight drop from the last one to the 0 km line with its distance.
   const pts = guesses.filter(c => c.iso3 !== target.iso3).map(c => ({ c, h: guessInfo(c), isAns: false }));
@@ -2380,6 +2363,7 @@ async function addAveragePath(won) {
   const day = currentDay(), when = MODE === 'archive' ? 'that day' : 'today';
   await new Promise(r => setTimeout(r, 0));          // let endGame() finish first
   await recordPathOnce();
+  if (SHOP.cardCells()) return;
   const res = averagePath(await sbFetchPathStats(day));
   if (currentDay() !== day) return;
   const dc = document.querySelector('#banner .go-card .dc'); if (!res || !dc || dc.dataset.avg) return;
@@ -2454,12 +2438,12 @@ function renderResultCard(won, animate = true) {
 }
 
 function endGame() {
-  gameOver = true; saveDailyState(); updateShopTeaser();
+  gameOver = true; saveDailyState();
   if (MODE === 'practice') recordPracticeResult(guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3);
   if (MODE === 'archive') refreshArchiveStatus();
   if (MODE === 'normal') {
     const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
-    recordDailyResult(won, guesses.length);
+    recordDailyResult(won, cellsUsed());
     recordPathOnce();
     // Returning player: submit now, stats after 2.5s.
     // First-time player: after 2.5s ask for a name FIRST, then submit, then show stats —
@@ -2473,6 +2457,7 @@ function endGame() {
     }
   }
   document.getElementById('input-area').style.display   = 'none';
+  shopOnEnd(guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3);
   if (MODE === 'normal') {
     const switcher = document.getElementById('mode-nav');
     if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
@@ -2485,7 +2470,7 @@ async function submitDailyScore() {
   const username = getUsername();
   if (!username || scoreSubmitted || !gameOver || MODE !== 'normal') return;
   const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
-  const ok = await sbInsert({ username, day: getDayNumber(), guesses: guesses.length, won });
+  const ok = await sbInsert({ username, day: getDayNumber(), guesses: cellsUsed(), won });
   if (ok) {
     scoreSubmitted = true;
     saveDailyState();
@@ -2562,7 +2547,7 @@ function syncInputFlag() {
 //  DAILY GAME
 // ============================================================
 function restoreDailyGame() {
-  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false; pathSent = false;
+  target = getDailyTarget(COUNTRIES); guesses = []; gameOver = false; scoreSubmitted = false; pathSent = false; SHOP.reset();
   if (!target) { renderUnavailable('normal'); return; }
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
@@ -2572,15 +2557,20 @@ function restoreDailyGame() {
   renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
   const saved = loadDailyState();
   if (saved && saved.guesses.length > 0) {
-    for (const iso3 of saved.guesses) {
-      const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) continue;
-      guesses.push(country); addGuessRow(country, country.iso3 === target.iso3, false);
-    }
+    const cardsOn = SHOP.on();                    // clue cards bought today go back in between the guesses
+    saved.guesses.forEach((iso3, i) => {
+      if (cardsOn) shopReplayCards(saved.cards, i);
+      const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) return;
+      guesses.push(country); shopNoteGuess(country); addGuessRow(country, country.iso3 === target.iso3, false);
+    });
+    if (cardsOn) shopReplayCards(saved.cards, saved.guesses.length);
+    SHOP.sent = saved.cardsSent === true; SHOP.seen = SHOP.owned().length > 0;
     renderLives();
     if (saved.gameOver) {
       const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
       gameOver = true; renderResultCard(won, false);
       document.getElementById('input-area').style.display   = 'none';
+      shopOnEnd(won);
       // Saved states from before this fix have no flag — treat them as already sent
       // so nobody gets a duplicate row today.
       scoreSubmitted = saved.submitted !== false;
@@ -2591,6 +2581,7 @@ function restoreDailyGame() {
       }
     }
   }
+  renderClueCards(); updateShopButton();
 }
 
 // ============================================================
@@ -2618,8 +2609,9 @@ function shareSquare(c) {
 
 function buildShareText() {
   const won = guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3;
-  const score = won ? guesses.length : 'X';
-  return 'Energle ⚡ #' + getDayNumber() + '  ' + score + '/' + MAX_GUESSES + '\n' + guesses.map(shareSquare).join('') + '\nhttps://energle.org';
+  const score = won ? cellsUsed() : 'X';
+  const squares = shopShareSquares() || guesses.map(shareSquare).join('');     // a 💡 for every guess spent on a clue card
+  return 'Energle ⚡ #' + getDayNumber() + '  ' + score + '/' + MAX_GUESSES + '\n' + squares + '\nhttps://energle.org';
 }
 
 function copyShare(btn) {
@@ -2687,7 +2679,7 @@ function showStatsModal(afterGame) {
   const solvedGuesses = [1, 2, 3, 4, 5, 6].reduce((s, k) => s + k * (stats.dist[k] || 0), 0);
   const avg = stats.won > 0 ? (solvedGuesses / stats.won).toFixed(1) : '–';
   const won = afterGame && gameOver && MODE === 'normal' && guesses.length > 0 && guesses[guesses.length - 1].iso3 === target.iso3;
-  const currentKey = afterGame && gameOver && MODE === 'normal' ? (won ? guesses.length : 'X') : null;
+  const currentKey = afterGame && gameOver && MODE === 'normal' ? (won ? cellsUsed() : 'X') : null;
 
   // Header: who these stats belong to
   const header = '<div class="sx-head">'
@@ -2705,7 +2697,7 @@ function showStatsModal(afterGame) {
     // Today's result with the same guess path as the result card, in miniature
     today = '<div class="sx-today ' + (won ? 'sx-today--won' : 'sx-today--lost') + '">'
       + '<div class="sx-today-top"><span class="sx-today-title">' + (won
-          ? 'Puzzle #' + getDayNumber() + ' solved in ' + guesses.length
+          ? 'Puzzle #' + getDayNumber() + ' solved in ' + cellsUsed()
           : 'Puzzle #' + getDayNumber() + ': it was ' + escHtml(target.name)) + '</span>'
       + '<span class="sx-today-sub">' + streakLine + '</span></div>'
       + pathHTML(won, true, false).html + '</div>';

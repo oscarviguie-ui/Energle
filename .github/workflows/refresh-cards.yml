@@ -1,0 +1,65 @@
+name: Refresh clue cards
+
+# Builds cards.json (the Clue Shop's card data) from open sources. Monthly, the day after the Ember
+# refresh; yearly sources (BACI, USGS, NASA POWER) only re-download when they have something new,
+# and elevation is fetched once. See scripts/build_cards.py.
+# A failed run (a source down, or checks that keep the live file) sends the usual GitHub failure email.
+
+on:
+  schedule:
+    - cron: '17 7 2 * *'      # the 2nd of every month, 07:17 UTC
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Sources to fetch (blank = whatever is due; e.g. "wdi eia" or "--all")'
+        required: false
+        default: ''
+  push:
+    branches: [cards-pipeline-test]   # test runs: results are committed back to that branch only
+
+concurrency:
+  group: refresh-cards-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  cards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas requests pycountry entsoe-py
+
+      - name: Build cards.json
+        id: build
+        env:
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+          ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
+        run: |
+          set +e
+          python scripts/build_cards.py ${{ github.event.inputs.sources }}
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Commit the cards and the caches
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for f in cards.json data/cards_raw.json data/cards_report.md data/power_cache.json data/elevation_cache.json; do if [ -f "$f" ]; then git add "$f"; fi; done
+          git diff --staged --quiet || git commit -m "Auto-refresh: clue cards $(date +'%Y-%m-%d')"
+          git pull --rebase --autostash && git push
+
+      - name: Fail loudly if the cards were not published
+        if: steps.build.outputs.status != '0'
+        run: |
+          echo "::error::cards.json was not fully refreshed - see data/cards_report.md"
+          exit 1

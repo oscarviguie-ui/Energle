@@ -1,0 +1,181 @@
+"""
+Turns the raw source figures (data/cards_raw.json) into cards.json, in the shape the cards draw
+(see shop-cards.js), applying the giveaway rules on the way:
+  - ranks are only ever shown as bands (Top 3 / Top 5 / Top 10), never as the exact rank;
+  - the highest point of a country is never stored;
+  - figures are rounded the way the cards print them.
+
+cards.json:
+  {"version": 1, "built": "YYYY-MM-DD", "sources": {source: {"updated", "release"/"year"}},
+   "world": {...averages for the cards...},
+   "countries": {ISO3: {"cards": ["nature", "under", "trade", "market", "people"], "europe": bool,
+                        ...the card figures...}}}
+A card is listed for a country only when every figure it draws is there.
+"""
+import os
+import re
+
+from .common import ROOT, r
+
+FUELS = ('crude', 'refined', 'gas', 'lng', 'coal')
+MINERALS = ['Li', 'Co', 'Ni', 'Cu', 'C', 'REE', 'Mn', 'PGM']
+SHORT_NAMES = {
+    'USA': 'United States', 'GBR': 'United Kingdom', 'RUS': 'Russia', 'KOR': 'South Korea', 'PRK': 'North Korea',
+    'IRN': 'Iran', 'SYR': 'Syria', 'VEN': 'Venezuela', 'BOL': 'Bolivia', 'TZA': 'Tanzania', 'VNM': 'Vietnam',
+    'LAO': 'Laos', 'MDA': 'Moldova', 'COD': 'DR Congo', 'COG': 'Congo', 'ARE': 'United Arab Emirates',
+    'CZE': 'Czechia', 'TWN': 'Taiwan', 'BRN': 'Brunei', 'CIV': "Côte d'Ivoire", 'MKD': 'North Macedonia',
+    'NLD': 'Netherlands', 'PHL': 'Philippines', 'DOM': 'Dominican Republic', 'CAF': 'Central African Rep.',
+    'TUR': 'Türkiye', 'PSE': 'Palestine', 'XKX': 'Kosovo', 'HKG': 'Hong Kong', 'MAC': 'Macao', 'SWZ': 'Eswatini',
+}
+
+
+def _script_maps():
+    """ISO3 -> ISO2 and ISO3 -> continent, read from the game script so both always agree."""
+    src = open(os.path.join(ROOT, 'script.js'), encoding='utf-8').read()
+    m = re.search(r'const ISO3_TO_ISO2 = \{(.*?)\};', src, re.S)
+    iso2 = dict(re.findall(r"([A-Z]{3}):'([a-z]{2})'", m.group(1))) if m else {}
+    m = re.search(r'const ISO3_CONTINENT = \{(.*?)\};', src, re.S)
+    cont = dict(re.findall(r"'([A-Z]{3})':'([^']+)'", m.group(1))) if m else {}
+    return iso2, cont
+
+
+def _name(iso3, game_names):
+    if iso3 in SHORT_NAMES:
+        return SHORT_NAMES[iso3]
+    if iso3 in game_names:
+        return re.sub(r'\s*\(the\)$', '', game_names[iso3])
+    try:
+        import pycountry
+        c = pycountry.countries.get(alpha_3=iso3)
+        if c:
+            return getattr(c, 'common_name', None) or c.name
+    except Exception:       # noqa: BLE001
+        pass
+    return iso3
+
+
+def band(rank):
+    """Exact ranks never leave the pipeline: Top 3, Top 5 or Top 10, else nothing."""
+    if not rank:
+        return None
+    return 3 if rank <= 3 else 5 if rank <= 5 else 10 if rank <= 10 else None
+
+
+def sig(v, n=2):
+    if v is None or v == 0:
+        return 0
+    from math import floor, log10
+    d = n - 1 - int(floor(log10(abs(v))))
+    return round(v, d) if d > 0 else int(round(v, d))
+
+
+def build(raw, game, log=print):
+    countries = {v['iso3']: k for k, v in game.items() if not k.startswith('__') and isinstance(v, dict) and v.get('iso3')}
+    iso2, cont = _script_maps()
+    data = {s: (raw.get(s) or {}).get('data', {}) for s in ('wdi', 'power', 'elevation', 'eia', 'usgs', 'baci', 'entsoe')}
+    out, why = {}, {}
+    for iso, gname in countries.items():
+        w, pw, el = data['wdi'].get(iso, {}), data['power'].get(iso, {}), data['elevation'].get(iso)
+        e, u, b, en = data['eia'].get(iso, {}), data['usgs'].get(iso, {}), data['baci'].get(iso, {}), data['entsoe'].get(iso)
+        wv = lambda k: (w.get(k) or [None])[0]
+        C, cards, missing = {'europe': cont.get(iso) == 'Europe'}, [], {}
+
+        # ---- Renewables Potential ----
+        need = {'sun': pw.get('sun'), 'wind': pw.get('wind'), 'rain': wv('rain'), 'flow': wv('flow'), 'elevation': el}
+        if all(v is not None for v in need.values()):
+            q = [list(x) for x in el['q']]
+            if q[-1][0] < 1:
+                q.append([1, q[-1][1]])          # flat to the top: the highest point stays unknown
+            C.update({'sun': [r(v, 2) for v in pw['sun']], 'wind': [r(v, 1) for v in pw['wind']],
+                      'rain': int(round(wv('rain'))), 'flow': sig(wv('flow'), 3), 'terr': q, 'elevMean': el['mean']})
+            cards.append('nature')
+        else:
+            missing['nature'] = [k for k, v in need.items() if v is None]
+
+        # ---- Underground Riches ----
+        fos = {}
+        for f in ('oil', 'gas', 'coal'):
+            x = e.get(f)
+            fos[f] = [sig(x['value'], 2) if x and x.get('value') else 0, band(x and x.get('rank')), band(x and x.get('prod_rank'))]
+        mins = {}
+        for sym in MINERALS:
+            m = u.get(sym)
+            if m and (band(m.get('rank_reserves')) or band(m.get('rank_output'))):
+                mins[sym] = [sig(m['reserves'], 2) if m.get('reserves') else 0, m['unit'], band(m.get('rank_reserves')), band(m.get('rank_output'))]
+        rents = {k: wv('rent_' + k) for k in ('oil', 'gas', 'coal', 'min')}
+        if data['eia'] and any(v is not None for v in rents.values()):
+            C.update({'fossil': fos, 'minerals': mins, 'rents': {k: r(v or 0, 2) for k, v in rents.items()}})
+            coal = e.get('coal')
+            if coal and coal.get('years_left') and fos['coal'][0]:
+                C['coalYears'] = sig(coal['years_left'], 2)
+            cards.append('under')
+        else:
+            missing['under'] = [k for k, bad in (('eia', not data['eia']), ('rents', all(v is None for v in rents.values()))) if bad]
+
+        # ---- Fuel Trade ----
+        imp, exp = b.get('imports'), b.get('exports')
+        if imp or exp:
+            def side(s):
+                rows = []
+                for p in (s or {}).get('partners', []):
+                    fuels = {f: r(v, 2) for f, v in p['fuels'].items() if f in FUELS and v >= 0.005}
+                    if not fuels:
+                        continue
+                    a2 = 'OTHER' if p['iso3'] == 'OTHER' else (iso2.get(p['iso3'], '').upper() or 'OTHER')
+                    rows.append([a2, 'Others' if p['iso3'] == 'OTHER' else _name(p['iso3'], countries), fuels])
+                return rows
+            IN, OUT = side(imp), side(exp)
+            if sum(sum(x[2].values()) for x in IN + OUT) >= 0.05:
+                C['trade'] = {'year': b.get('year'), 'IN': IN, 'OUT': OUT}
+                cards.append('trade')
+            else:
+                missing['trade'] = ['too small']
+        else:
+            missing['trade'] = ['baci']
+
+        # ---- Electricity Trade: ENTSO-E in Europe, else EIA totals split by BACI partner shares ----
+        nb, src, year = None, None, None
+        if en and en.get('neighbours'):
+            nb = [[iso2.get(p, '').upper() or 'OTHER', _name(p, countries), a, x] for p, a, x in en['neighbours'][:6]]
+            src, year = 'entsoe', en.get('year')
+        elif e.get('elec'):
+            t = e['elec']; shares = b.get('elec', {})
+            ish, esh = dict(shares.get('imp_shares', [])), dict(shares.get('exp_shares', []))
+            parts = set(ish) | set(esh)
+            nb = []
+            for p in parts:
+                a, x = r((t.get('imp') or 0) * ish.get(p, 0), 2), r((t.get('exp') or 0) * esh.get(p, 0), 2)
+                if a + x >= 0.05:
+                    nb.append([('OTHER' if p == 'OTHER' else iso2.get(p, '').upper() or 'OTHER'), 'Others' if p == 'OTHER' else _name(p, countries), a, x])
+            if not parts and (t.get('imp') or t.get('exp')):
+                nb.append(['OTHER', 'Neighbours', r(t.get('imp') or 0, 2), r(t.get('exp') or 0, 2)])
+            nb.sort(key=lambda n: (n[0] == 'OTHER', -(n[2] + n[3])))
+            nb = nb[:6]
+            src, year = 'eia+baci', t.get('year')
+        if nb is not None:
+            C['elec'] = {'year': year, 'NB': nb, 'source': src}
+            cards.append('market')
+        else:
+            missing['market'] = ['eia']
+
+        # ---- People & Power ----
+        au, ar, at = wv('access_urban'), wv('access_rural'), wv('access')
+        access = [au if au is not None else at, ar if ar is not None else at]
+        need = {'access': access[0], 'cook': wv('cook'), 'climate': pw.get('hdd'), 'urban': wv('urban'), 'gdp': wv('gdp'), 'industry': wv('industry')}
+        if all(v is not None for v in need.values()) and access[1] is not None:
+            cuts = None
+            if wv('cuts_n') is not None and wv('cuts_firms') is not None:
+                cuts = {'n': r(wv('cuts_n'), 1), 'firms': int(round(wv('cuts_firms'))), 'loss': r(wv('cuts_loss') or 0, 1), 'year': w['cuts_n'][1]}
+            C.update({'access': [int(round(min(100, access[0]))), int(round(min(100, access[1])))], 'cook': int(round(min(100, wv('cook')))),
+                      'cuts': cuts, 'cold': int(round(pw['cold'])), 'hot': int(round(pw['hot'])), 'coldM': pw['coldM'], 'hotM': pw['hotM'],
+                      'hdd': int(pw['hdd']), 'cdd': int(pw['cdd']), 'urban': int(round(wv('urban'))), 'gdp': int(round(wv('gdp'), -2)),
+                      'industry': int(round(wv('industry')))})
+            cards.append('people')
+        else:
+            missing['people'] = [k for k, v in need.items() if v is None]
+
+        C['cards'] = cards
+        out[iso] = C
+        why[iso] = missing
+    world = {s: (raw.get(s) or {}).get('meta', {}).get('world') for s in ('wdi', 'power', 'elevation')}
+    return out, why, world
