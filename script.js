@@ -1727,7 +1727,8 @@ function renderCharts() {
       plugins: { legend: { display: false }, tooltip: { enabled: false, external: externalTooltipBar } },
       scales: {
         x: { stacked:true, grid:{display:false}, ticks:{display:false}, border:{color:'#e4e3df'} },
-        y: { stacked:true, grid:{color:'#efeeea'}, border:{display:false, dash:[3,4]}, ticks:{color:'#9a9a96',font:{size:11},padding:6,maxTicksLimit:6} },
+        y: { stacked:true, grid:{color:'#efeeea'}, border:{display:false, dash:[3,4]}, ticks:{color:'#9a9a96',font:{size:11},padding:6,maxTicksLimit:6},
+          ...phoneBarAxis(activeSources.reduce((a, s) => a + (latestData[s] || 0), 0)) },
       },
     },
   });
@@ -1762,6 +1763,15 @@ function worldCo2() {
 // Soft grey puffs rising from the top of the latest-mix bar. Grids around the world average get a
 // light wisp; only heavy polluters get a thick, dark column, and even then it stops at the top edge
 // of the card (it may just brush the card above, never cover it).
+// Phone: the bar chart is short, so the axis stops just above the bar (at most 5 steps of 1, 2, 2.5 or 5 × 10ⁿ)
+// instead of leaving a whole empty step on top. Desktop keeps Chart.js's own ticks.
+function phoneBarAxis(total) {
+  if (window.innerWidth > 600 || !(total > 0)) return {};
+  const mag = Math.pow(10, Math.floor(Math.log10(total / 5)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => Math.ceil(total * 1.04 / s) <= 5);
+  return { max: Math.ceil(total * 1.04 / step) * step, ticks: { color:'#9a9a96', font:{size:11}, padding:6, stepSize: step } };
+}
+
 const PUFF_SVG = '<svg viewBox="0 0 44 32" aria-hidden="true"><path d="M11 27a8 8 0 0 1-1.6-15.8A10 10 0 0 1 28.5 8.6a8 8 0 0 1 7.3 13.1A5.6 5.6 0 0 1 32 27z"/></svg>';
 function addCarbonSmoke() {
   if (!barChart || !target) return;
@@ -1790,7 +1800,14 @@ function addCarbonSmoke() {
   const alpha = (0.5 + 0.38 * k).toFixed(2), tone = Math.round(150 - 72 * k);
   // never higher than the top edge of the card (+ a few pixels for the worst, just brushing the card above)
   const toCardTop = yTop + (wrap.getBoundingClientRect().top - card.getBoundingClientRect().top);
-  const rise = Math.max(26, Math.min(40 + 150 * k, toCardTop - 8 + 22 * k));
+  let rise = Math.max(26, Math.min(40 + 150 * k, toCardTop - 8 + 22 * k));
+  // phone: a shorter, straighter, smaller column that stays under the chart title
+  const phone = window.innerWidth <= 600;
+  if (phone) {
+    const lbl = document.getElementById('bar-label');
+    const titleBottom = lbl ? lbl.getBoundingClientRect().bottom - wrap.getBoundingClientRect().top : -8;
+    rise = Math.max(16, yTop - titleBottom - 12);
+  }
   const smoke = document.createElement('div');
   smoke.className = 'co2-smoke'; smoke.setAttribute('aria-hidden', 'true');
   smoke.style.cssText = 'left:' + x + 'px;top:' + yTop + 'px;--c:' + tone + ',' + tone + ',' + (tone - 4)
@@ -1800,8 +1817,8 @@ function addCarbonSmoke() {
     const p = document.createElement('span');
     p.className = 'co2-puff';
     p.innerHTML = PUFF_SVG;
-    p.style.setProperty('--dx', ((i % 2 ? 1 : -1) * (4 + (i * 7) % 14) + 10 * k) + 'px');
-    p.style.setProperty('--s', (1.1 + 1.1 * k + (i % 3) * 0.15).toFixed(2));
+    p.style.setProperty('--dx', phone ? ((i % 2 ? 1 : -1) * (1 + i % 3)) + 'px' : ((i % 2 ? 1 : -1) * (4 + (i * 7) % 14) + 10 * k) + 'px');
+    p.style.setProperty('--s', phone ? (0.8 + 0.45 * k + (i % 3) * 0.08).toFixed(2) : (1.1 + 1.1 * k + (i % 3) * 0.15).toFixed(2));
     p.style.animationDuration = dur.toFixed(2) + 's';
     p.style.animationDelay = (-i * dur / n).toFixed(2) + 's';
     smoke.appendChild(p);
