@@ -71,7 +71,7 @@ def main(argv):
             try:
                 data, meta = mod.build(countries, state, log=log)
             except Exception as err:            # noqa: BLE001 - keep what we had, report at the end
-                log('  FAILED: %s' % err); traceback.print_exc()
+                log('  FAILED: %s: %s | %s' % (type(err).__name__, err, traceback.format_exc().strip().splitlines()[-3:])); traceback.print_exc()
                 failed.append(name); continue
             if data is None:                   # skipped: no key, or nothing new
                 continue
