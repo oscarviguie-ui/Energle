@@ -65,8 +65,57 @@ def usgs():
             p('  links: %s' % [(l.get('title'), l.get('uri')) for l in item.get('webLinks', [])][:15])
 
 
-section('World Bank outages', wb)
-section('EIA facets', eia)
-section('USGS ScienceBase', usgs)
+def eia_bulk():
+    import io, re, zipfile
+    from cards.common import get
+    raw = get('https://api.eia.gov/bulk/INTL.zip', timeout=600).content
+    z = zipfile.ZipFile(io.BytesIO(raw))
+    p('INTL.zip files: %s, %d MB' % (z.namelist(), len(raw) // 1e6))
+    rx = re.compile(r'^INTL\.(\d+)-(\d+)-([A-Z]{3})-([A-Za-z]+)\.A$')
+    seen, examples = {}, {}
+    with z.open(z.namelist()[0]) as f:
+        for i, line in enumerate(f):
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            sid = d.get('series_id') or ''
+            m = rx.match(sid)
+            if not m:
+                if i < 3: p('  other line keys: %s' % list(d)[:10])
+                continue
+            k = (m.group(1), m.group(2), m.group(4))
+            seen[k] = seen.get(k, 0) + 1
+            if k not in examples:
+                examples[k] = (sid, d.get('name'), (d.get('data') or [])[:2])
+    for k in sorted(seen, key=lambda k: (int(k[0]), int(k[1]))):
+        if k[0] in ('57', '26', '7', '2', '1', '4', '12', '44') :
+            p('  product %s activity %s unit %s: %d series e.g. %s' % (k[0], k[1], k[2], seen[k], examples[k]))
+
+
+def usgs_csv():
+    from cards.common import get
+    url = 'https://www.sciencebase.gov/catalog/file/get/696a75d5d4be0228872d3bf8?f=__disk__eb%2F4d%2F'
+    hits = get_json('https://www.sciencebase.gov/catalog/item/696a75d5d4be0228872d3bf8', {'format': 'json'})
+    for f in hits.get('files', []):
+        if f['name'] == 'MCS2026_Commodities_Data.csv':
+            url = f['url']
+    text = get(url, timeout=120).content.decode('utf-8-sig', errors='replace')
+    lines = text.splitlines()
+    p('rows %d; header: %s' % (len(lines), lines[0]))
+    for ln in lines[1:]:
+        if re.search(r'lithium|platinum|graphite|rare earth', ln, re.I) and re.search(r'chile|australia|south africa|china|world', ln, re.I):
+            p('  ' + ln[:300])
+
+
+import re  # noqa: E402
+def wb2():
+    body = get_json('https://api.worldbank.org/v2/country/all/indicator/IC.FRM.INFRA.IN2', {'format': 'json', 'per_page': 500, 'mrnev': 1, 'source': 13})
+    p('IC.FRM.INFRA.IN2 source 13: %s; rows %d; e.g. %s' % (json.dumps(body[0])[:150], len(body[1] or []), [(r['countryiso3code'], r['date'], r['value']) for r in (body[1] or [])[:6]]))
+
+
+section('World Bank outages (Enterprise Surveys source)', wb2)
+section('EIA bulk INTL', eia_bulk)
+section('USGS commodities CSV', usgs_csv)
 open(os.path.join(DATA_DIR, 'debug_sources.txt'), 'w', encoding='utf-8').write('\n'.join(out) + '\n')
 print('\n'.join(out)[:3000])
