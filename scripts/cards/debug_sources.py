@@ -89,7 +89,7 @@ def eia_bulk():
             if k not in examples:
                 examples[k] = (sid, d.get('name'), (d.get('data') or [])[:2])
     for k in sorted(seen, key=lambda k: (int(k[0]), int(k[1]))):
-        if k[0] in ('57', '26', '7', '2', '1', '4', '12', '44') :
+        if k[1] == '6' or 'reserve' in (examples[k][1] or '').lower():
             p('  product %s activity %s unit %s: %d series e.g. %s' % (k[0], k[1], k[2], seen[k], examples[k]))
 
 
@@ -100,12 +100,21 @@ def usgs_csv():
     for f in hits.get('files', []):
         if f['name'] == 'MCS2026_Commodities_Data.csv':
             url = f['url']
-    text = get(url, timeout=120).content.decode('utf-8-sig', errors='replace')
-    lines = text.splitlines()
-    p('rows %d; header: %s' % (len(lines), lines[0]))
-    for ln in lines[1:]:
-        if re.search(r'lithium|platinum|graphite|rare earth', ln, re.I) and re.search(r'chile|australia|south africa|china|world', ln, re.I):
-            p('  ' + ln[:300])
+    raw = get(url, timeout=120).content
+    try:
+        text = raw.decode('utf-8-sig')
+    except UnicodeDecodeError:
+        text = raw.decode('cp1252')
+        p('decoded as cp1252')
+    import csv as _csv, io as _io
+    rows = list(_csv.DictReader(_io.StringIO(text)))
+    p('rows %d' % len(rows))
+    p('commodities: %s' % sorted({r['Commodity'] for r in rows if r['Section'].startswith('World')}))
+    p('statistics: %s' % sorted({(r['Statistics'], r['Statistics_detail'], r['Unit']) for r in rows if r['Section'].startswith('World')})[:80])
+    for r in rows:
+        if r['Section'].startswith('World') and r['Commodity'] in ('Lithium', 'Platinum-Group Metals', 'Rare Earths', 'Manganese', 'Copper') and r['Country'] in ('Chile', 'South Africa', 'China', 'Australia', 'World total (rounded)', 'Gabon'):
+            p('  %s | %s | %s | %s | %s | %s | %s' % (r['Commodity'], r['Country'], r['Statistics'], r['Statistics_detail'], r['Unit'], r['Year'], r['Value']))
+    p('countries: %s' % sorted({r['Country'] for r in rows if r['Section'].startswith('World')})[:400])
 
 
 import re  # noqa: E402
@@ -114,7 +123,6 @@ def wb2():
     p('IC.FRM.INFRA.IN2 source 13: %s; rows %d; e.g. %s' % (json.dumps(body[0])[:150], len(body[1] or []), [(r['countryiso3code'], r['date'], r['value']) for r in (body[1] or [])[:6]]))
 
 
-section('World Bank outages (Enterprise Surveys source)', wb2)
 section('EIA bulk INTL', eia_bulk)
 section('USGS commodities CSV', usgs_csv)
 open(os.path.join(DATA_DIR, 'debug_sources.txt'), 'w', encoding='utf-8').write('\n'.join(out) + '\n')

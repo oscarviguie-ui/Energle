@@ -20,7 +20,7 @@ INDICATORS = {
     'access_rural':  'EG.ELC.ACCS.RU.ZS',   # access to electricity, % of rural population
     'access':        'EG.ELC.ACCS.ZS',      # access to electricity, % of population (fallback)
     'cook':          'EG.CFT.ACCS.ZS',      # access to clean fuels and technologies for cooking, % of population
-    'cuts_n':        'IC.ELC.OUTG',         # power outages in firms in a typical month (number)
+    'cuts_n':        ('IC.FRM.INFRA.IN2', 13),  # outages in a typical month (Enterprise Surveys database; the WDI copy is archived)
     'cuts_firms':    'IC.ELC.OUTG.ZS',      # firms experiencing electrical outages, % of firms
     'cuts_loss':     'IC.FRM.OUTG.ZS',      # value lost due to electrical outages, % of sales for affected firms
     'urban':         'SP.URB.TOTL.IN.ZS',   # urban population, % of total
@@ -37,11 +37,14 @@ INDICATORS = {
 }
 
 
-def fetch_indicator(code):
+def fetch_indicator(code, source=None):
     """{ISO3: (value, year)} for one indicator, most recent non-empty value per country."""
     out, page = {}, 1
     while True:
-        body = get_json(API.format(ind=code), {'format': 'json', 'per_page': 20000, 'mrnev': 1, 'page': page})
+        params = {'format': 'json', 'per_page': 20000, 'mrnev': 1, 'page': page}
+        if source:
+            params['source'] = source
+        body = get_json(API.format(ind=code), params)
         if not isinstance(body, list) or len(body) < 2 or body[1] is None:
             break
         for row in body[1]:
@@ -57,8 +60,9 @@ def fetch_indicator(code):
 def build(countries, state=None, log=print):
     series, failed = {}, []
     for key, code in INDICATORS.items():
+        code, source = code if isinstance(code, tuple) else (code, None)
         try:
-            series[key] = fetch_indicator(code)
+            series[key] = fetch_indicator(code, source)
             log('  wdi %-13s %-18s %d countries' % (key, code, sum(1 for iso in series[key] if iso in countries)))
         except Exception as err:            # noqa: BLE001
             log('  wdi %-13s FAILED: %s' % (key, err))
