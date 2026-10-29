@@ -40,7 +40,7 @@ const SHOP = {
   seen: false,           // shop opened at least once this game: stops the attention animation
   sent: false,           // usage already recorded for today (record_cards)
   on() {
-    return !!(shopLive() && MODE === 'normal' && target && CARDS_DATA);
+    return !!(shopLive() && target && CARDS_DATA);     // every mode; only the daily is recorded (record_cards)
   },
   // every card is always for sale; one without data for today's country costs nothing and opens empty
   cards() { return SHOP_CARDS; },
@@ -61,7 +61,7 @@ const guessWord = n => n + ' guess' + (n > 1 ? 'es' : '');
 const cellsHTML = (n, cls = 'sp-cell') => Array.from({ length: n }, () => '<span class="' + cls + '"></span>').join('');
 
 // game hooks ------------------------------------------------------
-function shopNoteGuess(country) { if (MODE === 'normal') SHOP.events.push({ t: 'g', c: country }); }
+function shopNoteGuess(country) { SHOP.events.push({ t: 'g', c: country }); }
 // restore: the cards bought after `at` guesses go back in before the next guess
 function shopReplayCards(saved, at) {
   if (!Array.isArray(saved)) return;
@@ -126,7 +126,6 @@ const SHOP_ICON = '<svg class="shop-ico" viewBox="0 0 32 32" width="26" height="
 const LS_SHOP_TEASER = 'energle_shop_teaser_v1';
 function shopTeaserSeen() { try { return localStorage.getItem(LS_SHOP_TEASER) === '1'; } catch (e) { return false; } }
 function shopButtonHTML() {
-  if (MODE !== 'normal') return '';
   return '<button type="button" id="shop-btn" class="shop-btn is-soon" aria-label="Clue Shop">' + SHOP_ICON
     + '<span class="shop-lbl">Clue Shop</span><span class="shop-soon">Soon</span><span class="shop-badge" hidden></span></button>';
 }
@@ -209,7 +208,7 @@ function renderShopModal() {
     + '<p class="sh-note">' + (locked ? 'Have a look now: cards open after your first guess.' : 'Every card you skip is revealed for free once the game is over.') + '</p>'
     + (cc ? '<div class="sh-confirm" role="alertdialog" aria-modal="true" aria-label="Confirm purchase"><div class="sh-cbox">'
       + '<span class="sh-ctitle">Open “' + cc.name + '”?</span>'
-      + '<span class="sh-ctext">It costs <strong>' + guessWord(cc.cost) + '</strong>. You’ll have <strong>' + (left - cc.cost) + '</strong> left to find the country. If its sources have nothing on today’s country, it’s free and opens empty.</span>'
+      + '<span class="sh-ctext">It costs <strong>' + guessWord(cc.cost) + '</strong>. You’ll have <strong>' + (left - cc.cost) + '</strong> left to find the country. If its sources have nothing on this country, it’s free and opens empty.</span>'
       + '<span class="sh-cbat">' + batteryHTML(left, cc.cost) + '</span>'
       + '<div class="sh-cbtns"><button type="button" class="sh-cbtn" data-cancel="1">Keep my guesses</button><button type="button" class="sh-cbtn sh-cbtn--dark" data-confirm="1">Open for ' + guessWord(cc.cost) + '</button></div>'
       + '</div></div>' : '')
@@ -444,7 +443,7 @@ function shopPathHTML(won, mini, animate) {
       : '<span' + (p.card ? ' class="cp-x"' : '') + ' style="left:' + X(p) + '%">' + (p.c0 === p.c1 ? p.c0 + 1 : (p.c0 + 1) + '–' + (p.c1 + 1)) + '</span>').join('') + '</div>';
   }
   const label = 'Distance to the answer, step by step: ' + items.map(p => p.card ? p.card.name + ' (clue card)' : p.isAns ? 'the answer' : chartKm(p.h.km)).join(', ')
-    + (won ? '' : '. Today’s country was ' + target.name);
+    + (won ? '' : (MODE === 'normal' ? '. Today’s country was ' : '. The country was ') + target.name);
   const key = !mini ? '<div class="cp-key"><span><span class="cp-card cp-card--key" aria-hidden="true"><svg viewBox="0 0 24 24" width="12" height="12"><rect x="5" y="3" width="14" height="18" rx="2.5" fill="#fff" stroke="#b08a2a" stroke-width="2"/></svg></span>clue card: the guesses it cost, no new distance</span></div>' : '';
   return { html: '<div class="dc cp-dc' + (mini ? ' dc--mini' : '') + (items.length === 1 ? ' dc--one' : '') + (won ? '' : ' dc--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '" role="img" aria-label="' + escHtml(label) + '">'
       + '<div class="dc-plot">' + grid + '<div class="dc-in">' + svg + drop + nodes + labels + '</div></div>' + xs + '</div>' + key,
@@ -488,11 +487,11 @@ function shopIntroSteps() {
   const tiles = SHOP_CARDS.map(c => '<span class="si-tile"><span class="si-art" aria-hidden="true">' + SHOP_ART[c.k] + '</span><span class="si-name">' + c.name + '</span><span class="si-cost">' + cellsHTML(c.cost) + guessWord(c.cost) + '</span></span>').join('');
   return [
     { art: '<span class="si-sign" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="si-shop" style="--awn:#f5c842;color:#1a1a1a"') + '</span>',
-      title: 'New: the Clue Shop', text: 'Stuck after a guess? Next to the Guess button you’ll now find the Clue Shop: it trades spare guesses for clue cards about today’s country.' },
+      title: 'New: the Clue Shop', text: 'Stuck after a guess? Next to the Guess button you’ll now find the Clue Shop: it trades spare guesses for clue cards about the country you’re guessing, in the daily, the archive and practice.' },
     { art: bat,
       title: 'You pay with guesses', text: 'Each card costs 1 cell of your battery. The shop opens after your first guess, and your last guess can never be spent, so you always get a final try.' },
     { art: '<span class="si-tiles">' + tiles + '</span>',
-      title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source. If the sources have nothing on today’s country, the card is free and opens empty.' },
+      title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source. If the sources have nothing on that country, the card is free and opens empty.' },
     { art: '<span class="si-share" aria-hidden="true">🟥🟨💡🟩</span>',
       title: 'Every card counts', text: 'Cards count in your score like guesses, and show as 💡 when you share. Skip them and they’re all revealed for free once the game is over.' }
   ];

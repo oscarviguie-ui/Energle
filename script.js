@@ -190,7 +190,7 @@ function saveDailyState() {
   if (MODE === 'archive') {
     const prev = loadHistory()[ARCHIVE_DAY];
     if (prev && prev.done) return;                     // a finished puzzle is never overwritten
-    saveHistoryEntry(ARCHIVE_DAY, { g: guesses.map(g => g.iso3), done: gameOver, src: 'archive' });
+    saveHistoryEntry(ARCHIVE_DAY, { g: guesses.map(g => g.iso3), c: SHOP.saveData(), done: gameOver, src: 'archive' });
     return;
   }
   if (MODE !== 'normal') return;
@@ -200,7 +200,7 @@ function saveDailyState() {
       cards: SHOP.saveData(), cardsSent: SHOP.sent,
     }));
   } catch {}
-  saveHistoryEntry(getDayNumber(), { g: guesses.map(g => g.iso3), done: gameOver, src: 'daily', ps: pathSent });
+  saveHistoryEntry(getDayNumber(), { g: guesses.map(g => g.iso3), c: SHOP.saveData(), done: gameOver, src: 'daily', ps: pathSent });
 }
 
 // Every puzzle played on this device: { day: { g: [ISO3 guesses], done, src: 'daily' | 'archive', ps: added to the average path } }.
@@ -711,13 +711,15 @@ function puzzleDate(day, opts) {
 // What this player did on a past puzzle.
 //   onDay:  the daily game on its own day (this device's history, else the scores table, which only holds daily games)
 //   replay: a game played later from the archive (never counted anywhere)
+// cells a saved game used: its guesses plus the guesses spent on clue cards
+function histCells(h) { return h.g.length + (Array.isArray(h.c) ? h.c.reduce((a, c) => a + (c.cost || 0), 0) : 0); }
 function archiveStatus(day) {
   const h = loadHistory()[day], t = getDailyTarget(COUNTRIES, day), ans = t && t.iso3;
   const sc = MY_SCORES && MY_SCORES[day];
   let onDay = null, replay = null;
-  if (h && h.src === 'daily' && h.done && h.g.length) onDay = { won: h.g[h.g.length - 1] === ans, n: h.g.length };
+  if (h && h.src === 'daily' && h.done && h.g.length) onDay = { won: h.g[h.g.length - 1] === ans, n: histCells(h) };
   else if (sc) onDay = { won: !!sc.won, n: sc.n };
-  if (h && h.g.length && !(h.src === 'daily' && h.done)) replay = { done: !!h.done, won: !!h.done && h.g[h.g.length - 1] === ans, n: h.g.length };
+  if (h && h.g.length && !(h.src === 'daily' && h.done)) replay = { done: !!h.done, won: !!h.done && h.g[h.g.length - 1] === ans, n: histCells(h) };
   const kind = onDay ? (onDay.won ? 'solved' : 'missed') : replay ? (replay.done ? 'replayed' : 'started') : 'new';
   return { kind, onDay, replay };
 }
@@ -834,7 +836,7 @@ function refreshArchiveStatus() {
 }
 function restoreArchiveGame() {
   const day = ARCHIVE_DAY;
-  target = getDailyTarget(COUNTRIES, day); guesses = []; gameOver = false;
+  target = getDailyTarget(COUNTRIES, day); guesses = []; gameOver = false; SHOP.reset();
   if (!target) { renderUnavailable('archive'); return; }
   const h = loadHistory()[day];
   pathSent = !!(h && h.src === 'daily' && h.ps);      // (see below)      // your own daily game is already inside that day's average
@@ -845,18 +847,22 @@ function restoreArchiveGame() {
   document.getElementById('guess-input').value = ''; syncInputFlag();
   renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
   if (h && h.g.length) {
-    for (const iso3 of h.g) {
-      const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) continue;
-      guesses.push(country); addGuessRow(country, country.iso3 === target.iso3, false);
-    }
+    h.g.forEach((iso3, i) => {
+      shopReplayCards(h.c, i);                       // clue cards bought before this guess
+      const country = COUNTRIES.find(c => c.iso3 === iso3); if (!country) return;
+      guesses.push(country); shopNoteGuess(country); addGuessRow(country, country.iso3 === target.iso3, false);
+    });
+    shopReplayCards(h.c, h.g.length);
     renderLives();
     if (h.done) {
       gameOver = true;
       renderResultCard(guesses[guesses.length - 1].iso3 === target.iso3, false);
       document.getElementById('input-area').style.display = 'none';
     }
+    renderClueCards(); updateShopButton();
     return;
   }
+  renderClueCards(); updateShopButton();
   const st = archiveStatus(day);
   if (st.onDay)
     document.getElementById('banner').innerHTML = '<p class="ar-note">You ' + (st.onDay.won ? 'solved this one in ' + st.onDay.n : 'missed this one')
@@ -2594,13 +2600,14 @@ function restoreDailyGame() {
 //  PRACTICE GAME
 // ============================================================
 function newGame() {
-  target = nextPracticeCountry(); guesses = []; gameOver = false;
+  target = nextPracticeCountry(); guesses = []; gameOver = false; SHOP.reset();
   document.getElementById('guesses').innerHTML      = '';
   document.getElementById('banner').innerHTML       = '';
   document.getElementById('error').textContent      = '';
   document.getElementById('input-area').style.display   = 'flex';
   document.getElementById('guess-input').value      = ''; syncInputFlag();
   renderLives(); renderStatBar(); renderFlowBar(); renderCharts();
+  renderClueCards(); updateShopButton();
 }
 
 // ============================================================
