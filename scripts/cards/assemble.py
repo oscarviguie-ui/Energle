@@ -113,7 +113,7 @@ def build(raw, game, log=print):
         rents = {k: wv('rent_' + k) for k in ('oil', 'gas', 'coal', 'min')}
         if (data['eia'] or data['factbook']) and any(v is not None for v in rents.values()):
             C.update({'fossil': fos, 'minerals': mins, 'rents': {k: r(v or 0, 2) for k, v in rents.items()}})
-            if years.get('coal') and fos['coal'][0]:
+            if years.get('coal') and fos['coal'][0] and years['coal'] <= 500:     # no "years left" for coal that is barely mined
                 C['coalYears'] = sig(min(years['coal'], 999), 2)
             cards.append('under')
         else:
@@ -148,12 +148,16 @@ def build(raw, game, log=print):
         elif e.get('elec'):
             t = e['elec']; shares = b.get('elec', {})
             ish, esh = dict(shares.get('imp_shares', [])), dict(shares.get('exp_shares', []))
+            for sh in (ish, esh):                # flows the customs data has no partner for go to "Others"
+                left = 1 - sum(sh.values())
+                if left > 0.02:
+                    sh['OTHER'] = sh.get('OTHER', 0) + left
             parts = set(ish) | set(esh)
             nb = []
             for p in parts:
                 a, x = r((t.get('imp') or 0) * ish.get(p, 0), 2), r((t.get('exp') or 0) * esh.get(p, 0), 2)
                 if a + x >= 0.05:
-                    nb.append([('OTHER' if p == 'OTHER' else iso2.get(p, '').upper() or 'OTHER'), 'Others' if p == 'OTHER' else _name(p, countries), a, x])
+                    nb.append([('OTHER' if p == 'OTHER' else iso2.get(p, '').upper() or 'OTHER'), ('Others' if len(parts) > 1 else 'Neighbours') if p == 'OTHER' else _name(p, countries), a, x])
             if not parts and (t.get('imp') or t.get('exp')):
                 nb.append(['OTHER', 'Neighbours', r(t.get('imp') or 0, 2), r(t.get('exp') or 0, 2)])
             nb.sort(key=lambda n: (n[0] == 'OTHER', -(n[2] + n[3])))
@@ -172,7 +176,7 @@ def build(raw, game, log=print):
         if all(v is not None for v in need.values()) and access[1] is not None:
             cuts = None
             if wv('cuts_n') is not None and wv('cuts_firms') is not None:
-                cuts = {'n': r(wv('cuts_n'), 1), 'firms': int(round(wv('cuts_firms'))), 'loss': r(wv('cuts_loss') or 0, 1), 'year': w['cuts_n'][1]}
+                cuts = {'n': r(wv('cuts_n'), 1), 'firms': int(round(wv('cuts_firms'))), 'loss': None if wv('cuts_loss') is None else r(wv('cuts_loss'), 1), 'year': w['cuts_n'][1]}
             C.update({'access': [int(round(min(100, access[0]))), int(round(min(100, access[1])))], 'cook': int(round(min(100, wv('cook')))),
                       'cuts': cuts, 'cold': int(round(pw['cold'])), 'hot': int(round(pw['hot'])), 'coldM': pw['coldM'], 'hotM': pw['hotM'],
                       'hdd': int(pw['hdd']), 'cdd': int(pw['cdd']), 'urban': int(round(wv('urban'))), 'gdp': int(round(wv('gdp'), -2)),

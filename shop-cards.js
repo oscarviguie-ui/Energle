@@ -366,7 +366,9 @@ function cardsV3Vals(st0) {
     const MIN = [['Li', 'Lithium'], ['Co', 'Cobalt'], ['Ni', 'Nickel'], ['Cu', 'Copper'], ['C', 'Graphite'], ['REE', 'Rare earths'], ['Mn', 'Manganese'], ['PGM', 'Platinum metals']];
     const minTiles = MIN.map(([sym, name]) => {
       const m = C.minerals[sym], b = m ? Math.min(m[2] || 99, m[3] || 99) : 0;
-      return { sym, name, sub: m ? sig2(m[0]) + ' ' + m[1] : name, title: name + (m ? ': reserves ' + sig2(m[0]) + ' ' + m[1] + ', world top ' + m[2] + ' for reserves, top ' + m[3] + ' for output' : ''), band: m ? 'Top ' + m[2] : '', cls: 'mn-tile' + (m ? ' is-lit' : '') };
+      const res = m && m[0] ? sig2(m[0]) + ' ' + m[1] : 'mined';
+      const parts = m ? [m[2] ? 'world top ' + m[2] + ' for reserves' : '', m[3] ? 'top ' + m[3] + ' for output' : ''].filter(Boolean).join(', ') : '';
+      return { sym, name, sub: m ? res : name, title: name + (m ? (m[0] ? ': reserves ' + res + ', ' : ': ') + parts : ''), band: m ? 'Top ' + (m[2] || m[3]) : '', cls: 'mn-tile' + (m ? ' is-lit' : '') };
     });
     const minRows = MIN.filter(([sym]) => C.minerals[sym]).map(([sym, name]) => {
       const [v, u, r, p] = C.minerals[sym];
@@ -426,9 +428,9 @@ function cardsV3Vals(st0) {
       cutRows: cuts ? [
         { label: 'Firms hit', val: cuts.firms + '%', title: 'Share of firms with at least one outage in the year · ticks: average of all surveyed countries (45%)',
           fill: meterStyle(cuts.firms, '#8a8a86'), mark: 'left: 45%' },
-        { label: 'Sales lost', val: cuts.loss + '%', title: 'Sales lost to outages by the firms hit · ticks: average of all surveyed countries (3%) · scale 0 to 10%',
+        cuts.loss == null ? null : { label: 'Sales lost', val: cuts.loss + '%', title: 'Sales lost to outages by the firms hit · ticks: average of all surveyed countries (3%) · scale 0 to 10%',
           fill: meterStyle(Math.min(100, cuts.loss * 10), '#8a8a86'), mark: 'left: 30%' }
-      ] : [],
+      ].filter(Boolean) : [],
       tmRange: 'left: ' + tp(C.cold) + '%; width: ' + (tp(C.hot) - tp(C.cold)).toFixed(1) + '%',
       hddTxt: nf(Math.round(C.hdd / 50) * 50), cddTxt: nf(Math.round(C.cdd / 50) * 50),
       hddWorld: 'left: ' + (1400 / 4000 * 100).toFixed(1) + '%', cddWorld: 'left: ' + (1500 / 4000 * 100).toFixed(1) + '%',

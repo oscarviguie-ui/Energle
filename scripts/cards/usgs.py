@@ -25,7 +25,14 @@ MINERALS = {
     'C': ('Graphite (Natural)', 't'), 'REE': ('Rare Earths', 't'), 'Mn': ('Manganese', 'Mt'), 'PGM': ('Platinum-Group Metals', 't'),
 }
 PGM_OUTPUT = ('Platinum', 'Palladium')       # PGM mine output is published under the two metals
-UNIT_T = {'metric tons': 1.0, 'thousand metric tons': 1e3, 'million metric tons': 1e6, 'kilograms': 1e-3}
+def unit_t(unit):
+    """Tonnes per unit: 'metric tons', 'thousand metric tons', 'metric tons of rare-earth-oxide equivalent', 'kilograms'..."""
+    u = (unit or '').strip().lower()
+    if u.startswith('kilogram'):
+        return 1e-3
+    if 'metric' in u and 'ton' in u and 'carat' not in u:
+        return 1e6 if u.startswith('million') else 1e3 if u.startswith('thousand') else 1.0
+    return None
 NAMES = {
     'burma': 'MMR', 'congo (kinshasa)': 'COD', 'congo (brazzaville)': 'COG', 'korea, north': 'PRK', 'korea, republic of': 'KOR',
     'russia': 'RUS', 'united states': 'USA', 'united kingdom': 'GBR', 'iran': 'IRN', 'turkey': 'TUR', 'turkiye': 'TUR', 'türkiye': 'TUR',
@@ -94,7 +101,7 @@ def build(countries, state=None, log=print):
             if row.get('Commodity') not in names:
                 continue
             iso = iso_of(row.get('Country'))
-            f = UNIT_T.get((row.get('Unit') or '').strip().lower())
+            f = unit_t(row.get('Unit'))
             v = _num(row.get('Value'))
             detail = (row.get('Statistics_detail') or '').strip().lower()
             if not iso or f is None or v is None or 'rounded' in detail:
