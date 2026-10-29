@@ -39,11 +39,23 @@ def _script_maps():
     return iso2, cont
 
 
+_DISPLAY = None
+def _display_names():
+    """The everyday names the game shows ('Bosnia Herzegovina' -> 'Bosnia and Herzegovina'), from script.js."""
+    global _DISPLAY
+    if _DISPLAY is None:
+        src = open(os.path.join(ROOT, 'script.js'), encoding='utf-8').read()
+        m = re.search(r'const DISPLAY_NAMES = \{(.*?)\};', src, re.S)
+        _DISPLAY = {a: b for _, a, b in re.findall(r"""(['"])(.*?)\1:\s*'([^']*)'""", m.group(1))} if m else {}
+    return _DISPLAY
+
+
 def _name(iso3, game_names):
     if iso3 in SHORT_NAMES:
         return SHORT_NAMES[iso3]
     if iso3 in game_names:
-        return re.sub(r'\s*\(the\)$', '', game_names[iso3])
+        g = game_names[iso3]
+        return _display_names().get(g) or re.sub(r'\s*\(the\)$', '', g)
     try:
         import pycountry
         c = pycountry.countries.get(alpha_3=iso3)
