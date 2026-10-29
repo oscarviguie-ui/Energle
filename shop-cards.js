@@ -39,7 +39,7 @@ function shopV2Vals(st0) {
 
     // ---------- the shop: three cards for every country, a fourth in Europe ----------
     const CARDS = [
-      { k: 'trade', cost: 2, name: 'Fuel trade', desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'UN trade data (BACI) · every country' },
+      { k: 'trade', cost: 1, name: 'Fuel trade', desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'UN trade data (BACI) · every country' },
       { k: 'nature', cost: 1, name: 'Natural endowment', desc: 'How much sun and wind it gets, and the oil, gas and coal under its ground.', src: 'Solar & Wind Atlas · EIA · every country' },
       { k: 'society', cost: 1, name: 'Energy in daily life', desc: 'Who has power at home, who cooks with clean fuel, how green all its energy is.', src: 'World Bank · every country' },
       { k: 'market', cost: 1, name: 'Power market & neighbours', desc: 'Who it swaps electricity with, and how the price moves through a day.', src: 'ENTSO-E · Europe only', europe: true }
@@ -277,7 +277,7 @@ function cardsV3Vals(st0) {
 
     // ---------- which cards, and the layout rule ----------
     const CARDS = [
-      { k: 'trade', cost: 2, title: 'Fuel trade', full: true, ph: 'Fuel trade card: unchanged from Info shop v2', h: 300 },
+      { k: 'trade', cost: 1, title: 'Fuel trade', full: true, ph: 'Fuel trade card: unchanged from Info shop v2', h: 300 },
       { k: 'nature', cost: 1, title: 'Renewables potential' },
       { k: 'under', cost: 1, title: 'Underground riches' },
       { k: 'people', cost: 1, title: 'People & power' },

@@ -1,6 +1,6 @@
 // ============================================================
 //  CLUE SHOP + CLUE CARDS
-//  Players trade guesses for clue cards about the daily country. A card costs 1 or 2 cells of the
+//  Players trade guesses for clue cards about the daily country. A card costs 1 cell (set per card in SHOP_CARDS) of the
 //  six-cell battery; the shop opens after the first guess and the last guess can never be spent.
 //  The score counts cards like guesses. Unopened cards are revealed for free when the game ends.
 //
@@ -20,8 +20,8 @@ function shopLive() { return SHOP_LIVE || SHOP_TEST; }
 const SHOP_CARDS = [
   { k: 'nature', cost: 1, name: 'Renewables Potential', desc: 'Sun and wind month by month, rain, fresh water and how high its land sits.', src: 'NASA POWER · NOAA · World Bank' },
   { k: 'under',  cost: 1, name: 'Underground Riches', desc: 'Oil, gas and coal reserves, transition minerals, and what mining brings in.', src: 'U.S. EIA · USGS · World Bank' },
-  { k: 'trade',  cost: 2, name: 'Fuel Trade', full: true, desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'CEPII BACI (UN Comtrade)' },
-  { k: 'market', cost: 2, name: 'Electricity Trade', desc: 'How much electricity it imports and exports, and with which neighbours.', src: 'ENTSO-E · UN Comtrade · U.S. EIA' },
+  { k: 'trade',  cost: 1, name: 'Fuel Trade', full: true, desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'CEPII BACI (UN Comtrade)' },
+  { k: 'market', cost: 1, name: 'Electricity Trade', desc: 'How much electricity it imports and exports, and with which neighbours.', src: 'ENTSO-E · UN Comtrade · U.S. EIA' },
   { k: 'people', cost: 1, name: 'People & Power', desc: 'Who has power at home, power cuts, heating and cooling needs, way of life.', src: 'World Bank · NASA POWER' }
 ];
 
@@ -490,7 +490,7 @@ function shopIntroSteps() {
     { art: '<span class="si-sign" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="si-shop" style="--awn:#f5c842;color:#1a1a1a"') + '</span>',
       title: 'New: the Clue Shop', text: 'Stuck after a guess? Next to the Guess button you’ll now find the Clue Shop: it trades spare guesses for clue cards about today’s country.' },
     { art: bat,
-      title: 'You pay with guesses', text: 'A card costs 1 or 2 cells of your battery. The shop opens after your first guess, and your last guess can never be spent, so you always get a final try.' },
+      title: 'You pay with guesses', text: 'Each card costs 1 cell of your battery. The shop opens after your first guess, and your last guess can never be spent, so you always get a final try.' },
     { art: '<span class="si-tiles">' + tiles + '</span>',
       title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source. If the sources have nothing on today’s country, the card is free and opens empty.' },
     { art: '<span class="si-share" aria-hidden="true">🟥🟨💡🟩</span>',
