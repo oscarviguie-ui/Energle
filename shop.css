@@ -678,7 +678,7 @@ svg.ec-stove .ec-flame { transform: scale(1.25); transform-origin: 12px 14px; }
 .si-art-wrap.is-jolt .si-sign svg { transform-origin: 50% 100%; animation: shopJolt 2.6s ease-in-out .3s 2; }
 .si-bat { transform: scale(1.7); }
 .si-bat .battery-cell.si-used { background: #fff; box-shadow: inset 0 0 0 1.5px #d6d4cf; }
-.si-bat .battery-cell.si-card { background: #e0b25a; }
+.si-bat .battery-cell.si-card { background: repeating-linear-gradient(135deg, #f1dfae 0 3px, #fff 3px 6px); box-shadow: inset 0 0 0 1.5px #c9a24a; }
 .si-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
 .si-tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 6px; border: 1px solid #ece9e1; border-radius: 8px; background: #fff; }
 .si-art svg { display: block; width: 100%; height: 34px; }
@@ -699,3 +699,14 @@ svg.ec-stove .ec-flame { transform: scale(1.25); transform-origin: 12px 14px; }
   .si-art-wrap { min-height: 96px; }
 }
 @media (prefers-reduced-motion: reduce) { .si-art-wrap.is-jolt .si-sign svg { animation: none; } }
+
+/* ---- a clue card with no data for today's country ---- */
+.ic-card.is-empty .ic-none { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
+  min-height: 132px; margin-top: 10px; padding: 18px 14px; border: 1.5px dashed #cfccc4; border-radius: 10px; color: #9a978f;
+  background: repeating-linear-gradient(135deg, rgba(0,0,0,.025) 0 8px, transparent 8px 16px); }
+.ic-card.is-empty .ic-none strong { color: #6e6b64; font-size: 14px; }
+.ic-card.is-empty .ic-none span { font-size: 12px; line-height: 1.4; max-width: 32ch; }
+.ic-cost.ic-cost--free { background: #f1f0ec; color: #6e6b64; border: 1px dashed #bdb9b0; }
+.sp-logrow--free { color: #8a8780; }
+.sp-logrow--free .sp-lognum { color: #b3b0a8; }
+.et-none { margin: 4px 0 2px; padding: 12px 14px; border: 1.5px dashed #cfccc4; border-radius: 10px; font-size: 13px; color: #6e6b64; text-align: center; }

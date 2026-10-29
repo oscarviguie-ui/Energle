@@ -50,13 +50,21 @@ async function sbFetchPathStats(day) {
     return { totals: t.ok ? await t.json() : [], counts: c.ok ? await c.json() : [] };
   } catch { return { totals: [], counts: [] }; }
 }
+// Every row of a list, read in pages of 1000 (the most Supabase returns in one request)
+async function sbFetchPaged(url) {
+  const out = [], PAGE = 1000;
+  for (let off = 0; off < 50000; off += PAGE) {
+    const res = await fetch(url + '&limit=' + PAGE + '&offset=' + off, { headers: SB_HEADERS });
+    if (!res.ok) break;
+    const rows = await res.json();
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+  }
+  return out;
+}
 async function sbFetchToday(day) {
   try {
-    const res = await fetch(
-      SUPABASE_URL + '/rest/v1/scores?day=eq.' + day + '&order=guesses.asc,created_at.asc&limit=100',
-      { headers: SB_HEADERS }
-    );
-    return res.ok ? res.json() : [];
+    return await sbFetchPaged(SUPABASE_URL + '/rest/v1/scores?day=eq.' + day + '&order=guesses.asc,created_at.asc,username.asc');
   } catch { return []; }
 }
 
@@ -75,13 +83,11 @@ async function sbFetchMine(username) {
 // All-time stats are aggregated in Postgres by the `leaderboard_alltime` view
 // (one row per player, first attempt per day only). Ranked by Weighted Score
 // (lower is better), ties broken by more puzzles played. The podium uses the same order.
-async function sbFetchAllTime(limit = 500) {
+async function sbFetchAllTime(limit) {     // no limit: every player
+  const url = SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=score.asc,played.desc,username.asc';
   try {
-    const res = await fetch(
-      SUPABASE_URL + '/rest/v1/leaderboard_alltime?order=score.asc,played.desc&limit=' + limit,
-      { headers: SB_HEADERS }
-    );
-    return res.ok ? res.json() : [];
+    if (limit) { const res = await fetch(url + '&limit=' + limit, { headers: SB_HEADERS }); return res.ok ? res.json() : []; }
+    return await sbFetchPaged(url);
   } catch { return []; }
 }
 

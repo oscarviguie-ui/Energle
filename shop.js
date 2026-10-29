@@ -13,7 +13,6 @@
 const SHOP_LIVE = false;
 const SHOP_LAUNCH_DAY = null;          // puzzle number of launch day: the intro is shown for 7 days from it
 const SHOP_OPENS_AFTER = 1;            // guesses made before the shop opens
-const SHOP_MIN_CARDS = 3;              // a country gets the shop only with at least this many cards
 const SHOP_TEST = (() => { try { return new URLSearchParams(location.search).get('shop') === 'on'; } catch (e) { return false; } })();
 function shopLive() { return SHOP_LIVE || SHOP_TEST; }
 
@@ -22,7 +21,7 @@ const SHOP_CARDS = [
   { k: 'nature', cost: 1, name: 'Renewables Potential', desc: 'Sun and wind month by month, rain, fresh water and how high its land sits.', src: 'NASA POWER · NOAA · World Bank' },
   { k: 'under',  cost: 1, name: 'Underground Riches', desc: 'Oil, gas and coal reserves, transition minerals, and what mining brings in.', src: 'U.S. EIA · USGS · World Bank' },
   { k: 'trade',  cost: 2, name: 'Fuel Trade', full: true, desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'CEPII BACI (UN Comtrade)' },
-  { k: 'market', cost: 1, name: 'Electricity Trade', desc: 'How much electricity it imports and exports, and with which neighbours.', src: 'ENTSO-E · UN Comtrade · U.S. EIA' },
+  { k: 'market', cost: 2, name: 'Electricity Trade', desc: 'How much electricity it imports and exports, and with which neighbours.', src: 'ENTSO-E · UN Comtrade · U.S. EIA' },
   { k: 'people', cost: 1, name: 'People & Power', desc: 'Who has power at home, power cuts, heating and cooling needs, way of life.', src: 'World Bank · NASA POWER' }
 ];
 
@@ -41,13 +40,10 @@ const SHOP = {
   seen: false,           // shop opened at least once this game: stops the attention animation
   sent: false,           // usage already recorded for today (record_cards)
   on() {
-    if (!shopLive() || MODE !== 'normal' || !target) return false;
-    return this.cards().length >= SHOP_MIN_CARDS;
+    return !!(shopLive() && MODE === 'normal' && target && CARDS_DATA);
   },
-  cards() {
-    const e = shopEntry(); if (!e) return [];
-    return SHOP_CARDS.filter(c => !Array.isArray(e.cards) || e.cards.includes(c.k));
-  },
+  // every card is always for sale; one without data for today's country costs nothing and opens empty
+  cards() { return SHOP_CARDS; },
   owned() { return this.events.filter(e => e.t === 'c').map(e => e.k); },
   cardCells() { return this.on() ? this.events.filter(e => e.t === 'c').reduce((a, e) => a + e.cost, 0) : 0; },
   reset() { this.events = []; this.open = false; this.confirm = null; this.justBought = null; this.seen = false; this.sent = false; closeShopModal(); hideLockTip(); CARD_SCOPE_ISO = null; },
@@ -58,6 +54,7 @@ const SHOP = {
     return out;
   }
 };
+function cardHasData(k) { const e = shopEntry(); return !!(e && Array.isArray(e.cards) && e.cards.includes(k)); }
 function cellsUsed() { return guesses.length + SHOP.cardCells(); }
 function savedCells(ds) { return (ds && ds.guesses ? ds.guesses.length : 0) + (ds && Array.isArray(ds.cards) ? ds.cards.reduce((a, c) => a + (c.cost || 0), 0) : 0); }
 const guessWord = n => n + ' guess' + (n > 1 ? 'es' : '');
@@ -212,7 +209,7 @@ function renderShopModal() {
     + '<p class="sh-note">' + (locked ? 'Have a look now: cards open after your first guess.' : 'Every card you skip is revealed for free once the game is over.') + '</p>'
     + (cc ? '<div class="sh-confirm" role="alertdialog" aria-modal="true" aria-label="Confirm purchase"><div class="sh-cbox">'
       + '<span class="sh-ctitle">Open “' + cc.name + '”?</span>'
-      + '<span class="sh-ctext">It costs <strong>' + guessWord(cc.cost) + '</strong>. You’ll have <strong>' + (left - cc.cost) + '</strong> left to find the country.</span>'
+      + '<span class="sh-ctext">It costs <strong>' + guessWord(cc.cost) + '</strong>. You’ll have <strong>' + (left - cc.cost) + '</strong> left to find the country. If its sources have nothing on today’s country, it’s free and opens empty.</span>'
       + '<span class="sh-cbat">' + batteryHTML(left, cc.cost) + '</span>'
       + '<div class="sh-cbtns"><button type="button" class="sh-cbtn" data-cancel="1">Keep my guesses</button><button type="button" class="sh-cbtn sh-cbtn--dark" data-confirm="1">Open for ' + guessWord(cc.cost) + '</button></div>'
       + '</div></div>' : '')
@@ -233,6 +230,12 @@ document.addEventListener('click', e => {
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && SHOP.open) { if (SHOP.confirm) { SHOP.confirm = null; renderShopModal(); } else closeShopModal(); } });
 
 function addCardLogRow(c, cost, animate = true) {
+  if (!cost) {                       // no data for today's country: free, and the log says so
+    const row = document.createElement('div'); row.className = 'sp-logrow sp-logrow--free' + (animate && !REDUCED_MOTION ? ' gr-anim' : '');
+    row.innerHTML = '<span class="sp-lognum">·</span><span>Opened <strong>' + c.name + '</strong>: no data for this country</span><span class="sp-logcost">free</span>';
+    const list = document.getElementById('guesses'); if (list) list.insertBefore(row, list.firstChild);
+    return;
+  }
   const step0 = cellsUsed() - cost;
   const lbl = cost === 1 ? String(step0 + 1) : (step0 + 1) + '–' + (step0 + cost);
   const row = document.createElement('div'); row.className = 'sp-logrow' + (animate && !REDUCED_MOTION ? ' gr-anim' : '');
@@ -242,10 +245,11 @@ function addCardLogRow(c, cost, animate = true) {
 function buyCard(k) {
   const c = SHOP_CARDS.find(x => x.k === k);
   if (!c || !SHOP.on() || shopState(c) !== 'buy') return;
-  SHOP.events.push({ t: 'c', k, cost: c.cost }); SHOP.justBought = k;
+  const cost = cardHasData(k) ? c.cost : 0;          // no data: the guesses are not taken
+  SHOP.events.push({ t: 'c', k, cost }); SHOP.justBought = k;
   closeShopModal();
-  renderLives(true);
-  addCardLogRow(c, c.cost);
+  renderLives(cost > 0);
+  addCardLogRow(c, cost);
   saveDailyState();
   renderClueCards();
   const card = document.querySelector('#clue-cards .is-new');
@@ -255,8 +259,12 @@ function buyCard(k) {
 
 // ---------- clue cards under the charts ----------
 let CARD_SCOPE = null, CARD_SCOPE_ISO = null;
+// stand-in figures for the parts a country has no data for: they are only ever drawn as an empty card
+const CARD_BLANK = { sun: Array(12).fill(0), wind: Array(12).fill(0), rain: 0, flow: 0, terr: [[0, 0], [1, 0]], elevMean: 0,
+  fossil: { oil: [0, null, null], gas: [0, null, null], coal: [0, null, null] }, minerals: {}, rents: { oil: 0, gas: 0, coal: 0, min: 0 },
+  access: [0, 0], cook: 0, cuts: null, cold: 0, hot: 0, coldM: 'Jan', hotM: 'Jul', hdd: 0, cdd: 0, urban: 0, gdp: 0, industry: 0 };
 function cardScope() {
-  const e = shopEntry() || {};
+  const e = Object.assign({}, CARD_BLANK, shopEntry() || {});
   const v3 = cardsV3Vals({ C: e, scene: 'two' });
   const info = ALL_DATA[target.name], yd = (info && info.years[info.latestYear]) || {};
   const v2 = shopV2Vals({ europe: true, IN: (e.trade || {}).IN, OUT: (e.trade || {}).OUT, NB: (e.elec || {}).NB || [], demand: yd.Demand });
@@ -265,6 +273,7 @@ function cardScope() {
    'hubY', 'hubH', 'hubPos', 'hubLPos', 'tradeAria', 'neighbours', 'dayPts', 'dayArea', 'avgLine'].forEach(k => { r[k] = v2[k]; });
   r.tradeYear = (e.trade || {}).year || '';
   r.elecYear = (e.elec || {}).year || '';
+  r.noNeighbours = !((e.elec || {}).NB || []).some(n => n[2] + n[3] > 0);
   return r;
 }
 function renderClueCards() {
@@ -280,6 +289,7 @@ function renderClueCards() {
   const anchor = document.getElementById('guess-head'), before = anchor ? anchor.getBoundingClientRect().top : null;
   const html = shown.map(c => {
     const have = owned.includes(c.k), cost = (SHOP.events.find(e => e.t === 'c' && e.k === c.k) || c).cost;
+    if (!cardHasData(c.k)) return emptyCardHTML(c, have);
     const o = { cls: 'ic-card v3-card' + (c.full ? ' is-full' : ' is-half') + (have ? '' : ' is-unused') + (have && c.k === SHOP.justBought ? ' is-new' : ''),
       tagCls: have ? 'ic-cost' : 'ic-cost ic-cost--unused ic-cost--icon', tag: have ? 'Bought for ' + guessWord(cost) : '',
       tagTitle: have ? '' : 'Not opened: revealed after the game',
@@ -293,6 +303,15 @@ function renderClueCards() {
   packCards(host);
   if (anchor && before !== null && !SHOP.justBought) { const d = anchor.getBoundingClientRect().top - before; if (Math.abs(d) > 1) window.scrollBy(0, d); }
   SHOP.justBought = null;
+}
+// a card with no data for today's country: unmistakably empty
+function emptyCardHTML(c, have) {
+  const isNew = have && c.k === SHOP.justBought;
+  return '<section class="ic-card v3-card is-half is-empty' + (have ? '' : ' is-unused') + (isNew ? ' is-new' : '') + '">'
+    + '<div class="ic-head"><span class="ic-title"><span class="ic-ico" aria-hidden="true"></span>' + c.name + '</span>'
+    + '<span class="ic-cost ic-cost--free">' + (have ? 'No data · free' : 'No data') + '</span></div>'
+    + '<div class="ic-none"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 18L18 6" stroke="currentColor" stroke-width="1.8"/></svg>'
+    + '<strong>No data for this country</strong><span>Sources checked: ' + c.src + '.' + (have ? ' No guess was spent.' : '') + '</span></div></section>';
 }
 // pack the half-width cards into two columns of nearly equal height; Fuel Trade (full width) goes underneath.
 // A lone half-width card takes the full row. Phones: one column.
@@ -362,6 +381,7 @@ function shopShareSquares() {
 function shopPathHTML(won, mini, animate) {
   const items = []; let cell = 0;
   SHOP.events.forEach(e => {
+    if (e.t === 'c' && !e.cost) return;              // a free (empty) card took no step
     if (e.t === 'c') { const c = SHOP_CARDS.find(x => x.k === e.k); items.push({ card: c, cost: e.cost, c0: cell, c1: cell + e.cost - 1 }); cell += e.cost; }
     else { items.push({ c: e.c, isAns: e.c.iso3 === target.iso3, h: e.c.iso3 === target.iso3 ? null : guessInfo(e.c), c0: cell, c1: cell }); cell += 1; }
   });
@@ -436,7 +456,7 @@ async function recordCardsOnce(won) {
   if (!SHOP.on() || SHOP.sent) return;
   SHOP.sent = true;
   let g = 0; const cards = [], costs = [], steps = [];
-  SHOP.events.forEach(e => { if (e.t === 'g') g++; else { cards.push(e.k); costs.push(e.cost); steps.push(g); } });
+  SHOP.events.forEach(e => { if (e.t === 'g') g++; else if (e.cost) { cards.push(e.k); costs.push(e.cost); steps.push(g); } });
   try {
     const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/record_cards', {
       method: 'POST', headers: SB_HEADERS,
@@ -464,7 +484,7 @@ function maybeShowShopIntro() {
 }
 function shopIntroSteps() {
   const cell = cls => '<span class="battery-cell ' + cls + '"></span>';
-  const bat = '<span class="battery si-bat" aria-hidden="true"><span class="battery-body">' + cell('si-used') + cell('si-card') + cell('si-card') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + '</span><span class="battery-cap"></span></span>';
+  const bat = '<span class="battery si-bat" aria-hidden="true"><span class="battery-body">' + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('si-card') + cell('si-used') + '</span><span class="battery-cap"></span></span>';
   const tiles = SHOP_CARDS.map(c => '<span class="si-tile"><span class="si-art" aria-hidden="true">' + SHOP_ART[c.k] + '</span><span class="si-name">' + c.name + '</span><span class="si-cost">' + cellsHTML(c.cost) + guessWord(c.cost) + '</span></span>').join('');
   return [
     { art: '<span class="si-sign" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="si-shop" style="--awn:#f5c842;color:#1a1a1a"') + '</span>',
@@ -472,7 +492,7 @@ function shopIntroSteps() {
     { art: bat,
       title: 'You pay with guesses', text: 'A card costs 1 or 2 cells of your battery. The shop opens after your first guess, and your last guess can never be spent, so you always get a final try.' },
     { art: '<span class="si-tiles">' + tiles + '</span>',
-      title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source.' },
+      title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source. If the sources have nothing on today’s country, the card is free and opens empty.' },
     { art: '<span class="si-share" aria-hidden="true">🟥🟨💡🟩</span>',
       title: 'Every card counts', text: 'Cards count in your score like guesses, and show as 💡 when you share. Skip them and they’re all revealed for free once the game is over.' }
   ];
