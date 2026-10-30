@@ -447,26 +447,25 @@ function pageSubtitleHTML(lead, rest = '', extra = '') {
     + (rest ? '<span class="sub-sep"> · </span><span class="sub-rest">' + rest + '</span>' : '') + '</p>' + extra + '</div>';
 }
 // Footer: where the data comes from, credited as Ember asks (CC BY 4.0)
-// Every source in full, with links. Cards and charts name a source by one word; the full name is here.
+// Every data source, one linked name each (Ember keeps the credit line it asks for). Cards and charts use the same names.
 const DATA_SOURCES = [
-  ['Ember', [['Yearly Electricity Data | Ember', 'https://ember-energy.org/data/yearly-electricity-data/']], 'CC BY 4.0'],
-  ['World Bank', [['World Development Indicators', 'https://databank.worldbank.org/source/world-development-indicators'], ['Enterprise Surveys', 'https://www.enterprisesurveys.org/']]],
-  ['EIA', [['U.S. Energy Information Administration, International Energy Statistics', 'https://www.eia.gov/international/data/world']]],
-  ['OPEC', [['Annual Statistical Bulletin', 'https://www.opec.org/annual-statistical-bulletin.html']]],
-  ['CIA', [['The World Factbook', 'https://www.cia.gov/the-world-factbook/']]],
-  ['USGS', [['U.S. Geological Survey, Mineral Commodity Summaries', 'https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries']]],
-  ['CEPII', [['BACI, international trade data from UN Comtrade', 'https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37']]],
-  ['ENTSO-E', [['ENTSO-E Transparency Platform, cross-border physical flows', 'https://transparency.entsoe.eu/']]],
-  ['NASA', [['NASA POWER, Prediction of Worldwide Energy Resources', 'https://power.larc.nasa.gov/']]],
-  ['NOAA', [['NOAA ETOPO1 Global Relief Model', 'https://www.ncei.noaa.gov/products/etopo-global-relief-model']]],
+  ['World Bank', 'https://databank.worldbank.org/source/world-development-indicators'],
+  ['EIA', 'https://www.eia.gov/international/data/world'],
+  ['OPEC', 'https://www.opec.org/annual-statistical-bulletin.html'],
+  ['CIA', 'https://www.cia.gov/the-world-factbook/'],
+  ['USGS', 'https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries'],
+  ['CEPII', 'https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37'],
+  ['ENTSO-E', 'https://transparency.entsoe.eu/'],
+  ['NASA', 'https://power.larc.nasa.gov/'],
+  ['NOAA', 'https://www.ncei.noaa.gov/products/etopo-global-relief-model'],
 ];
 function footerHTML() {
+  const sep = '<span class="ft-sep" aria-hidden="true">·</span>';
   // the clue-card sources are listed once the cards can be seen (shop on, or the ?shop=on preview)
-  const list = typeof shopLive === 'function' && shopLive() ? DATA_SOURCES : DATA_SOURCES.slice(0, 1);
-  const link = ([t, u]) => '<a href="' + u + '" target="_blank" rel="noopener">' + escHtml(t) + '</a>';
-  return '<footer><div class="ft-sources"><span class="ft-h">Data sources</span><ul>'
-    + list.map(([name, items, lic]) => '<li><strong>' + escHtml(name) + '</strong><span>' + items.map(link).join(' · ') + (lic ? ' · ' + lic : '') + '</span></li>').join('')
-    + '</ul></div><p><button type="button" class="ft-link" onclick="showNotice()">What’s new</button></p></footer>';
+  const more = typeof shopLive === 'function' && shopLive()
+    ? sep + '<span class="ft-more">' + DATA_SOURCES.map(([n, u]) => '<a href="' + u + '" target="_blank" rel="noopener">' + n + '</a>').join('<span class="ft-dot" aria-hidden="true"> · </span>') + '</span>' : '';
+  return '<footer><p><span>Data: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a> (CC BY 4.0)</span>'
+    + more + sep + '<button type="button" class="ft-link" onclick="showNotice()">What’s new</button></p></footer>';
 }
 function todayLabel() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -937,7 +936,14 @@ function initApp() {
 // ============================================================
 //  WHAT'S NEW: shown once to returning players, and from the footer link
 // ============================================================
-const NOTICE_KEY = 'energle_notice_lineup_v1';
+const NOTICE_KEY = 'energle_notice_v2';
+const UPDATES = [
+  ['30 Oct', 'Back at the top', 'A finished puzzle now reopens at the top of the page, with a small reminder of the answer and your score at the bottom.'],
+  ['29 Oct', 'The full leaderboard', 'The all-time and daily leaderboards now list every player, not just the first few hundred.'],
+  ['28 Oct', 'A cleaner look', 'Daily, Archive and Practice in one switch, a single Stats & Leaderboard button, and pictures for each Practice group.'],
+  ['28 Oct', 'Carbon smoke', 'The latest mix now shows how much CO\u2082 each unit of electricity carries.'],
+  ['25 Oct', 'A smarter daily line-up', 'From puzzle #146, big and telling grids like Canada, France or Brazil come up more often, and no country repeats within 50 days.'],
+];
 function maybeShowNotice() {
   let seen = true, returning = false;
   try {
@@ -952,16 +958,11 @@ function showNotice() {
   try { localStorage.setItem(NOTICE_KEY, '1'); } catch (e) {}
   const modal = document.createElement('div'); modal.id = 'notice-modal';
   modal.innerHTML = '<div class="st-backdrop"></div>'
-    + '<div class="nt-box" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
+    + '<div class="nt-box nt-box--log" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
     + '<span class="nt-eyebrow">What’s new</span>'
-    + '<h2 class="nt-title" id="nt-title">A smarter daily line-up</h2>'
-    + '<p>From puzzle #146 (Sunday 25 October), Energle picks each day’s country by the size of its power system and by how much its mix has to teach.</p>'
-    + '<ul class="nt-list">'
-    +   '<li>You’ll meet the grids that shape the energy world, like Canada, France, Brazil or India, more often.</li>'
-    +   '<li>Smaller and more surprising grids still come up along the way.</li>'
-    +   '<li>A country never comes back within 50 days.</li>'
-    + '</ul>'
-    + '<p class="nt-keep">Past puzzles, your streak and the leaderboard stay exactly as they are.</p>'
+    + '<h2 class="nt-title" id="nt-title">Latest updates</h2>'
+    + '<ol class="nt-log">' + UPDATES.map(([d, t, x]) => '<li><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong>' + x + '</span></li>').join('') + '</ol>'
+    + '<p class="nt-keep">Coming soon: the Clue Shop, to trade a spare guess for a clue card.</p>'
     + '<button type="button" class="nt-btn" id="nt-ok">Got it</button>'
     + '</div>';
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
