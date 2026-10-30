@@ -3285,7 +3285,7 @@ header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
 /* ---- What's new: the last few updates, newest first ---- */
 .nt-box--log { max-height: calc(100vh - 48px); overflow-y: auto; }
 .nt-log { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.nt-log li { display: grid; grid-template-columns: 52px 1fr; gap: 10px; font-size: .9rem; line-height: 1.45; color: #444; }
+.nt-log li { display: grid; grid-template-columns: 60px 1fr; gap: 10px; font-size: .9rem; line-height: 1.45; color: #444; }
 .nt-date { font-size: .78rem; font-weight: 600; color: #9a978f; padding-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .nt-item strong { display: block; color: #1a1a1a; font-weight: 650; }
 footer .ft-more { color: #ccc; }          /* the card sources: one group that wraps as a line */
