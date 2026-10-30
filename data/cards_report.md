@@ -1,4 +1,4 @@
-# Clue cards build 2026-10-29
+# Clue cards build 2026-10-30
 
 Published: **yes**
 
@@ -7,6 +7,7 @@ Published: **yes**
 - wdi: {'countries': 172, 'updated': '2026-10-29'}
 - eia: {'countries': 173, 'updated': '2026-10-29'}
 - factbook: {'countries': 123, 'updated': '2026-10-29'}
+- opec: {'year': 2025, 'updated': '2026-10-30', 'countries': 58}
 - entsoe: {'countries': 36, 'updated': '2026-10-29', 'year': 2025}
 - baci: {'countries': 167, 'release': 'BACI_HS96_V202601.zip', 'updated': '2026-10-29', 'year': 2024}
 - usgs: {'countries': 42, 'release': 2026, 'updated': '2026-10-29'}
@@ -37,4 +38,7 @@ No shop (fewer than 3 cards): PRK, TWN, XKX
 ## Log
 
 ```
+== opec
+  opec ASB 2026 (https://publications.opec.org/ASSETS/assetdb/asb-2026.pdf): oil reserves for 41 countries, gas for 57
+  -> 58 countries
 ```
