@@ -937,12 +937,11 @@ function initApp() {
 //  WHAT'S NEW: shown once to returning players, and from the footer link
 // ============================================================
 const NOTICE_KEY = 'energle_notice_v2';
+// Only what changes how the game plays or what data it shows (mechanics, new figures, data refreshes), newest first
 const UPDATES = [
-  ['30 Oct', 'Back at the top', 'A finished puzzle now reopens at the top of the page, with a small reminder of the answer and your score at the bottom.'],
-  ['29 Oct', 'The full leaderboard', 'The all-time and daily leaderboards now list every player, not just the first few hundred.'],
-  ['28 Oct', 'A cleaner look', 'Daily, Archive and Practice in one switch, a single Stats & Leaderboard button, and pictures for each Practice group.'],
-  ['28 Oct', 'Carbon smoke', 'The latest mix now shows how much CO\u2082 each unit of electricity carries.'],
+  ['28 Oct', 'Carbon intensity added', 'The latest mix now shows how much CO\u2082 each kWh of the country’s electricity emits, from Ember’s data.'],
   ['25 Oct', 'A smarter daily line-up', 'From puzzle #146, big and telling grids like Canada, France or Brazil come up more often, and no country repeats within 50 days.'],
+  ['Monthly', 'Fresh data every month', 'Ember’s figures refresh on the 1st of each month; 91 countries already show their 2025 mix.'],
 ];
 function maybeShowNotice() {
   let seen = true, returning = false;
