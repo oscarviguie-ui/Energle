@@ -18,11 +18,11 @@ function shopLive() { return SHOP_LIVE || SHOP_TEST; }
 
 // fixed order, grouped: the land · what it trades · the grid and its people
 const SHOP_CARDS = [
-  { k: 'nature', cost: 1, name: 'Renewables Potential', desc: 'Sun and wind month by month, rain, fresh water and how high its land sits.', src: 'NASA POWER · NOAA · World Bank' },
-  { k: 'under',  cost: 1, name: 'Underground Riches', desc: 'Oil, gas and coal reserves, transition minerals, and what mining brings in.', src: 'U.S. EIA · USGS · World Bank' },
-  { k: 'trade',  cost: 1, name: 'Fuel Trade', full: true, desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'CEPII BACI (UN Comtrade)' },
-  { k: 'market', cost: 1, name: 'Electricity Trade', desc: 'How much electricity it imports and exports, and with which neighbours.', src: 'ENTSO-E · UN Comtrade · U.S. EIA' },
-  { k: 'people', cost: 1, name: 'People & Power', desc: 'Who has power at home, power cuts, heating and cooling needs, way of life.', src: 'World Bank · NASA POWER' }
+  { k: 'nature', cost: 1, name: 'Renewables Potential', desc: 'Sun and wind month by month, rain, fresh water and how high its land sits.', src: 'NASA · NOAA · World Bank' },
+  { k: 'under',  cost: 1, name: 'Underground Riches', desc: 'Oil, gas and coal reserves, transition minerals, and what mining brings in.', src: 'OPEC · CIA · EIA · USGS · World Bank' },
+  { k: 'trade',  cost: 1, name: 'Fuel Trade', full: true, desc: 'Who it buys oil, gas and coal from, and who it sells to.', src: 'CEPII' },
+  { k: 'market', cost: 1, name: 'Electricity Trade', desc: 'How much electricity it imports and exports, and with which neighbours.', src: 'ENTSO-E · CEPII · EIA' },
+  { k: 'people', cost: 1, name: 'People & Power', desc: 'Who has power at home, power cuts, heating and cooling needs, way of life.', src: 'World Bank · NASA' }
 ];
 
 // ---------- card data (cards.json) ----------

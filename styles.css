@@ -3280,3 +3280,12 @@ header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
 #done-pill .dp-score--lost { color: #b0574a; background: #fbeeeb; }
 #done-pill .dp-arrow { color: #9a978f; flex-shrink: 0; }
 @media (prefers-reduced-motion: reduce) { #done-pill { transition: opacity .2s; } #done-pill.is-merged { transform: translateX(-50%); } }
+
+/* ---- footer: every data source in full, with links (script.js DATA_SOURCES) ---- */
+footer .ft-sources { display: grid; gap: 8px; text-align: left; max-width: 760px; margin: 0 auto 10px; }
+footer .ft-h { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #888; }
+footer .ft-sources ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 24px; }
+footer .ft-sources li { display: grid; grid-template-columns: 76px 1fr; gap: 8px; font-size: .78rem; line-height: 1.4; color: #777; min-width: 0; }
+footer .ft-sources li strong { color: #444; font-weight: 650; }
+footer .ft-sources li span { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 600px) { footer .ft-sources ul { grid-template-columns: 1fr; } }

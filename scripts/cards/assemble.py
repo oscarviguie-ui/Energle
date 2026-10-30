@@ -66,6 +66,10 @@ def _name(iso3, game_names):
     return iso3
 
 
+# OPEC figures left out: Canada's oil excludes the oil sands there (its table footnote), so the Factbook's total is kept
+OPEC_SKIP = {('oil', 'CAN')}
+
+
 def band(rank):
     """Exact ranks never leave the pipeline: Top 3, Top 5 or Top 10, else nothing."""
     if not rank:
@@ -91,7 +95,8 @@ def build(raw, game, log=print):
     for f in ('oil', 'gas'):
         merged = {}
         for iso in set(data['factbook']) | set(data['opec']):
-            x = (data['opec'].get(iso) or {}).get(f) or (data['factbook'].get(iso) or {}).get(f)
+            x = None if (f, iso) in OPEC_SKIP else (data['opec'].get(iso) or {}).get(f)
+            x = x or (data['factbook'].get(iso) or {}).get(f)
             if x and x.get('value'):
                 merged[iso] = x
         RES[f] = {iso: dict(merged[iso], rank=i + 1) for i, iso in enumerate(sorted(merged, key=lambda k: -merged[k]['value']))}

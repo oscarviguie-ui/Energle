@@ -447,10 +447,26 @@ function pageSubtitleHTML(lead, rest = '', extra = '') {
     + (rest ? '<span class="sub-sep"> · </span><span class="sub-rest">' + rest + '</span>' : '') + '</p>' + extra + '</div>';
 }
 // Footer: where the data comes from, credited as Ember asks (CC BY 4.0)
+// Every source in full, with links. Cards and charts name a source by one word; the full name is here.
+const DATA_SOURCES = [
+  ['Ember', [['Yearly Electricity Data | Ember', 'https://ember-energy.org/data/yearly-electricity-data/']], 'CC BY 4.0'],
+  ['World Bank', [['World Development Indicators', 'https://databank.worldbank.org/source/world-development-indicators'], ['Enterprise Surveys', 'https://www.enterprisesurveys.org/']]],
+  ['EIA', [['U.S. Energy Information Administration, International Energy Statistics', 'https://www.eia.gov/international/data/world']]],
+  ['OPEC', [['Annual Statistical Bulletin', 'https://www.opec.org/annual-statistical-bulletin.html']]],
+  ['CIA', [['The World Factbook', 'https://www.cia.gov/the-world-factbook/']]],
+  ['USGS', [['U.S. Geological Survey, Mineral Commodity Summaries', 'https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries']]],
+  ['CEPII', [['BACI, international trade data from UN Comtrade', 'https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37']]],
+  ['ENTSO-E', [['ENTSO-E Transparency Platform, cross-border physical flows', 'https://transparency.entsoe.eu/']]],
+  ['NASA', [['NASA POWER, Prediction of Worldwide Energy Resources', 'https://power.larc.nasa.gov/']]],
+  ['NOAA', [['NOAA ETOPO1 Global Relief Model', 'https://www.ncei.noaa.gov/products/etopo-global-relief-model']]],
+];
 function footerHTML() {
-  return '<footer><p><span>Data: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a></span>'
-    + '<span class="ft-sep" aria-hidden="true">·</span><span>CC BY 4.0</span>'
-    + '<span class="ft-sep" aria-hidden="true">·</span><button type="button" class="ft-link" onclick="showNotice()">What’s new</button></p></footer>';
+  // the clue-card sources are listed once the cards can be seen (shop on, or the ?shop=on preview)
+  const list = typeof shopLive === 'function' && shopLive() ? DATA_SOURCES : DATA_SOURCES.slice(0, 1);
+  const link = ([t, u]) => '<a href="' + u + '" target="_blank" rel="noopener">' + escHtml(t) + '</a>';
+  return '<footer><div class="ft-sources"><span class="ft-h">Data sources</span><ul>'
+    + list.map(([name, items, lic]) => '<li><strong>' + escHtml(name) + '</strong><span>' + items.map(link).join(' · ') + (lic ? ' · ' + lic : '') + '</span></li>').join('')
+    + '</ul></div><p><button type="button" class="ft-link" onclick="showNotice()">What’s new</button></p></footer>';
 }
 function todayLabel() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1838,7 +1854,7 @@ function renderLegend(keys) {
           + (group ? '<span class="legend-members">' + group.members.join(' · ') + '</span>' : '') + '</div>';
       })
       .join('') + '</div>'
-    + '<p class="og-src og-src--in">Source: Ember, Yearly Electricity Data (CC BY 4.0)</p>';
+    + '<p class="og-src og-src--in">Source: Ember</p>';
   bindLegendFocus();
 }
 let lockedSource = null;
