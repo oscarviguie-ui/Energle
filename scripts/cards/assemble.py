@@ -84,7 +84,17 @@ def sig(v, n=2):
 def build(raw, game, log=print):
     countries = {v['iso3']: k for k, v in game.items() if not k.startswith('__') and isinstance(v, dict) and v.get('iso3')}
     iso2, cont = _script_maps()
-    data = {s: (raw.get(s) or {}).get('data', {}) for s in ('wdi', 'power', 'elevation', 'eia', 'factbook', 'usgs', 'baci', 'entsoe')}
+    data = {s: (raw.get(s) or {}).get('data', {}) for s in ('wdi', 'power', 'elevation', 'eia', 'factbook', 'opec', 'usgs', 'baci', 'entsoe')}
+    # oil and gas reserves: OPEC's bulletin for the countries it lists (every major holder), the Factbook for the rest;
+    # world ranks over the merged figures
+    RES = {}
+    for f in ('oil', 'gas'):
+        merged = {}
+        for iso in set(data['factbook']) | set(data['opec']):
+            x = (data['opec'].get(iso) or {}).get(f) or (data['factbook'].get(iso) or {}).get(f)
+            if x and x.get('value'):
+                merged[iso] = x
+        RES[f] = {iso: dict(merged[iso], rank=i + 1) for i, iso in enumerate(sorted(merged, key=lambda k: -merged[k]['value']))}
     out, why = {}, {}
     for iso, gname in countries.items():
         w, pw, el = data['wdi'].get(iso, {}), data['power'].get(iso, {}), data['elevation'].get(iso)
@@ -111,7 +121,8 @@ def build(raw, game, log=print):
         fos, years = {}, {}
         for f in ('oil', 'gas', 'coal'):
             ex = e.get(f) or {}
-            res = (ex if f == 'coal' and ex.get('value') else None) or fb.get(f) or {}
+            res = (ex if ex.get('value') else fb.get('coal')) if f == 'coal' else RES[f].get(iso)
+            res = res or {}
             fos[f] = [sig(res['value'], 2) if res.get('value') else 0, band(res.get('rank')), band(ex.get('prod_rank'))]
             p = ex.get('prod')
             if res.get('value') and p:

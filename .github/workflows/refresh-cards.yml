@@ -37,7 +37,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pandas requests pycountry entsoe-py
+        run: pip install pandas requests pycountry entsoe-py pdfplumber
 
       - name: Build cards.json
         id: build
@@ -46,7 +46,7 @@ jobs:
           ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
         run: |
           set +e
-          python scripts/build_cards.py ${{ github.event.inputs.sources }}
+          python scripts/build_cards.py opec
           echo "status=$?" >> "$GITHUB_OUTPUT"
 
       - name: Commit the cards and the caches
@@ -54,7 +54,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for f in cards.json data/cards_raw.json data/cards_report.md data/power_cache.json data/elevation_cache.json; do if [ -f "$f" ]; then git add "$f"; fi; done
+          for f in data/opec_debug.txt cards.json data/cards_raw.json data/cards_report.md data/power_cache.json data/elevation_cache.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --staged --quiet || git commit -m "Auto-refresh: clue cards $(date +'%Y-%m-%d')"
           git pull --rebase --autostash && git push
 
