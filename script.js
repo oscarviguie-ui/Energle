@@ -434,7 +434,7 @@ function modeSwitcherHTML() {
 function pageHeaderHTML() {
   return '<header><div class="hd-grid"><div class="hd-brand">' + logoHTML()
     + '<span class="hd-by">by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span></div>'
-    + podiumHTML() + modeSwitcherHTML()
+    + podiumHTML() + modeSwitcherHTML() + newsButtonHTML()
     + '<div class="mode-switcher lb-switcher lb-split" role="group" aria-label="Stats and leaderboard">'
     +   '<button type="button" class="mode-btn" onclick="showStatsModal(false)" title="Your stats">' + HD_ICO.stats + 'Stats</button>'
     +   '<span class="lb-amp" aria-hidden="true">&amp;</span>'
