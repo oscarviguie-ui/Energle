@@ -963,12 +963,12 @@ function maybeShowNotice() {
 const NEWS_SEEN_KEY = 'energle_news_seen';
 const newsId = () => UPDATES[0][0] + ' ' + UPDATES[0][1];
 function newsUnseen() { try { return localStorage.getItem(NEWS_SEEN_KEY) !== newsId(); } catch (e) { return false; } }
-// the date on the puzzle line opens What's new; an unread dot sits in front of it while the latest update is unread
-const NEWS_ICON = '<span class="sd-ico" aria-hidden="true"></span>';      // the unread dot, as in iPhone Messages
+// the date on the puzzle line opens What's new (it underlines like a link); a red badge dot sits on it while the latest update is unread
+const NEWS_ICON = '<span class="sd-ico" aria-hidden="true"></span>';      // a red badge dot on the date, like an app with something new
 function dateButtonHTML() {
   const fresh = newsUnseen();
   return '<button type="button" class="sub-date sub-date--btn' + (fresh ? ' has-news' : '') + '" id="sub-date" onclick="showNotice()" title="What’s new"'
-    + ' aria-label="' + todayLabel() + (fresh ? ' · new update' : '') + ' · What’s new">' + (fresh ? NEWS_ICON : '') + '<span class="sd-txt">' + todayLabel() + '</span></button>';
+    + ' aria-label="' + todayLabel() + (fresh ? ' · new update' : '') + ' · What’s new">' + '<span class="sd-txt">' + todayLabel() + '</span><span class="sd-short">' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '</span>' + (fresh ? NEWS_ICON : '') + '</button>';
 }
 function showNotice() {
   if (document.getElementById('notice-modal')) return;
