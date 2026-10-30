@@ -26,10 +26,10 @@ import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from cards import assemble, baci, checks, eia, elevation, entsoe, factbook, power, usgs, wdi   # noqa: E402
+from cards import assemble, baci, checks, eia, elevation, entsoe, factbook, opec, power, usgs, wdi   # noqa: E402
 from cards.common import CARDS_FILE, RAW_FILE, REPORT_FILE, days_since, game_countries, game_data, load_json, save_json, today   # noqa: E402
 
-SOURCES = {'wdi': wdi, 'eia': eia, 'factbook': factbook, 'entsoe': entsoe, 'baci': baci, 'usgs': usgs, 'power': power, 'elevation': elevation}
+SOURCES = {'wdi': wdi, 'eia': eia, 'factbook': factbook, 'opec': opec, 'entsoe': entsoe, 'baci': baci, 'usgs': usgs, 'power': power, 'elevation': elevation}
 
 
 def due(name, mod, state, countries):
@@ -41,7 +41,7 @@ def due(name, mod, state, countries):
         have = (state.get('countries') or 0)
         return have < len(countries), False
     # yearly: BACI and USGS look for a new release every month (cheap); POWER starts afresh once a year
-    if name in ('baci', 'usgs'):
+    if name in ('baci', 'usgs', 'opec'):
         return True, False
     return days_since(state.get('updated')) >= 330 or not state.get('countries'), days_since(state.get('updated')) >= 365
 
@@ -65,7 +65,7 @@ def main(argv):
             go, fresh = due(name, mod, state, countries)
             if not go and '--all' not in flags and not args:
                 log('== %s: not due (last %s)' % (name, state.get('updated'))); continue
-            if fresh or (name in args and name in ('usgs', 'baci', 'entsoe')):   # named on the command line: re-read the release
+            if fresh or (name in args and name in ('usgs', 'baci', 'entsoe', 'opec')):   # named on the command line: re-read the release
                 state['refresh'] = True
             log('== %s' % name)
             try:

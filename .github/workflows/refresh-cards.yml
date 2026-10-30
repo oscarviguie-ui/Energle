@@ -37,7 +37,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install pandas requests pycountry entsoe-py
+        run: pip install pandas requests pycountry entsoe-py pdfplumber
 
       - name: Build cards.json
         id: build
