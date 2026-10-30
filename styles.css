@@ -3290,3 +3290,19 @@ header .hd-modes .mode-btn.active .hd-ico { opacity: 1; }
 .nt-item strong { display: block; color: #1a1a1a; font-weight: 650; }
 footer .ft-more { color: #ccc; }          /* the card sources: one group that wraps as a line */
 footer .ft-dot { color: #ccc; }
+
+/* What's new: coming soon (the first item is the big one) */
+.nt-soon { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; padding-top: 12px; border-top: 1px solid #eeede9; }
+.nt-soon-item { display: flex; flex-direction: column; gap: 1px; font-size: .88rem; line-height: 1.45; color: #555; }
+.nt-soon-item strong { color: #1a1a1a; font-weight: 650; }
+.nt-soon-item.is-big { padding: 10px 12px; border-radius: 10px; background: #fbf3df; box-shadow: inset 0 0 0 1px #efd99c; color: #444; }
+.nt-soon-item.is-big strong { font-size: .98rem; }
+
+/* header: What's new, a quiet link beside the mode switch, with a dot until the latest update is seen */
+.hd-grid .hd-news { grid-area: modes; justify-self: end; align-self: center; position: relative; display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border: 0; border-radius: 999px; background: none; font: inherit; font-size: .8rem; font-weight: 600; color: #8a8780; cursor: pointer; }
+.hd-grid .hd-news:hover { background: #f3f2ee; color: #1a1a1a; }
+.hd-grid .hd-news svg { color: #c9a24a; }
+.hd-grid .hd-news.is-new::after { content: ''; position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; border-radius: 50%; background: #e0583e; box-shadow: 0 0 0 2px #fff; }
+@media (max-width: 600px) { .hd-grid .hd-news { font-size: .74rem; padding: 6px 8px; } }
+@media (max-width: 380px) { .hd-grid .hd-news span { display: none; } .hd-grid .hd-news { padding: 6px; } }   /* very small phones: the star alone */

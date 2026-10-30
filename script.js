@@ -937,11 +937,18 @@ function initApp() {
 //  WHAT'S NEW: shown once to returning players, and from the footer link
 // ============================================================
 const NOTICE_KEY = 'energle_notice_v2';
-// Only what changes how the game plays or what data it shows (mechanics, new figures, data refreshes), newest first
+// Only what changes how the game plays or what data it shows (modes, mechanics, new figures, data refreshes), newest first
 const UPDATES = [
   ['28 Oct', 'Carbon intensity added', 'The latest mix now shows how much CO\u2082 each kWh of the country’s electricity emits, from Ember’s data.'],
+  ['25 Oct', 'The Archive', 'Every past puzzle, one tap away. Replays never count in your stats or on the leaderboard.'],
   ['25 Oct', 'A smarter daily line-up', 'From puzzle #146, big and telling grids like Canada, France or Brazil come up more often, and no country repeats within 50 days.'],
   ['Monthly', 'Fresh data every month', 'Ember’s figures refresh on the 1st of each month; 91 countries already show their 2025 mix.'],
+];
+// What's coming: the first one is the big one; the rest stay vague on purpose
+const COMING = [
+  ['The Clue Shop', 'Stuck after a guess? Trade a spare guess for a clue card: its sun and wind, what lies underground, who it trades fuel and power with, how its people live.'],
+  ['Head to head', 'A way to settle it with your friends.'],
+  ['A special mode', 'For the days the grid misbehaves.'],
 ];
 function maybeShowNotice() {
   let seen = true, returning = false;
@@ -952,16 +959,27 @@ function maybeShowNotice() {
   } catch (e) { return; }
   if (!seen && returning) setTimeout(showNotice, REDUCED_MOTION ? 0 : 700);
 }
+// the header's What's new button: a dot until the latest update has been seen
+const NEWS_SEEN_KEY = 'energle_news_seen';
+const newsId = () => UPDATES[0][0] + ' ' + UPDATES[0][1];
+function newsUnseen() { try { return localStorage.getItem(NEWS_SEEN_KEY) !== newsId(); } catch (e) { return false; } }
+function newsButtonHTML() {
+  return '<button type="button" class="hd-news' + (newsUnseen() ? ' is-new' : '') + '" id="hd-news" onclick="showNotice()" title="What’s new">'
+    + '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 1.5l1.6 4.1 4.4.3-3.4 2.8 1.1 4.3L8 10.6l-3.7 2.4 1.1-4.3L2 5.9l4.4-.3z" fill="currentColor"/></svg>'
+    + '<span>What’s new</span></button>';
+}
 function showNotice() {
   if (document.getElementById('notice-modal')) return;
-  try { localStorage.setItem(NOTICE_KEY, '1'); } catch (e) {}
+  try { localStorage.setItem(NOTICE_KEY, '1'); localStorage.setItem(NEWS_SEEN_KEY, newsId()); } catch (e) {}
+  const nb = document.getElementById('hd-news'); if (nb) nb.classList.remove('is-new');
   const modal = document.createElement('div'); modal.id = 'notice-modal';
   modal.innerHTML = '<div class="st-backdrop"></div>'
     + '<div class="nt-box nt-box--log" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
     + '<span class="nt-eyebrow">What’s new</span>'
     + '<h2 class="nt-title" id="nt-title">Latest updates</h2>'
     + '<ol class="nt-log">' + UPDATES.map(([d, t, x]) => '<li><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong>' + x + '</span></li>').join('') + '</ol>'
-    + '<p class="nt-keep">Coming soon: the Clue Shop, to trade a spare guess for a clue card.</p>'
+    + '<div class="nt-soon"><span class="nt-eyebrow">Coming soon</span>'
+    + COMING.map(([t, x], i) => '<div class="nt-soon-item' + (i ? '' : ' is-big') + '"><strong>' + t + '</strong><span>' + x + '</span></div>').join('') + '</div>'
     + '<button type="button" class="nt-btn" id="nt-ok">Got it</button>'
     + '</div>';
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
