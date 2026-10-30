@@ -3298,9 +3298,9 @@ footer .ft-dot { color: #ccc; }
 .nt-soon-item.is-big { padding: 10px 12px; border-radius: 10px; background: #fbf3df; box-shadow: inset 0 0 0 1px #efd99c; color: #444; }
 .nt-soon-item.is-big strong { font-size: .98rem; }
 
-/* the date on the puzzle line opens What's new; a message icon in front of it while an update is unread */
+/* the date on the puzzle line opens What's new; an unread dot in front of it while an update is unread */
 .sub-date--btn { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px; margin-right: -6px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 13px; color: #888; cursor: pointer; }
 .sub-date--btn:hover { background: #f3f2ee; color: #1a1a1a; }
-.sub-date--btn .sd-ico { color: #d9773f; flex-shrink: 0; }
+.sub-date--btn .sd-ico { width: 9px; height: 9px; border-radius: 50%; background: #0a84ff; flex-shrink: 0; }   /* iOS unread blue */
 .sub-date--btn.has-news .sd-txt { color: #555; }
-@media (max-width: 600px) { .sub-date--btn { display: none; } .sub-date--btn.has-news { display: inline-flex; flex-shrink: 0; } .sub-date--btn.has-news .sd-txt { display: none; } }   /* phones: the icon alone, only when there is news */
+@media (max-width: 600px) { .sub-date--btn { display: none; } .sub-date--btn.has-news { display: inline-flex; flex-shrink: 0; } .sub-date--btn.has-news .sd-txt { display: none; } }   /* phones: the dot alone, only when there is news */

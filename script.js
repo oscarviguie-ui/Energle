@@ -963,8 +963,8 @@ function maybeShowNotice() {
 const NEWS_SEEN_KEY = 'energle_news_seen';
 const newsId = () => UPDATES[0][0] + ' ' + UPDATES[0][1];
 function newsUnseen() { try { return localStorage.getItem(NEWS_SEEN_KEY) !== newsId(); } catch (e) { return false; } }
-// the date on the puzzle line opens What's new; a message icon sits in front of it while the latest update is unread
-const NEWS_ICON = '<svg class="sd-ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5v-2.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="currentColor"/><circle cx="5.5" cy="7.5" r=".9" fill="#fff"/><circle cx="8" cy="7.5" r=".9" fill="#fff"/><circle cx="10.5" cy="7.5" r=".9" fill="#fff"/></svg>';
+// the date on the puzzle line opens What's new; an unread dot sits in front of it while the latest update is unread
+const NEWS_ICON = '<span class="sd-ico" aria-hidden="true"></span>';      // the unread dot, as in iPhone Messages
 function dateButtonHTML() {
   const fresh = newsUnseen();
   return '<button type="button" class="sub-date sub-date--btn' + (fresh ? ' has-news' : '') + '" id="sub-date" onclick="showNotice()" title="What’s new"'
