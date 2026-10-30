@@ -10,8 +10,8 @@
 //  builders are in shop-cards.js; styles in shop.css. Loaded before script.js; everything here runs
 //  only when the game calls it.
 // ============================================================
-const SHOP_LIVE = false;
-const SHOP_LAUNCH_DAY = null;          // puzzle number of launch day: the intro is shown for 7 days from it
+const SHOP_LIVE = true;
+const SHOP_LAUNCH_DAY = 151;           // puzzle number of launch day (Friday 30 October 2026): the intro is shown for 7 days from it
 const SHOP_OPENS_AFTER = 1;            // guesses made before the shop opens
 const SHOP_TEST = (() => { try { return new URLSearchParams(location.search).get('shop') === 'on'; } catch (e) { return false; } })();
 function shopLive() { return SHOP_LIVE || SHOP_TEST; }
@@ -265,7 +265,7 @@ const CARD_BLANK = { sun: Array(12).fill(0), wind: Array(12).fill(0), rain: 0, f
   access: [0, 0], cook: 0, cuts: null, cold: 0, hot: 0, coldM: 'Jan', hotM: 'Jul', hdd: 0, cdd: 0, urban: 0, gdp: 0, industry: 0 };
 function cardScope() {
   const e = Object.assign({}, CARD_BLANK, shopEntry() || {});
-  const v3 = cardsV3Vals({ C: e, scene: 'two' });
+  const v3 = cardsV3Vals({ C: e, scene: 'two', W: (CARDS_DATA && CARDS_DATA.world && CARDS_DATA.world.cards) || null });
   const info = ALL_DATA[target.name], yd = (info && info.years[info.latestYear]) || {};
   const v2 = shopV2Vals({ europe: true, IN: (e.trade || {}).IN, OUT: (e.trade || {}).OUT, NB: (e.elec || {}).NB || [], demand: yd.Demand });
   const r = Object.assign({}, v3);
@@ -294,7 +294,7 @@ function renderClueCards() {
       tagCls: have ? 'ic-cost' : 'ic-cost ic-cost--unused ic-cost--icon', tag: have ? 'Bought for ' + guessWord(cost) : '',
       tagTitle: have ? '' : 'Not opened: revealed after the game',
       cells: have ? Array.from({ length: cost }, () => ({})) : [] };
-    try { return tplRender(c.k, Object.assign(Object.create(CARD_SCOPE), { o })); } catch (err) { console.error('card ' + c.k, err); return ''; }
+    try { return flagCard(tplRender(c.k, Object.assign(Object.create(CARD_SCOPE), { o })), ((shopEntry() || {}).flags || {})[c.k]); } catch (err) { console.error('card ' + c.k, err); return ''; }
   }).join('');
   const nOwned = owned.length, nOther = all.length - nOwned;
   const sub = gameOver ? (nOwned ? 'You opened ' + nOwned + (nOther ? ' · the other ' + nOther + ' are revealed too' : '') : 'You played without any: here is what they held')
@@ -303,6 +303,21 @@ function renderClueCards() {
   packCards(host);
   if (anchor && before !== null && !SHOP.justBought && !CARDS_RESTORING) { const d = anchor.getBoundingClientRect().top - before; if (Math.abs(d) > 1) window.scrollBy(0, d); }
   SHOP.justBought = null;
+}
+// a card whose sources disagree with the main chart (or carry a known error): a red asterisk by its title and a note above its source line
+function flagCard(html, note) {
+  if (!note) return html;
+  const box = document.createElement('div'); box.innerHTML = html;
+  const card = box.firstElementChild, title = card && card.querySelector('.ic-title');
+  if (!title) return html;
+  const star = document.createElement('span'); star.className = 'ic-flag'; star.textContent = '*'; star.title = note;
+  const words = document.createElement('span');                 // the title's words in one inline box, so the asterisk sits right after them
+  [...title.childNodes].filter(n => n.nodeType === 3).forEach(n => words.appendChild(n));
+  words.appendChild(star); title.appendChild(words);
+  const p = document.createElement('p'); p.className = 'ic-flagnote';
+  const s2 = document.createElement('span'); s2.className = 'ic-flag'; s2.textContent = '* '; p.appendChild(s2); p.appendChild(document.createTextNode(note));
+  const src = card.querySelector('.ic-src'); if (src) src.parentNode.insertBefore(p, src); else card.appendChild(p);
+  return box.innerHTML;
 }
 // a card with no data for today's country: unmistakably empty
 function emptyCardHTML(c, have) {

@@ -63,6 +63,12 @@ def run(countries, game, previous):
         nb = C['elec']['NB']
         mine = sum(n[2] - n[3] for n in nb)
         if abs(mine - net) > max(1.0, 0.1 * (yd.get('Demand') or 0)):
+            # the card says so (red asterisk): its sources don't agree with the main chart
+            sign = lambda v: '0' if abs(v) < 0.05 else ('+' if v > 0 else '') + ('%.1f' % v)
+            note = ('Imports minus exports here: %s TWh; the main chart (Ember) shows %s TWh. The sources count trade differently '
+                    'and don’t always agree.' % (sign(mine), sign(net)))
+            fl = C.setdefault('flags', {})
+            fl['market'] = (fl['market'] + ' ' + note) if fl.get('market') else note
             gaps.append('%s: imports - exports %.1f TWh vs Ember net %.1f TWh (%s %s)' % (iso, mine, net, C['elec'].get('source'), C['elec'].get('year')))
     if gaps:
         lines += ['', '## Electricity trade vs Ember net imports (gap > 1 TWh and > 10 % of demand)', ''] + ['- ' + x for x in sorted(gaps)]

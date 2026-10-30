@@ -939,14 +939,14 @@ function initApp() {
 const NOTICE_KEY = 'energle_notice_v2';
 // Only what changes how the game plays or what data it shows (modes, mechanics, new figures, data refreshes), newest first
 const UPDATES = [
+  ['30 Oct', 'The Clue Shop is open', 'Stuck after a guess? Trade a spare guess for a clue card: its sun and wind, what lies underground, who it trades fuel and power with, how its people live. Every card costs one guess, in the daily, the archive and practice.'],
   ['28 Oct', 'Carbon intensity added', 'The latest mix now shows how much CO\u2082 each kWh of the country’s electricity emits, from Ember’s data.'],
   ['25 Oct', 'The Archive', 'Every past puzzle, one tap away. Replays never count in your stats or on the leaderboard.'],
   ['25 Oct', 'A smarter daily line-up', 'From puzzle #146, big and telling grids like Canada, France or Brazil come up more often, and no country repeats within 50 days.'],
   ['Monthly', 'Fresh data every month', 'Ember’s figures refresh on the 1st of each month; 91 countries already show their 2025 mix.'],
 ];
-// What's coming: the first one is the big one; the rest stay vague on purpose
+// What's coming: kept vague on purpose
 const COMING = [
-  ['The Clue Shop', 'Stuck after a guess? Trade a spare guess for a clue card: its sun and wind, what lies underground, who it trades fuel and power with, how its people live.'],
   ['Head to head', 'A way to settle it with your friends.'],
   ['A special mode', 'For the days the grid misbehaves.'],
 ];
@@ -981,7 +981,7 @@ function showNotice() {
     + '<h2 class="nt-title" id="nt-title">Latest updates</h2>'
     + '<ol class="nt-log">' + UPDATES.map(([d, t, x]) => '<li><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong>' + x + '</span></li>').join('') + '</ol>'
     + '<div class="nt-soon"><span class="nt-eyebrow">Coming soon</span>'
-    + COMING.map(([t, x], i) => '<div class="nt-soon-item' + (i ? '' : ' is-big') + '"><strong>' + t + '</strong><span>' + x + '</span></div>').join('') + '</div>'
+    + COMING.map(([t, x]) => '<div class="nt-soon-item"><strong>' + t + '</strong><span>' + x + '</span></div>').join('') + '</div>'
     + '<button type="button" class="nt-btn" id="nt-ok">Got it</button>'
     + '</div>';
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
@@ -1161,7 +1161,7 @@ function renderGameScreen() {
   const isPractice = MODE === 'practice';
   const cat = isPractice ? PRACTICE_CATEGORIES.find(c => c.id === PRACTICE_CAT) : null;
   const lead = isPractice ? 'Practice · ' + (cat ? cat.label : 'All countries') : 'Puzzle #' + getDayNumber();
-  const rest = isPractice ? 'guess the country from its mix' : 'Guess the country from its electricity generation mix';
+  const rest = isPractice ? 'guess the country from its mix' : 'Guess the country from its energy profile';
   const backBtn = isPractice ? '<span class="pr-extra"><span class="pr-session" id="pr-session">' + practiceSessionText() + '</span>'
     + '<button type="button" id="back-to-categories">Change group</button></span>' : '';
 

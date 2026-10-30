@@ -15,7 +15,9 @@ A card is listed for a country only when every figure it draws is there.
 import os
 import re
 
-from .common import ROOT, r
+import math
+
+from .common import ROOT, r, static
 
 FUELS = ('crude', 'refined', 'gas', 'lng', 'coal')
 MINERALS = ['Li', 'Co', 'Ni', 'Cu', 'C', 'REE', 'Mn', 'PGM']
@@ -68,6 +70,28 @@ def _name(iso3, game_names):
 
 # OPEC figures left out: Canada's oil excludes the oil sands there (its table footnote), so the Factbook's total is kept
 OPEC_SKIP = {('oil', 'CAN')}
+
+
+def _and(names):
+    return names[0] if len(names) == 1 else ', '.join(names[:-1]) + ' and ' + names[-1]
+
+
+_PTS = None
+def near(a, b, km=1500):
+    """Whether two countries come within `km` of each other (100 sample points each): a power line can join them."""
+    global _PTS
+    if _PTS is None:
+        _PTS = static('elevation_points')
+    A, B = _PTS.get(a), _PTS.get(b)
+    if not A or not B:
+        return True                          # unknown: keep the partner
+    rad = math.radians
+    for la1, lo1 in A:
+        for la2, lo2 in B:
+            h = math.sin(rad(la2 - la1) / 2) ** 2 + math.cos(rad(la1)) * math.cos(rad(la2)) * math.sin(rad(lo2 - lo1) / 2) ** 2
+            if 6371 * 2 * math.asin(math.sqrt(min(1, h))) < km:
+                return True
+    return False
 
 
 def band(rank):
@@ -180,6 +204,14 @@ def build(raw, game, log=print):
                 left = 1 - sum(sh.values())
                 if left > 0.02:
                     sh['OTHER'] = sh.get('OTHER', 0) + left
+            far = sorted({p for p in set(ish) | set(esh) if p != 'OTHER' and not near(iso, p)})
+            for sh in (ish, esh):                # partners too far away for any power line: customs-record errors, counted under Others
+                for p in far:
+                    if p in sh:
+                        sh['OTHER'] = sh.get('OTHER', 0) + sh.pop(p)
+            if far:
+                C.setdefault('flags', {})['market'] = ('Customs records also name %s, too far away for a power line; that trade is counted under Others.'
+                                                       % _and([_name(p, countries) for p in far]))
             parts = set(ish) | set(esh)
             nb = []
             for p in parts:
@@ -217,4 +249,47 @@ def build(raw, game, log=print):
         out[iso] = C
         why[iso] = missing
     world = {s: (raw.get(s) or {}).get('meta', {}).get('world') for s in ('wdi', 'power', 'elevation')}
+    world['cards'] = card_world(out, world.get('wdi') or {})
     return out, why, world
+
+
+# height bands of the Elevation tile, as the card draws them (shop-cards.js: BINS)
+BINS = [(3000, 1e9), (2000, 3000), (1000, 2000), (500, 1000), (200, 500), (-1e9, 200)]
+
+
+def _terr_q(T):
+    """101 sampled elevations from the stored quantiles, as the card interpolates them."""
+    q = []
+    for i in range(101):
+        t, k = i / 100, 1
+        while k < len(T) - 1 and T[k][0] < t:
+            k += 1
+        (x0, y0), (x1, y1) = T[k - 1], T[k]
+        q.append(y0 + (y1 - y0) * (t - x0) / (x1 - x0) if x1 != x0 else y0)
+    return q
+
+
+def card_world(out, wdi_world):
+    """The world marks the cards draw. Climate, water and land: the average of every country in the game, computed the
+    way each card computes its own figure. Society and the economy: the World Bank's world figure. Power cuts: the average
+    of the surveyed countries."""
+    def mean(vals):
+        vals = [v for v in vals if v is not None]
+        return sum(vals) / len(vals) if vals else None
+    nat = [C for C in out.values() if 'sun' in C]
+    qs = [_terr_q(C['terr']) for C in nat]
+    bins = [r(mean([sum(1 for z in q if lo <= z < hi) / len(q) * 100 for q in qs]), 0) for lo, hi in BINS] if qs else None
+    ppl = [C for C in out.values() if 'hdd' in C]
+    cuts = [C['cuts'] for C in out.values() if C.get('cuts')]
+    wv = lambda k: (wdi_world.get(k) or [None])[0]
+    rents = [wv('rent_' + k) for k in ('oil', 'gas', 'coal', 'min')]
+    return {
+        'n': len(nat),
+        'sunYear': r(mean([sum(C['sun']) / 12 * 365 for C in nat]), 0), 'wind': r(mean([sum(C['wind']) / 12 for C in nat]), 1),
+        'rain': r(mean([C['rain'] for C in nat]), 0), 'flow': r(mean([C['flow'] for C in nat]), 0),
+        'elevMean': r(mean([sum(q) / len(q) for q in qs]), 0), 'terrBins': bins,
+        'hdd': r(mean([C['hdd'] for C in ppl]), 0), 'cdd': r(mean([C['cdd'] for C in ppl]), 0),
+        'urban': r(wv('urban'), 0), 'gdp': r(wv('gdp'), -2), 'industry': r(wv('industry'), 0), 'cook': r(wv('cook'), 0),
+        'rent': r(sum(v for v in rents if v is not None), 1) if any(v is not None for v in rents) else None,
+        'cutsFirms': r(mean([c['firms'] for c in cuts]), 0), 'cutsLoss': r(mean([c['loss'] for c in cuts]), 1), 'cutsN': len(cuts),
+    }

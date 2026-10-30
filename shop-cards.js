@@ -270,6 +270,11 @@ function cardsV3Vals(st0) {
     // ---------- illustrative figures, rounded the way the cards will show them ----------
     const D = {};
     const C = st.C;
+    // world marks: computed by the card pipeline (cards.json "world"); these stand in only if that is missing.
+    // Climate, water and land = average of all countries in the game; society and economy = the World Bank's world figure.
+    const W = Object.assign({ sunYear: 1763, wind: 4.9, rain: 1100, flow: 253, elevMean: 560, terrBins: [2, 3, 13, 18, 25, 39], hdd: 1140, cdd: 1656,
+      urban: 58, gdp: 25700, industry: 25, rent: 2.9, cutsFirms: 50, cutsLoss: 0.4 }, st.W || {});
+    const AVG = 'average of all countries';
     const nf = v => v.toLocaleString('en-US');
     const sig2 = v => { if (!v) return '0'; const d = Math.max(0, 1 - Math.floor(Math.log10(Math.abs(v)))); return Number(v.toFixed(d)).toLocaleString('en-US', { maximumFractionDigits: d }); };
     const cellList = n => Array.from({ length: n }, () => ({}));
@@ -317,17 +322,17 @@ function cardsV3Vals(st0) {
     const bars = (a, max, col) => a.map((v, i) => ({ m: MONTHS[i], style: 'height: ' + Math.max(3, v / max * 100).toFixed(1) + '%; background: ' + col + '8c; box-shadow: inset 0 0 0 1px ' + col }));
     const ghi = avg(C.sun), ws = avg(C.wind);
     const skies = [
-      { label: 'Sunshine', pre: 'yearly total ', val: nf(Math.round(ghi * 365 / 10) * 10), unit: 'kWh/m²', worldDay: 4.6, wtxt: 'world average 1,680', col: '#e0b225', a: C.sun, max: 8,
+      { label: 'Sunshine', pre: 'yearly total ', val: nf(Math.round(ghi * 365 / 10) * 10), unit: 'kWh/m²', worldDay: W.sunYear / 365, wtxt: 'world average ' + nf(Math.round(W.sunYear / 10) * 10), col: '#e0b225', a: C.sun, max: 8,
         facts: [],
-        aria: 'Sunshine month by month; world average 1,680 kWh per square metre a year' },
-      { label: 'Wind at 50 m', pre: 'yearly average ', val: ws.toFixed(1), unit: 'm/s', worldDay: 5.2, wtxt: 'world average 5.2', col: '#5ab88a', a: C.wind, max: 9, facts: [],
-        aria: 'Wind speed by month, from ' + Math.min(...C.wind) + ' to ' + Math.max(...C.wind) + ' metres per second; world average 5.2' }
+        aria: 'Sunshine month by month; world average (' + AVG + ') ' + nf(Math.round(W.sunYear / 10) * 10) + ' kWh per square metre a year' },
+      { label: 'Wind at 50 m', pre: 'yearly average ', val: ws.toFixed(1), unit: 'm/s', worldDay: W.wind, wtxt: 'world average ' + W.wind.toFixed(1), col: '#5ab88a', a: C.wind, max: 9, facts: [],
+        aria: 'Wind speed by month, from ' + Math.min(...C.wind) + ' to ' + Math.max(...C.wind) + ' metres per second; world average (' + AVG + ') ' + W.wind.toFixed(1) }
     ].map(s => ({ ...s, bars: bars(s.a, s.max, s.col), wl: 'bottom: ' + (14 + 46 * s.worldDay / s.max).toFixed(1) + 'px' }));
     const logPos = (v, lo, hi) => Math.max(0, Math.min(100, (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo)) * 100));
     const meterStyle = (p, col) => 'width: ' + p.toFixed(1) + '%; background: ' + col + '8c; box-shadow: inset 0 0 0 1px ' + col;
     const water = [
-      { label: 'Rain', title: 'World average 1,000 mm · scale 0 to 3,000 mm', val: nf(C.rain), unit: 'mm/yr', fill: meterStyle(Math.min(100, C.rain / 3000 * 100), '#4a90c4'), mark: 'left: ' + (1000 / 3000 * 100).toFixed(1) + '%' },
-      { label: 'Rivers & groundwater', title: 'Renewable fresh water generated inside the country each year (World Bank / FAO) · world average 240 km³ · log scale 1 to 10,000', val: nf(C.flow), unit: 'km³/yr', fill: meterStyle(logPos(C.flow, 1, 10000), '#4a90c4'), mark: 'left: ' + logPos(240, 1, 10000).toFixed(1) + '%' }
+      { label: 'Rain', title: 'World average (' + AVG + ') ' + nf(W.rain) + ' mm · scale 0 to 3,000 mm', val: nf(C.rain), unit: 'mm/yr', fill: meterStyle(Math.min(100, C.rain / 3000 * 100), '#4a90c4'), mark: 'left: ' + Math.min(100, W.rain / 3000 * 100).toFixed(1) + '%' },
+      { label: 'Rivers & groundwater', title: 'Renewable fresh water generated inside the country each year (World Bank / FAO) · world average (' + AVG + ') ' + nf(W.flow) + ' km³ · log scale 1 to 10,000', val: nf(C.flow), unit: 'km³/yr', fill: meterStyle(logPos(C.flow, 1, 10000), '#4a90c4'), mark: 'left: ' + logPos(W.flow, 1, 10000).toFixed(1) + '%' }
     ];
     // terrain: 101 sampled elevations, sorted (interpolated from a few quantiles in this draft)
     const q = Array.from({ length: 101 }, (_, i) => {
@@ -340,7 +345,7 @@ function cardsV3Vals(st0) {
     const r50 = v => nf(Math.round(v / 50) * 50) + ' m';
     // terrain as a distribution: share of the land in each height band (world land for comparison)
     const BINS = [[3000, 1e9, '3+ km'], [2000, 3000, '2–3 km'], [1000, 2000, '1–2 km'], [500, 1000, '0.5–1 km'], [200, 500, '0.2–0.5 km'], [0, 200, '< 0.2 km']];
-    const WORLD_BINS = [5, 6, 15, 21, 25, 28];
+    const WORLD_BINS = W.terrBins;
     const nq = q.length;
     const shares = BINS.map(([lo, hi]) => Math.round(q.filter(z => z >= lo && z < hi).length / nq * 100));
     const DMAX = Math.max(40, ...shares) * 1.05;
@@ -398,9 +403,9 @@ function cardsV3Vals(st0) {
     ];
     const lin = (v, lo, hi) => Math.max(0, Math.min(100, (v - lo) / (hi - lo) * 100));
     const life = [
-      { label: 'Urban population', title: 'Share of people living in towns and cities · world average 57%', val: C.urban + '%', p: C.urban, w: 57, world: '57%', lo: '0%', hi: '100%' },
-      { label: 'Income per person (PPP)', title: 'GDP per person, adjusted for local prices · world average $23k · log scale', val: '$' + Math.round(C.gdp / 1000) + 'k', p: logPos(C.gdp, 1000, 150000), w: logPos(23000, 1000, 150000), world: '$23k', lo: '$1k', hi: '$150k (log)' },
-      { label: 'Industry, % of GDP', title: 'Manufacturing, mining, construction, power and water · world average 27%', val: C.industry + '%', p: lin(C.industry, 0, 60), w: lin(27, 0, 60), world: '27%', lo: '0%', hi: '60%' }
+      { label: 'Urban population', title: 'Share of people living in towns and cities · world average ' + W.urban + '% (World Bank)', val: C.urban + '%', p: C.urban, w: W.urban, world: W.urban + '%', lo: '0%', hi: '100%' },
+      { label: 'Income per person (PPP)', title: 'GDP per person, adjusted for local prices · world average $' + Math.round(W.gdp / 1000) + 'k (World Bank) · log scale', val: '$' + Math.round(C.gdp / 1000) + 'k', p: logPos(C.gdp, 1000, 150000), w: logPos(W.gdp, 1000, 150000), world: '$' + Math.round(W.gdp / 1000) + 'k', lo: '$1k', hi: '$150k (log)' },
+      { label: 'Industry, % of GDP', title: 'Manufacturing, mining, construction, power and water · world average ' + W.industry + '% (World Bank)', val: C.industry + '%', p: lin(C.industry, 0, 60), w: lin(W.industry, 0, 60), world: W.industry + '%', lo: '0%', hi: '60%' }
     ].map(l => ({ ...l, fill: meterStyle(l.p, '#8a8a86'), mark: 'left: ' + l.w.toFixed(1) + '%' }));
 
     const set = o => () => this.setState(o);
@@ -412,29 +417,29 @@ function cardsV3Vals(st0) {
       skies, water,
       terrLine, terrArea: '0,100 ' + terrLine + ' 100,100',
       terr1000: 'top: ' + zy(1000) + '%', terrTop: 'top: ' + zy(ZMAX) + '%', terrTopTxt: nf(ZMAX) + ' m', terr3000: 'top: ' + zy(3000) + '%',
-      terrBins, terrWorld: '680 m', terrMean: r50(mean), terrHigh: r50(high), terrAbove: above + '%',
+      terrBins, terrWorld: r50(W.elevMean), terrMean: r50(mean), terrHigh: r50(high), terrAbove: above + '%',
       terrAria: 'Elevation of its land, sorted: average ' + r50(mean) + ', ' + above + '% above 1,000 m',
       natureTake: C.tNature,
 
       fossil, fossilNote: C.coalYears ? 'Coal: about ' + C.coalYears + ' years at today’s output · bands are world ranks, never exact' : 'Bands are world ranks, never exact',
       minTiles, minRows, noMinerals: !minRows.length,
-      rentTotal: fmtPct(rentTot), rentVals: JSON.stringify(Object.fromEntries(RENT.map(([k]) => ['rent:' + k, fmtPct(C.rents[k])]))), rentWorld: '2.8%', rentSegs, rentKey, rentMark: 'left: ' + (2.8 / 20 * 100).toFixed(1) + '%',
+      rentTotal: fmtPct(rentTot), rentVals: JSON.stringify(Object.fromEntries(RENT.map(([k]) => ['rent:' + k, fmtPct(C.rents[k])]))), rentWorld: fmtPct(W.rent), rentSegs, rentKey, rentMark: 'left: ' + Math.min(100, W.rent / 20 * 100).toFixed(1) + '%',
       underTake: C.tUnder,
 
       accessRows, stoves, cookTxt: C.cook + '%', cookAria: C.cook + '% of people cook with gas or electricity',
       hasCuts: !!cuts, noCuts: !cuts, cutYear: cuts ? 'survey ' + cuts.year : '',
-      cutDays, cutsTxt: cuts ? String(cuts.n) : '', firmsTxt: cuts ? cuts.firms + '%' : '', firmsWorld: '45%',
+      cutDays, cutsTxt: cuts ? String(cuts.n) : '', firmsTxt: cuts ? cuts.firms + '%' : '', firmsWorld: W.cutsFirms + '%',
       cutAria: cuts ? cuts.n + ' power cuts in a typical month' : '',
       // Enterprise Surveys (WDI IC.ELC.OUTG, IC.ELC.OUTG.ZS, IC.FRM.OUTG.ZS); ticks = average of all surveyed countries
       cutRows: cuts ? [
-        { label: 'Firms hit', val: cuts.firms + '%', title: 'Share of firms with at least one outage in the year · ticks: average of all surveyed countries (45%)',
-          fill: meterStyle(cuts.firms, '#8a8a86'), mark: 'left: 45%' },
-        cuts.loss == null ? null : { label: 'Sales lost', val: cuts.loss + '%', title: 'Sales lost to outages by the firms hit · ticks: average of all surveyed countries (3%) · scale 0 to 10%',
-          fill: meterStyle(Math.min(100, cuts.loss * 10), '#8a8a86'), mark: 'left: 30%' }
+        { label: 'Firms hit', val: cuts.firms + '%', title: 'Share of firms with at least one outage in the year · ticks: average of all surveyed countries (' + W.cutsFirms + '%)',
+          fill: meterStyle(cuts.firms, '#8a8a86'), mark: 'left: ' + W.cutsFirms + '%' },
+        cuts.loss == null ? null : { label: 'Sales lost', val: cuts.loss + '%', title: 'Sales lost to outages by the firms hit · ticks: average of all surveyed countries (' + W.cutsLoss + '%) · scale 0 to 10%',
+          fill: meterStyle(Math.min(100, cuts.loss * 10), '#8a8a86'), mark: 'left: ' + Math.min(100, W.cutsLoss * 10) + '%' }
       ].filter(Boolean) : [],
       tmRange: 'left: ' + tp(C.cold) + '%; width: ' + (tp(C.hot) - tp(C.cold)).toFixed(1) + '%',
       hddTxt: nf(Math.round(C.hdd / 50) * 50), cddTxt: nf(Math.round(C.cdd / 50) * 50),
-      hddWorld: 'left: ' + (1400 / 4000 * 100).toFixed(1) + '%', cddWorld: 'left: ' + (1500 / 4000 * 100).toFixed(1) + '%',
+      hddWorld: 'left: ' + Math.min(100, W.hdd / 4000 * 100).toFixed(1) + '%', cddWorld: 'left: ' + Math.min(100, W.cdd / 4000 * 100).toFixed(1) + '%',
       hddW: 'width: ' + Math.min(100, C.hdd / 4000 * 100).toFixed(1) + '%', cddW: 'width: ' + Math.min(100, C.cdd / 4000 * 100).toFixed(1) + '%',
       tmLo: tp(C.cold) < 22 ? 'left: 0; translate: 0 0' : 'left: ' + tp(C.cold) + '%',
       tmHi: tp(C.hot) > 78 ? 'left: auto; right: 0; translate: 0 0' : 'left: ' + tp(C.hot) + '%',   // labels near an end stay inside the card
