@@ -761,7 +761,7 @@ function renderUnavailable(where) {
   const early = !!RELEASED, day = getDayNumber();
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
-    + pageSubtitleHTML(where === 'archive' ? 'Archive' : 'Puzzle #' + day, '', '<span class="sub-date">' + todayLabel() + '</span>')
+    + pageSubtitleHTML(where === 'archive' ? 'Archive' : 'Puzzle #' + day, '', dateButtonHTML())
     + '<div class="un-card" role="status">'
     +   '<p class="un-title">' + (early ? 'Puzzle #' + day + ' is on its way' : 'Couldn’t reach the puzzle server') + '</p>'
     +   '<p class="un-text">' + (early ? 'A new puzzle opens every day at midnight UTC. Try again in a moment.' : 'Check your connection and try again.') + '</p>'
@@ -963,15 +963,17 @@ function maybeShowNotice() {
 const NEWS_SEEN_KEY = 'energle_news_seen';
 const newsId = () => UPDATES[0][0] + ' ' + UPDATES[0][1];
 function newsUnseen() { try { return localStorage.getItem(NEWS_SEEN_KEY) !== newsId(); } catch (e) { return false; } }
-function newsButtonHTML() {
-  return '<button type="button" class="hd-news' + (newsUnseen() ? ' is-new' : '') + '" id="hd-news" onclick="showNotice()" title="What’s new">'
-    + '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M8 1.5l1.6 4.1 4.4.3-3.4 2.8 1.1 4.3L8 10.6l-3.7 2.4 1.1-4.3L2 5.9l4.4-.3z" fill="currentColor"/></svg>'
-    + '<span>What’s new</span></button>';
+// the date on the puzzle line opens What's new; a message icon sits in front of it while the latest update is unread
+const NEWS_ICON = '<svg class="sd-ico" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M2.5 3.5h11a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H7l-3 2.5v-2.5H2.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z" fill="currentColor"/><circle cx="5.5" cy="7.5" r=".9" fill="#fff"/><circle cx="8" cy="7.5" r=".9" fill="#fff"/><circle cx="10.5" cy="7.5" r=".9" fill="#fff"/></svg>';
+function dateButtonHTML() {
+  const fresh = newsUnseen();
+  return '<button type="button" class="sub-date sub-date--btn' + (fresh ? ' has-news' : '') + '" id="sub-date" onclick="showNotice()" title="What’s new"'
+    + ' aria-label="' + todayLabel() + (fresh ? ' · new update' : '') + ' · What’s new">' + (fresh ? NEWS_ICON : '') + '<span class="sd-txt">' + todayLabel() + '</span></button>';
 }
 function showNotice() {
   if (document.getElementById('notice-modal')) return;
   try { localStorage.setItem(NOTICE_KEY, '1'); localStorage.setItem(NEWS_SEEN_KEY, newsId()); } catch (e) {}
-  const nb = document.getElementById('hd-news'); if (nb) nb.classList.remove('is-new');
+  const sd = document.getElementById('sub-date'); if (sd) { sd.classList.remove('has-news'); const ic = sd.querySelector('.sd-ico'); if (ic) ic.remove(); }
   const modal = document.createElement('div'); modal.id = 'notice-modal';
   modal.innerHTML = '<div class="st-backdrop"></div>'
     + '<div class="nt-box nt-box--log" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
@@ -1165,7 +1167,7 @@ function renderGameScreen() {
 
   document.getElementById('app').innerHTML =
     pageHeaderHTML()
-    + (MODE === 'archive' ? archiveNavHTML() : pageSubtitleHTML(lead, rest, isPractice ? backBtn : '<span class="sub-date">' + todayLabel() + '</span>'))
+    + (MODE === 'archive' ? archiveNavHTML() : pageSubtitleHTML(lead, rest, isPractice ? backBtn : dateButtonHTML()))
     + balanceCardHTML()
     + '<div id="charts-section">'
     + '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
