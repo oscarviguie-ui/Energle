@@ -3310,3 +3310,21 @@ footer .ft-dot { color: #ccc; }
   .sub-date--btn.has-news .sd-txt { display: none; }
   .sub-date--btn.has-news .sd-short { display: inline; font-size: 12px; }
 }
+
+/* phones: Daily / Archive / Practice and Stats & Leaderboard side by side on one row, both scaled down */
+@media (max-width: 600px) {
+  .hd-grid { grid-template-areas: "title podium" "modes lb"; row-gap: 10px; column-gap: 6px; }
+  .hd-grid #mode-nav.hd-modes { justify-self: start; align-self: center; margin: 0; }
+  header .hd-modes .mode-btn, .hd-grid #mode-nav.hd-modes .mode-btn { gap: 3px; padding: 4px clamp(4px, 1.4vw, 8px); font-size: clamp(.6rem, 2.6vw, .72rem); }
+  header .hd-modes .mode-btn .hd-ico { width: 11px; height: 11px; }
+  .hd-grid .lb-split { width: auto; justify-self: end; align-self: center; }
+  .lb-split .mode-btn { gap: 3px; padding: 5px clamp(4px, 1.4vw, 9px); font-size: clamp(.6rem, 2.6vw, .72rem); }
+  .lb-split .mode-btn:first-child { padding-right: 3px; }
+  .lb-split .mode-btn:last-child { padding-left: 3px; }
+  .lb-split .lb-amp { font-size: clamp(.6rem, 2.6vw, .72rem); }
+  .lb-split .hd-ico { width: 11px; height: 11px; }
+  .hd-lockemo { font-size: .55rem; margin-left: 0; }
+}
+@media (max-width: 345px) { header .hd-modes .mode-btn .hd-ico, .lb-split .hd-ico { display: none; } }   /* the smallest phones: words only */
+/* phones whose font runs wider than expected: back to stacked rows (script.js fitHeader) */
+@media (max-width: 600px) { .hd-grid.hd-stack { grid-template-areas: "title podium" "title lb" "modes modes"; } }

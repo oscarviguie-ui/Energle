@@ -442,6 +442,19 @@ function pageHeaderHTML() {
     + '</div>'
     + '</div></header>';
 }
+// Phones: the mode switch and Stats & Leaderboard share a row; if this phone's font makes them collide, stack them instead
+function fitHeader() {
+  const g = document.querySelector('.hd-grid'); if (!g) return;
+  g.classList.remove('hd-stack');
+  const a = g.querySelector('#mode-nav'), b = g.querySelector('.lb-split');
+  if (a && b && window.innerWidth <= 600 && a.getBoundingClientRect().right > b.getBoundingClientRect().left - 6) g.classList.add('hd-stack');
+}
+window.addEventListener('resize', fitHeader);
+document.addEventListener('DOMContentLoaded', () => {
+  const app = document.getElementById('app');
+  if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(fitHeader)).observe(app, { childList: true });
+});
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeader);
 function pageSubtitleHTML(lead, rest = '', extra = '') {
   return '<div class="subtitle-row"><p class="subtitle"><span class="sub-lead">' + lead + '</span>'
     + (rest ? '<span class="sub-sep"> · </span><span class="sub-rest">' + rest + '</span>' : '') + '</p>' + extra + '</div>';
@@ -2512,7 +2525,7 @@ function endGame() {
   shopOnEnd(guesses.length > 0 && guesses[guesses.length-1].iso3 === target.iso3);
   if (MODE === 'normal') {
     const switcher = document.getElementById('mode-nav');
-    if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild); }
+    if (switcher) { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); switcher.replaceWith(tmp.firstElementChild);  fitHeader(); }
   }
 }
 
