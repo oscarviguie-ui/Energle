@@ -3310,3 +3310,9 @@ footer .ft-dot { color: #ccc; }
   .sub-date--btn.has-news .sd-txt { display: none; }
   .sub-date--btn.has-news .sd-short { display: inline; font-size: 12px; }
 }
+
+/* phones: the Daily / Archive / Practice switch spans the header, so its right edge lines up with Stats & Leaderboard */
+@media (max-width: 600px) {
+  .hd-grid #mode-nav.hd-modes { justify-self: stretch; width: 100%; display: flex; }
+  header .hd-modes .mode-btn, .hd-grid #mode-nav.hd-modes .mode-btn { flex: 1 1 0; padding: 5px 6px; }
+}
