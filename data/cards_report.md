@@ -8,13 +8,11 @@ Published: **yes**
 - eia: {'updated': '2026-11-02', 'countries': 173}
 - factbook: {'updated': '2026-11-02', 'countries': 123}
 - opec: {'countries': 58, 'updated': '2026-10-30', 'year': 2025}
-- entsoe: {'year': 2025, 'updated': '2026-11-02', 'countries': 36}
+- entsoe: {'countries': 36, 'updated': '2026-11-02', 'year': 2025}
 - baci: {'countries': 167, 'release': 'BACI_HS96_V202601.zip', 'updated': '2026-10-29', 'year': 2024}
 - usgs: {'countries': 42, 'release': 2026, 'updated': '2026-10-29'}
 - power: {'countries': 173, 'updated': '2026-10-29'}
 - elevation: {'countries': 173, 'updated': '2026-10-29'}
-
-Failed this run (kept their previous figures): baci
 
 ## Coverage
 
@@ -72,11 +70,9 @@ No shop (fewer than 3 cards): PRK, TWN, XKX
 == opec
   opec: ASB 2026 already read, skipped
 == entsoe
-  entsoe 2025: 160 border directions to read
-  entsoe 2025: flows for 77 borders, 36 countries
-  -> 36 countries
+  entsoe: 2025 already read this month, skipped
 == baci
-  FAILED: RuntimeError: GET failed after 4 tries: https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp (403 Client Error: Forbidden for url: https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37) | ['  File "/home/runner/work/Energle/Energle/scripts/cards/common.py", line 40, in get', "    raise RuntimeError('GET failed after %d tries: %s (%s)' % (tries, url.split('?')[0], last))", 'RuntimeError: GET failed after 4 tries: https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp (403 Client Error: Forbidden for url: https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37)']
+  baci: BACI_HS96_V202601.zip already processed, skipped
 == usgs
   usgs: MCS 2026 already read, skipped
 == power: not due (last 2026-10-29)
