@@ -715,3 +715,5 @@ svg.ec-stove .ec-flame { transform: scale(1.25); transform-origin: 12px 14px; }
 .ic-flag { color: #d64532; font-weight: 800; margin-left: 3px; cursor: help; }
 .ic-flagnote { margin: 8px 0 0; font-size: 11.5px; line-height: 1.4; color: #7d6f68; }
 .ic-flagnote .ic-flag { margin-left: 0; cursor: default; }
+
+.ic-cost.ic-cost--none { display: none; }   /* atlas: no price tag */

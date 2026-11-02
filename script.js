@@ -685,6 +685,7 @@ function browseCountry(iso3) {
     + '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
     + '</div>'
     + '<div id="legend-shared"></div>'
+    + '<section id="clue-cards" class="fg-clues" aria-label="Clue cards"></section>'
     + footerHTML();
   document.getElementById('back-to-browse').addEventListener('click', () => {
     if (lineChart) { lineChart.destroy(); lineChart = null; }
@@ -692,6 +693,7 @@ function browseCountry(iso3) {
     target = prevTarget; renderBrowseScreen();
   });
   renderStatBar(); renderFlowBar(); renderCharts();
+  if (typeof renderAtlasCards === 'function') renderAtlasCards();
 }
 
 // ============================================================

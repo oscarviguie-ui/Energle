@@ -258,7 +258,8 @@ function buyCard(k) {
 
 // ---------- clue cards under the charts ----------
 let CARD_SCOPE = null, CARD_SCOPE_ISO = null;
-let CARDS_RESTORING = false;          // while a saved game is rebuilt: no scroll anchoring (the page opens at the top)
+let CARDS_RESTORING = false;
+let CARDS_VIEW = 'game';               // 'atlas' while a country page of the atlas shows its cards          // while a saved game is rebuilt: no scroll anchoring (the page opens at the top)
 // stand-in figures for the parts a country has no data for: they are only ever drawn as an empty card
 const CARD_BLANK = { sun: Array(12).fill(0), wind: Array(12).fill(0), rain: 0, flow: 0, terr: [[0, 0], [1, 0]], elevMean: 0,
   fossil: { oil: [0, null, null], gas: [0, null, null], coal: [0, null, null] }, minerals: {}, rents: { oil: 0, gas: 0, coal: 0, min: 0 },
@@ -278,6 +279,7 @@ function cardScope() {
 }
 function renderClueCards() {
   const host = document.getElementById('clue-cards'); if (!host) return;
+  CARDS_VIEW = 'game';
   if (!SHOP.on()) { host.innerHTML = ''; return; }
   if (CARD_SCOPE_ISO !== target.iso3) {
     try { CARD_SCOPE = cardScope(); CARD_SCOPE_ISO = target.iso3; } catch (err) { console.error('clue cards', err); host.innerHTML = ''; return; }
@@ -328,6 +330,21 @@ function emptyCardHTML(c, have) {
     + '<div class="ic-none"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 18L18 6" stroke="currentColor" stroke-width="1.8"/></svg>'
     + '<strong>No data for this country</strong><span>Sources checked: ' + c.src + '.' + (have ? ' No guess was spent.' : '') + '</span></div></section>';
 }
+// the atlas: every card of the country, open and free (a reference, not a game)
+function renderAtlasCards() {
+  const host = document.getElementById('clue-cards'); if (!host) return;
+  CARDS_VIEW = 'atlas';
+  if (!CARDS_DATA || !target) { host.innerHTML = ''; return; }
+  try { CARD_SCOPE = cardScope(); CARD_SCOPE_ISO = target.iso3; } catch (err) { console.error('atlas cards', err); host.innerHTML = ''; return; }
+  const flags = (shopEntry() || {}).flags || {};
+  const html = SHOP_CARDS.map(c => {
+    if (!cardHasData(c.k)) return emptyCardHTML(c, false);
+    const o = { cls: 'ic-card v3-card' + (c.full ? ' is-full' : ' is-half'), tagCls: 'ic-cost ic-cost--none', tag: '', tagTitle: '', cells: [] };
+    try { return flagCard(tplRender(c.k, Object.assign(Object.create(CARD_SCOPE), { o })), flags[c.k]); } catch (err) { console.error('card ' + c.k, err); return ''; }
+  }).join('');
+  host.innerHTML = '<div class="ic-sechead"><span class="section-title">Clue cards</span><span class="ic-secsub">All five, from open data</span></div><div class="ic-slot">' + html + '</div>';
+  packCards(host);
+}
 // pack the half-width cards into two columns of nearly equal height; Fuel Trade (full width) goes underneath.
 // A lone half-width card takes the full row. Phones: one column.
 function packCards(host) {
@@ -346,7 +363,7 @@ function packCards(host) {
   slot.textContent = ''; slot.appendChild(wrap); fulls.forEach(f => slot.appendChild(f));
 }
 let packTimer = null;
-window.addEventListener('resize', () => { clearTimeout(packTimer); packTimer = setTimeout(() => { if (SHOP.on()) renderClueCards(); }, 200); });
+window.addEventListener('resize', () => { clearTimeout(packTimer); packTimer = setTimeout(() => { if (CARDS_VIEW === 'atlas') renderAtlasCards(); else if (SHOP.on()) renderClueCards(); }, 200); });
 
 // legends: hover (or tap) an entry to pick out its part of the chart, and its numbers
 function hlSet(card, key) {
