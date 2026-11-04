@@ -12,7 +12,8 @@
 // ============================================================
 const SHOP_LIVE = true;
 const SHOP_LAUNCH_DAY = 151;           // puzzle number of launch day (Friday 30 October 2026): the intro is shown for 7 days from it
-const SHOP_OPENS_AFTER = 1;            // guesses made before the shop opens
+const SHOP_OPENS_AFTER = 1;            // guesses made before the shop opens (daily and archive; practice: right away)
+function shopOpensAfter() { return MODE === 'practice' ? 0 : SHOP_OPENS_AFTER; }
 const SHOP_TEST = (() => { try { return new URLSearchParams(location.search).get('shop') === 'on'; } catch (e) { return false; } })();
 function shopLive() { return SHOP_LIVE || SHOP_TEST; }
 
@@ -132,7 +133,7 @@ function shopButtonHTML() {
 function shopState(c) {
   const left = MAX_GUESSES - cellsUsed();
   if (SHOP.owned().includes(c.k)) return 'owned';
-  if (guesses.length < SHOP_OPENS_AFTER) return 'locked';
+  if (guesses.length < shopOpensAfter()) return 'locked';
   return left - c.cost >= 1 ? 'buy' : 'broke';
 }
 function updateShopButton() {
@@ -145,7 +146,7 @@ function updateShopButton() {
     const b = btn.querySelector('.shop-badge'); if (b) b.hidden = true;
     return;
   }
-  const locked = guesses.length < SHOP_OPENS_AFTER || gameOver;
+  const locked = guesses.length < shopOpensAfter() || gameOver;
   const n = locked ? 0 : SHOP.cards().filter(c => shopState(c) === 'buy').length;
   btn.className = 'shop-btn' + (locked ? ' is-locked' : '') + (n ? ' has-cards' : '') + (n && !SHOP.seen && !SHOP.owned().length ? ' is-calling' : '');
   btn.setAttribute('aria-disabled', locked ? 'true' : 'false');
@@ -164,7 +165,7 @@ document.addEventListener('click', e => {
     return;
   }
   if (gameOver) { lockTip(btn, '<strong>The game is over.</strong> Every clue card is shown above your guesses.', false); return; }
-  if (guesses.length < SHOP_OPENS_AFTER) { lockTip(btn, '<strong>Make your first guess to open the Clue Shop.</strong> Then trade spare guesses for clue cards.', false); return; }
+  if (guesses.length < shopOpensAfter()) { lockTip(btn, '<strong>Make your first guess to open the Clue Shop.</strong> Then trade spare guesses for clue cards.', false); return; }
   hideLockTip(); SHOP.open = true; SHOP.seen = true; SHOP.confirm = null; updateShopButton(); renderShopModal();
 });
 
@@ -186,7 +187,7 @@ function renderShopModal() {
   let m = document.getElementById('shop-modal');
   if (!SHOP.open) { if (m) m.remove(); return; }
   if (!m) { m = document.createElement('div'); m.id = 'shop-modal'; m.className = 'sh-modal'; document.body.appendChild(m); }
-  const left = MAX_GUESSES - cellsUsed(), locked = guesses.length < SHOP_OPENS_AFTER;
+  const left = MAX_GUESSES - cellsUsed(), locked = guesses.length < shopOpensAfter();
   const tiles = SHOP.cards().map(c => {
     const st = shopState(c);
     const btn = st === 'owned' ? 'Opened' : st === 'locked' ? 'After your 1st guess' : st === 'broke' ? 'Needs ' + (c.cost + 1) + ' left' : 'Buy';
@@ -523,7 +524,7 @@ function shopIntroSteps() {
     { art: '<span class="si-sign" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="si-shop" style="--awn:#f5c842;color:#1a1a1a"') + '</span>',
       title: 'New: the Clue Shop', text: 'Stuck after a guess? Next to the Guess button you’ll now find the Clue Shop: it trades spare guesses for clue cards about the country you’re guessing, in the daily, the archive and practice.' },
     { art: bat,
-      title: 'You pay with guesses', text: 'Each card costs 1 cell of your battery. The shop opens after your first guess, and your last guess can never be spent, so you always get a final try.' },
+      title: 'You pay with guesses', text: 'Each card costs 1 cell of your battery. The shop opens after your first guess (straight away in practice), and your last guess can never be spent, so you always get a final try.' },
     { art: '<span class="si-tiles">' + tiles + '</span>',
       title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source. If the sources have nothing on that country, the card is free and opens empty.' },
     { art: '<span class="si-share" aria-hidden="true">🟥🟨💡🟩</span>',

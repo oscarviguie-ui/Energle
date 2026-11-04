@@ -2564,9 +2564,9 @@ function setupAutocomplete() {
   }
   function buildList(q) {
     activeIdx = -1;
-    // Empty query: show the full eligible pool (alphabetical, scrollable).
-    // POOL is the active country set, so practice categories are filtered automatically.
-    const source = [...POOL].sort((a,b) => a.name.localeCompare(b.name));
+    // Empty query: every country (alphabetical, scrollable). Practice groups don't narrow the list:
+    // that would let players scroll through a short list instead of reading the charts.
+    const source = [...COUNTRIES].sort((a,b) => a.name.localeCompare(b.name));
     const matches = q.length === 0 ? source : source.filter(c => c.name.toLowerCase().includes(q) || (NAME_ALIAS[c.name] || '').toLowerCase().includes(q));
     if (!matches.length) { list.style.display = 'none'; return; }
     list.innerHTML = '';
