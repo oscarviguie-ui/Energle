@@ -1,0 +1,13 @@
+{
+  "name": "Energle",
+  "short_name": "Energle",
+  "description": "Guess the country from its energy profile. A daily puzzle.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f7f5",
+  "theme_color": "#f7f7f5",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

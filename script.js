@@ -432,7 +432,7 @@ function modeSwitcherHTML() {
 // Below the line: the puzzle number and task, which change every day (pageSubtitleHTML).
 // Stats & Leaderboard is one button with two halves: the left half opens your stats, the right half today's leaderboard.
 function pageHeaderHTML() {
-  return '<header><div class="hd-grid"><div class="hd-brand">' + logoHTML()
+  return '<header data-nosnippet><div class="hd-grid"><div class="hd-brand">' + logoHTML()
     + '<span class="hd-by">by <a href="https://www.linkedin.com/in/oscar-viguie/" target="_blank" rel="noopener">Oscar Viguié</a></span></div>'
     + podiumHTML() + modeSwitcherHTML()
     + '<div class="mode-switcher lb-switcher lb-split" role="group" aria-label="Stats and leaderboard">'
