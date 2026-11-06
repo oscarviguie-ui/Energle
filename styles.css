@@ -3371,6 +3371,25 @@ footer .ft-dot { color: #ccc; }
 .flame--big { width: 36px; height: 44px; margin: -9px 0 -5px; }
 .flame--big .flame-n { font-size: 17px; margin-bottom: 6px; }
 .flame--big.flame--3d .flame-n { font-size: 13px; }
-.sx-tile-num .flame { vertical-align: bottom; }
+/* Every tile's number box has the same height, flame or not, so the labels line up */
+.sx-tile-num { height: 1.1em; display: flex; align-items: center; justify-content: center; overflow: visible; }
+.sx-tile-num { align-items: flex-end; }
+.sx-tile-num .flame--big { margin: 0 0 -2px; }          /* grows upward from the number line, never into the label */
+
+/* Phone: more room for names in the leaderboard (tighter rank, number columns and padding; smaller flame) */
+@media (max-width: 600px) {
+  #lb-modal .lb-row, #lb-modal .lb-header-row { padding-left: 0.6rem; padding-right: 0.6rem; }
+  #lb-modal .lb-rank { width: 26px; }
+  #lb-modal .lb-row--alltime .lb-score, #lb-modal .lb-header-row .lb-score { width: 40px; }
+  #lb-modal .lb-header-row .lb-score { letter-spacing: 0; }
+  #lb-modal .lb-score.lb-score--main-hdr,
+  #lb-modal .lb-row--alltime .lb-score.lb-score--main { width: 64px; margin-left: 7px; }
+  .lb-name { gap: 4px; }
+  .lb-name .flame { width: 20px; height: 25px; }
+  .lb-name .flame-n { font-size: 10px; }
+  .flame--big { width: 30px; height: 37px; }
+  .flame--big .flame-n { font-size: 14px; margin-bottom: 5px; }
+  .flame--big.flame--3d .flame-n { font-size: 11px; }
+}
 
 @media (prefers-reduced-motion: reduce) { .flame-out, .flame-in { animation: none; } }
