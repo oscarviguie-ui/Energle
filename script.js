@@ -26,6 +26,7 @@ async function sbInsert(row) {
       headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
       body: JSON.stringify(row),
     });
+    STREAKS_P = null;                 // today's result may light or grow a flame
     // 409 = this player already has a row for today (if a unique constraint exists) — count as sent
     return res.ok || res.status === 409;
   } catch { return false; }
@@ -89,6 +90,40 @@ async function sbFetchAllTime(limit) {     // no limit: every player
     if (limit) { const res = await fetch(url + '&limit=' + limit, { headers: SB_HEADERS }); return res.ok ? res.json() : []; }
     return await sbFetchPaged(url);
   } catch { return []; }
+}
+
+// ------------------------------------------------------------
+//  STREAK FLAMES — daily puzzles solved in a row, from every score on record
+//  (`player_streaks` view: current = run ending today or yesterday, best = longest ever).
+//  A flame with the count inside shows from FLAME_MIN days.
+// ------------------------------------------------------------
+const FLAME_MIN = 5;
+let STREAKS_P = null;
+function loadStreaks() {             // { lower(name): current } for every live streak of FLAME_MIN+
+  if (!STREAKS_P) STREAKS_P = sbFetchPaged(SUPABASE_URL + '/rest/v1/player_streaks?current=gte.' + FLAME_MIN + '&select=username,current')
+    .then(rows => { const m = {}; rows.forEach(r => { m[String(r.username).toLowerCase()] = r.current; }); return m; })
+    .catch(() => { STREAKS_P = null; return {}; });
+  return STREAKS_P;
+}
+async function sbFetchMyStreak(username) {
+  try {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/player_streaks?username=eq.' + encodeURIComponent(username.toLowerCase())
+      + '&select=current,best', { headers: SB_HEADERS });
+    if (!res.ok) return null;
+    return (await res.json())[0] || { current: 0, best: 0 };
+  } catch { return null; }
+}
+const FLAME_SVG = '<svg class="flame-svg" viewBox="0 0 24 30" aria-hidden="true">'
+  + '<path class="flame-out" d="M12 .6C14.2 5.4 21.2 10 21.2 19.6a9.2 9.2 0 0 1-18.4 0c0-4.6 2.3-7.3 4.2-9.3.3 2 1.2 3.2 2.3 3.6C9 9.4 10.5 4.8 12 .6z"/>'
+  + '<path class="flame-in" d="M12.2 11.6c1.6 2.7 5.3 4.6 5.3 8.9a5.5 5.5 0 0 1-11 0c0-2.2 1.1-3.6 2.2-4.4.3.9.8 1.5 1.5 1.7.2-2.5.9-4.3 2-6.2z"/></svg>';
+function flameHTML(n, opts) {
+  if (!(n >= FLAME_MIN)) return '';
+  opts = opts || {};
+  const tier = n >= 30 ? 3 : n >= 15 ? 2 : 1;
+  const delay = -((n * 0.37) % 1.6).toFixed(2);             // flames side by side don't flicker in step
+  const label = n + ' daily puzzles solved in a row';
+  return '<span class="flame flame--t' + tier + (opts.big ? ' flame--big' : '') + (n >= 100 ? ' flame--3d' : '') + '" role="img" aria-label="' + label
+    + '" title="' + label + '" style="--fd:' + delay + 's">' + FLAME_SVG + '<span class="flame-n">' + n + '</span></span>';
 }
 
 // Since 2010 (or the first year with data): how much the mix and the output changed; and trade in the latest year
@@ -2786,7 +2821,7 @@ function showStatsModal(afterGame) {
   const header = '<div class="sx-head">'
     + '<span class="sx-avatar" aria-hidden="true" style="background:' + (name ? avatarColor(name) : '#c9c9c6') + '">'
     +   (name ? escHtml(name.charAt(0).toUpperCase()) : '?') + '</span>'
-    + '<div class="sx-who"><span class="sx-name">' + (name ? escHtml(name) : 'Guest') + '</span>'
+    + '<div class="sx-who"><span class="sx-name"><span class="sx-nm">' + (name ? escHtml(name) : 'Guest') + '</span><span id="sx-flame"></span></span>'
     +   '<span class="sx-sub" id="sx-rank">' + (name ? 'Looking up your rank…' : 'Not on the leaderboard yet. You pick a name after your first daily.') + '</span></div></div>';
 
   // Today's result, only right after the daily
@@ -2804,8 +2839,9 @@ function showStatsModal(afterGame) {
       + pathHTML(won, true, false).html + '</div>';
   }
 
-  const tiles = [[stats.played, 'Played'], [winPct + '%', 'Win rate'], [stats.streak, 'Streak'], [stats.bestStreak, 'Best streak']]
-    .map(([v, l]) => '<div class="sx-tile"><span class="sx-tile-num">' + v + '</span><span class="sx-tile-lbl">' + l + '</span></div>').join('');
+  const tiles = [[stats.played, 'Played'], [winPct + '%', 'Win rate'], [stats.streak, 'Streak', 'sx-streak'], [stats.bestStreak, 'Best streak', 'sx-best']]
+    .map(([v, l, id]) => '<div class="sx-tile"><span class="sx-tile-num"' + (id ? ' id="' + id + '"' : '') + '>' + (id === 'sx-streak' ? sxStreakHTML(v) : v)
+      + '</span><span class="sx-tile-lbl">' + l + '</span></div>').join('');
 
   const rows = [1, 2, 3, 4, 5, 6, 'X'].map((k, i) => {
     const n = stats.dist[k] || 0, share = stats.played ? n / stats.played : 0, isToday = k === currentKey;
@@ -2847,6 +2883,18 @@ function showStatsModal(afterGame) {
     el.textContent = getCountdown();
   }, 1000);
 
+  // Streaks from every daily on record under this name (this browser may only know the recent ones)
+  if (name) {
+    sbFetchMyStreak(name).then(sk => {
+      if (!sk) return;
+      const cur = sk.current, best = Math.max(sk.best, stats.bestStreak);
+      const a = document.getElementById('sx-streak'), b = document.getElementById('sx-best'), f = document.getElementById('sx-flame');
+      if (a) a.innerHTML = sxStreakHTML(cur);
+      if (b) b.textContent = best;
+      if (f) f.innerHTML = flameHTML(cur);
+    });
+  }
+
   // All-time rank and Weighted Score, from the same view as the leaderboard
   if (name) {
     sbFetchAllTime().then(rows => {
@@ -2858,6 +2906,9 @@ function showStatsModal(afterGame) {
     }).catch(() => { const el = document.getElementById('sx-rank'); if (el) el.textContent = 'Playing on the leaderboard as ' + name; });
   }
 }
+
+// The Streak tile: a big flame with the count from FLAME_MIN days, the plain number below that
+function sxStreakHTML(n) { return n >= FLAME_MIN ? flameHTML(n, { big: true }) : String(n); }
 
 // ============================================================
 //  LEADERBOARD MODAL
@@ -2890,11 +2941,19 @@ function lbSwitchTab(tab) {
 async function lbLoadTab(tab) {
   const me = getUsername();
   try {
-    const rows = tab === 'today' ? await sbFetchToday(getDayNumber()) : await sbFetchAllTime();
+    const [rows, fl] = await Promise.all([tab === 'today' ? sbFetchToday(getDayNumber()) : sbFetchAllTime(), loadStreaks()]);
+    LB_FLAMES = fl;
     tab === 'today' ? renderLbToday(rows, me) : renderLbAllTime(rows, me);
   } catch {
     document.getElementById('lb-body').innerHTML = '<div class="lb-loading">Could not load scores.</div>';
   }
+}
+
+// Player name in a leaderboard row, with the streak flame after it
+let LB_FLAMES = {};
+function lbNameHTML(name, isMe) {
+  return '<span class="lb-name"><span class="lb-nm">' + escHtml(name) + (isMe ? ' 👤' : '') + '</span>'
+    + flameHTML(LB_FLAMES[String(name).toLowerCase()]) + '</span>';
 }
 
 function escHtml(s) {
@@ -2920,7 +2979,7 @@ function renderLbToday(rows, me) {
     const scoreStr = r.won ? r.guesses + '/6' : 'X/6';
     return '<div class="lb-row' + (isMe ? ' lb-row--me' : '') + '">'
       + '<span class="lb-rank">' + rank + '</span>'
-      + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
+      + lbNameHTML(r.username, isMe)
       + '<span class="lb-score' + (r.won ? ' lb-score--won' : ' lb-score--lost') + '">' + scoreStr + '</span>'
       + '</div>';
   }).join('') + '</div>';
@@ -2975,7 +3034,7 @@ function renderLbAllTime(rows, me) {
     return divider
       + '<div class="lb-row lb-row--alltime' + (isMe ? ' lb-row--me' : '') + '">'
       + '<span class="lb-rank">' + rank + '</span>'
-      + '<span class="lb-name">' + escHtml(r.username) + (isMe ? ' 👤' : '') + '</span>'
+      + lbNameHTML(r.username, isMe)
       + '<span class="lb-score' + (Number(r.win_pct) >= 50 ? ' lb-score--won' : '') + '">' + Number(r.win_pct) + '%</span>'
       + '<span class="lb-score">' + Number(r.avg_guesses).toFixed(2) + '</span>'
       + '<span class="lb-score">' + r.played + '</span>'
