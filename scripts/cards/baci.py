@@ -29,15 +29,17 @@ CADENCE = 'yearly'
 
 PAGE = 'https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37'
 LINK = re.compile(r'(https?://www\.cepii\.fr)?/?DATA_DOWNLOAD/baci/data/(BACI_HS(\d\d)_V(\d{6}[a-z]?)\.zip)', re.I)
-FUEL = {'crude': ('270900',), 'refined': ('271012', '271019', '271020'), 'lng': ('271111',),
+FUEL = {'crude': ('270900',), 'refined': ('271012', '271019', '271020', '271000'), 'lng': ('271111',),
         'gas': ('271121',), 'coal': ('2701', '270210', '270220'), 'elec': ('271600',)}
 TOP_IN, TOP_OUT = 5, 5
 # Barrels of oil equivalent per tonne, by energy content: boe/t = (GJ/t) / 41.868 x 7.33 (1 toe = 41.868 GJ = 7.33 boe,
 # the Energy Institute convention). Typical net calorific values: crude 41.9 GJ/t, gasoline and naphtha 44.3,
-# gasoil / jet / fuel oil 42.5, natural gas (pipeline or LNG) 48, hard coal 25.8, lignite 12, lignite briquettes 20.
+# gasoil / jet / fuel oil 42.5, natural gas (pipeline or LNG) 48, anthracite 28, bituminous coal 26, other
+# (sub-bituminous) coal 20, coal briquettes 25, lignite 12, lignite briquettes 20.
 # Crude comes out at 7.33, which is also its physical barrels a tonne. Longest prefix wins.
-BOE_PER_T = {'270900': 7.33, '271012': 7.75, '271019': 7.44, '271020': 7.44, '271111': 8.40, '271121': 8.40,
-             '2701': 4.50, '270210': 2.10, '270220': 3.50}
+BOE_PER_T = {'270900': 7.33, '271012': 7.75, '271019': 7.44, '271020': 7.44, '271000': 7.50, '271111': 8.40, '271121': 8.40,
+             '270111': 4.90, '270112': 4.55, '270119': 3.50, '270120': 4.38, '2701': 4.55,
+             '270210': 2.10, '270220': 3.50}
 
 
 def boe_per_t(code):
@@ -62,7 +64,10 @@ def latest_release():
         m = LINK.search(url)
         return url, (m.group(2) if m else os.path.basename(url))
     html = get(PAGE, timeout=60).text
-    found = {(int(m.group(3)), m.group(4).lower(), m.group(2)) for m in LINK.finditer(html)}
+    # newest HS revision first: '92' and '96' are 1992 and 1996, '02'...'22' are 2002...2022 (HS96 has no
+    # 6-digit split of refined products, so taking it by mistake drops them from the card)
+    hs_year = lambda hs: (1900 if int(hs) >= 88 else 2000) + int(hs)
+    found = {(hs_year(m.group(3)), m.group(4).lower(), m.group(2)) for m in LINK.finditer(html)}
     if not found:
         raise RuntimeError('no BACI download link found on the CEPII page')
     hs, ver, name = max(found)
