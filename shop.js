@@ -269,10 +269,10 @@ function cardScope() {
   const e = Object.assign({}, CARD_BLANK, shopEntry() || {});
   const v3 = cardsV3Vals({ C: e, scene: 'two', W: (CARDS_DATA && CARDS_DATA.world && CARDS_DATA.world.cards) || null });
   const info = ALL_DATA[target.name], yd = (info && info.years[info.latestYear]) || {};
-  const v2 = shopV2Vals({ europe: true, IN: (e.trade || {}).IN, OUT: (e.trade || {}).OUT, NB: (e.elec || {}).NB || [], demand: yd.Demand });
+  const v2 = shopV2Vals({ europe: true, IN: (e.trade || {}).IN, OUT: (e.trade || {}).OUT, cov: (e.trade || {}).cov, NB: (e.elec || {}).NB || [], demand: yd.Demand });
   const r = Object.assign({}, v3);
   ['buyTot', 'sellTot', 'buyVals', 'sellVals', 'nbImp', 'nbExp', 'grossTot', 'grossShare', 'tradeBands', 'tradeLeft', 'tradeRight', 'fuelKey',
-   'hubY', 'hubH', 'hubPos', 'hubLPos', 'tradeAria', 'neighbours', 'dayPts', 'dayArea', 'avgLine'].forEach(k => { r[k] = v2[k]; });
+   'hubY', 'hubH', 'hubPos', 'hubLPos', 'tradeAria', 'tradeViews', 'hasVol', 'noVol', 'covTxt', 'neighbours', 'dayPts', 'dayArea', 'avgLine'].forEach(k => { r[k] = v2[k]; });
   r.tradeYear = (e.trade || {}).year || '';
   r.elecYear = (e.elec || {}).year || '';
   r.noNeighbours = !((e.elec || {}).NB || []).some(n => n[2] + n[3] > 0);
@@ -394,6 +394,15 @@ function hlSet(card, key) {
     t.textContent = vals[key]; t.classList.add('is-swapped');
   });
 }
+// Fuel Trade: US$ or barrels of oil equivalent a day (one choice for every card on the page, remembered)
+const LS_FTU = 'energle_ftu';
+function setFuelUnit(u) {
+  document.documentElement.classList.toggle('ft-boe', u === 'boe');
+  try { localStorage.setItem(LS_FTU, u); } catch {}
+}
+try { if (localStorage.getItem(LS_FTU) === 'boe') document.documentElement.classList.add('ft-boe'); } catch {}
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-ftu]'); if (b) setFuelUnit(b.getAttribute('data-ftu')); });
+
 ['mouseover', 'focusin'].forEach(ev => document.addEventListener(ev, e => {
   const lg = e.target.closest && e.target.closest('#clue-cards [data-hl]'); if (!lg) return;
   hlSet(lg.closest('.ic-card'), lg.getAttribute('data-hl'));
