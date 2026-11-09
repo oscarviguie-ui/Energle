@@ -730,3 +730,11 @@ html.ft-boe .ft-view--boe { display: block; }
 html.ft-boe .ft-u--usd { background: none; color: #77766f; box-shadow: none; }
 .ft-why { display: none; margin: 8px auto 0; max-width: 62ch; text-align: center; font-size: 11.5px; line-height: 1.45; color: #8a8984; }
 html.ft-boe .ft-why { display: block; }
+/* the unit toggle sits in the totals row, centred over the hub */
+.ft-colhs { align-items: center; }
+.ft-colhs .ft-unit { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); letter-spacing: 0; text-transform: none; }
+@media (max-width: 600px) {     /* no room between the totals on a phone: the toggle gets its own row above them */
+  .ft-colhs { display: grid; grid-template-columns: 1fr 1fr; row-gap: 10px; }
+  .ft-colhs .ft-unit { grid-column: 1 / -1; order: -1; justify-self: center; position: static; transform: none; }
+  .ft-colhs .ft-colh--r { justify-self: end; }
+}
