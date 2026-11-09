@@ -46,7 +46,7 @@ jobs:
           ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
         run: |
           set +e
-          python scripts/build_cards.py ${{ github.event.inputs.sources }}
+          python scripts/build_cards.py ${{ github.event.inputs.sources || 'baci' }}
           echo "status=$?" >> "$GITHUB_OUTPUT"
 
       - name: Commit the cards and the caches
