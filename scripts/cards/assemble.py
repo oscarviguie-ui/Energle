@@ -181,11 +181,14 @@ def build(raw, game, log=print):
                     if not fuels:
                         continue
                     a2 = 'OTHER' if p['iso3'] == 'OTHER' else (iso2.get(p['iso3'], '').upper() or 'OTHER')
-                    rows.append([a2, 'Others' if p['iso3'] == 'OTHER' else _name(p['iso3'], countries), fuels])
+                    vol = {f: r(v, 2) for f, v in (p.get('vol') or {}).items() if f in fuels and v >= 0.005}   # thousand boe a day
+                    rows.append([a2, 'Others' if p['iso3'] == 'OTHER' else _name(p['iso3'], countries), fuels, vol])
                 return rows
             IN, OUT = side(imp), side(exp)
             if sum(sum(x[2].values()) for x in IN + OUT) >= 0.05:
                 C['trade'] = {'year': b.get('year'), 'IN': IN, 'OUT': OUT}
+                if any(x[3] for x in IN + OUT):     # share of the dollar value with a known tonnage, imports / exports
+                    C['trade']['cov'] = [(imp or {}).get('vol_cov'), (exp or {}).get('vol_cov')]
                 cards.append('trade')
             else:
                 missing['trade'] = ['too small']
