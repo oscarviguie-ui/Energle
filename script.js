@@ -513,7 +513,53 @@ function footerHTML() {
   const more = typeof shopLive === 'function' && shopLive()
     ? sep + '<span class="ft-more">' + DATA_SOURCES.map(([n, u]) => '<a href="' + u + '" target="_blank" rel="noopener">' + n + '</a>').join('<span class="ft-dot" aria-hidden="true"> · </span>') + '</span>' : '';
   return '<footer><p><span>Data: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a> (CC BY 4.0)</span>'
-    + more + sep + '<button type="button" class="ft-link" onclick="showNotice()">What’s new</button></p></footer>';
+    + more + sep + '<span class="ft-nav"><button type="button" class="ft-link" onclick="showNotice()">What’s new</button>'
+    + '<span class="ft-dot" aria-hidden="true"> · </span><button type="button" class="ft-link" onclick="showFeedback()">Feedback</button></span></p></footer>';
+}
+
+// ------------------------------------------------------------
+//  FEEDBACK — a short note to Oscar. "Send" opens the player's mail app with the note filled in;
+//  the address is also shown with a copy button, since not every device has a mail app set up.
+// ------------------------------------------------------------
+const FEEDBACK_EMAIL = 'oscviguie@gmail.com';
+function showFeedback() {
+  if (document.getElementById('feedback-modal')) return;
+  const nt = document.getElementById('notice-modal'); if (nt) nt.remove();
+  const modal = document.createElement('div'); modal.id = 'feedback-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="nt-box fb-box" role="dialog" aria-modal="true" aria-labelledby="fb-title">'
+    + '<span class="nt-eyebrow">Feedback</span>'
+    + '<h2 class="nt-title" id="fb-title">Help make Energle better</h2>'
+    + '<p class="fb-lead">An idea, a bug, a country whose data looks off? Every note is read.</p>'
+    + '<label class="fb-label" for="fb-text">Your note</label>'
+    + '<textarea id="fb-text" class="fb-text" rows="5" maxlength="2000" placeholder="What would make the game better?"></textarea>'
+    + '<div class="fb-row"><button type="button" class="nt-btn fb-send" id="fb-send">Send by email</button>'
+    + '<button type="button" class="fb-close" id="fb-close">Close</button></div>'
+    + '<p class="fb-alt">Or write to <span class="fb-addr" id="fb-addr">' + FEEDBACK_EMAIL + '</span>'
+    + '<button type="button" class="fb-copy" id="fb-copy">Copy</button></p>'
+    + '<p class="fb-msg" id="fb-msg" role="status" aria-live="polite"></p>'
+    + '</div>';
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  document.body.appendChild(modal);
+  document.addEventListener('keydown', onKey);
+  const ta = document.getElementById('fb-text'), msg = document.getElementById('fb-msg');
+  document.getElementById('fb-close').addEventListener('click', close);
+  document.getElementById('fb-send').addEventListener('click', () => {
+    const note = ta.value.trim();
+    const ctx = (MODE === 'normal' ? 'Puzzle #' + currentDay() : MODE === 'archive' ? 'Archive' : 'Practice')
+      + (typeof getUsername === 'function' && getUsername() ? ' · ' + getUsername() : '');
+    const body = (note || '') + '\n\n—\n' + ctx;
+    location.href = 'mailto:' + FEEDBACK_EMAIL + '?subject=' + encodeURIComponent('Energle feedback') + '&body=' + encodeURIComponent(body);
+    msg.textContent = 'Your mail app should open with the note filled in. If nothing happened, copy the address above and paste your note into an email.';
+  });
+  document.getElementById('fb-copy').addEventListener('click', e => {
+    const btn = e.currentTarget, done = () => { btn.textContent = 'Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1800); };
+    const pick = () => { const r = document.createRange(); r.selectNodeContents(document.getElementById('fb-addr')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(FEEDBACK_EMAIL).then(done, pick); } catch { pick(); }
+  });
+  ta.focus();
 }
 function todayLabel() {
   return new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -989,6 +1035,7 @@ function initApp() {
 const NOTICE_KEY = 'energle_notice_v2';
 // Only what changes how the game plays or what data it shows (modes, mechanics, new figures, data refreshes), newest first
 const UPDATES = [
+  ['9 Nov', 'Fuel trade in barrels a day', 'The Fuel Trade card now switches between dollars and barrels of oil equivalent a day, and shows refined products too. Coal and gas weigh far more by energy than by price.'],
   ['30 Oct', 'The Clue Shop is open', 'Stuck after a guess? Trade a spare guess for a clue card: its sun and wind, what lies underground, who it trades fuel and power with, how its people live. Every card costs one guess, in the daily, the archive and practice.'],
   ['28 Oct', 'Carbon intensity added', 'The latest mix now shows how much CO\u2082 each kWh of the country’s electricity emits, from Ember’s data.'],
   ['25 Oct', 'The Archive', 'Every past puzzle, one tap away. Replays never count in your stats or on the leaderboard.'],
@@ -1032,6 +1079,7 @@ function showNotice() {
     + '<ol class="nt-log">' + UPDATES.map(([d, t, x]) => '<li><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong>' + x + '</span></li>').join('') + '</ol>'
     + '<div class="nt-soon"><span class="nt-eyebrow">Coming soon</span>'
     + COMING.map(([t, x]) => '<div class="nt-soon-item"><strong>' + t + '</strong><span>' + x + '</span></div>').join('') + '</div>'
+    + '<p class="nt-fb">Have an idea for the next update? <button type="button" class="ft-link nt-fb-link" onclick="showFeedback()">Send feedback</button></p>'
     + '<button type="button" class="nt-btn" id="nt-ok">Got it</button>'
     + '</div>';
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
@@ -2515,13 +2563,13 @@ function renderResultCard(won, animate = true) {
   const foot = MODE === 'archive'
     ? '<span class="go-next">From the archive · not counted in your stats</span>'
       + '<div class="go-actions"><button type="button" class="go-btn" onclick="openArchive(' + (d - 1) + ')"' + (d <= 1 ? ' disabled' : '') + '>← #' + Math.max(1, d - 1) + '</button>'
-      + '<button type="button" class="go-btn go-btn--dark" onclick="openArchive(' + (d + 1) + ')"' + (d >= last ? ' disabled' : '') + '>#' + Math.min(last, d + 1) + ' →</button></div>'
+      + '<button type="button" class="go-btn go-btn--dark" onclick="openArchive(' + (d + 1) + ')"' + (d >= last ? ' disabled' : '') + '>#' + Math.min(last, d + 1) + ' →</button>' + '<button type="button" class="go-btn go-btn--fb" onclick="showFeedback()" title="Send feedback">Feedback</button>' + '</div>'
     : MODE === 'practice'
     ? '<span class="go-next">Practice round</span>'
-      + '<div class="go-actions"><button type="button" class="go-btn go-btn--dark" onclick="newGame()">Next puzzle ↺</button></div>'
+      + '<div class="go-actions"><button type="button" class="go-btn go-btn--dark" onclick="newGame()">Next puzzle ↺</button>' + '<button type="button" class="go-btn go-btn--fb" onclick="showFeedback()" title="Send feedback">Feedback</button>' + '</div>'
     : '<span class="go-next">Next puzzle in <strong id="go-countdown">' + getCountdown() + '</strong></span>'
       + '<div class="go-actions"><button type="button" class="go-btn" onclick="showStatsModal(true)">Stats</button>'
-      + '<button type="button" class="go-btn go-btn--dark" onclick="copyShare(this)">Share</button></div>';
+      + '<button type="button" class="go-btn go-btn--dark" onclick="copyShare(this)">Share</button>' + '<button type="button" class="go-btn go-btn--fb" onclick="showFeedback()" title="Send feedback">Feedback</button>' + '</div>';
   host.innerHTML = '<div class="go-card ' + (won ? 'go-card--won' : 'go-card--lost') + (animate && !REDUCED_MOTION ? ' go-anim' : '') + '">'
     + '<div class="go-head"><span class="go-title">' + (won ? 'Your path to ' + escHtml(target.name)
         : (MODE === 'normal' ? 'Today\u2019s country was ' : 'The country was ') + escHtml(target.name) + '.') + '</span>'
