@@ -103,6 +103,7 @@ def read_fuel_rows(zip_path, log=print):
 def summarise(rows, codes, year, countries):
     codes.columns = [c.strip().lower() for c in codes.columns]
     iso = dict(zip(codes['country_code'].astype(str), codes['country_iso3']))
+    iso = {k: {'S19': 'TWN'}.get(v, v) for k, v in iso.items()}      # BACI files Taiwan as "S19" (Other Asia, nes)
     rows = rows.assign(exp=rows['i'].astype(str).map(iso), imp=rows['j'].astype(str).map(iso)).dropna(subset=['exp', 'imp'])
     rows = rows[rows['exp'] != rows['imp']]
     out = {}
