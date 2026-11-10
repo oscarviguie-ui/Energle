@@ -255,6 +255,16 @@ function globeSide() {
   el.scrollTop = 0;
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
   const foot = document.querySelector('#app > footer'); if (foot && matchMedia(GLOBE_WIDE).matches) el.appendChild(foot);   // credits at the end of the panel
+  globeSideFit();
+}
+// marks the panel when it has more below than it shows (its scroll bar only appears then, on hover)
+let GLOBE_SIDE_RO = null;
+function globeSideFit() {
+  const el = document.getElementById('gl-side'); if (!el) return;
+  const check = () => el.classList.toggle('gl-overflows', el.scrollHeight > el.clientHeight + 1);
+  check();
+  if (!GLOBE_SIDE_RO && typeof ResizeObserver !== 'undefined') GLOBE_SIDE_RO = new ResizeObserver(() => { const e = document.getElementById('gl-side'); if (e) e.classList.toggle('gl-overflows', e.scrollHeight > e.clientHeight + 1); });
+  if (GLOBE_SIDE_RO) { GLOBE_SIDE_RO.disconnect(); GLOBE_SIDE_RO.observe(el); [...el.children].forEach(c => GLOBE_SIDE_RO.observe(c)); }
 }
 function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
@@ -297,8 +307,46 @@ function globeRegion(r) {
 function globeChipsHTML() {
   const chip = g => '<button type="button" class="at-chip" data-r="' + g.id + '" aria-pressed="' + (g.id === ATLAS.region) + '">' + g.chip + '</button>';
   return '<div class="at-chips gl-chips" role="group" aria-label="Group">' + GLOBE_GROUPS.filter(g => !g.bloc).map(chip).join('')
-    + '<span class="gl-chip-sep" aria-hidden="true"></span>' + GLOBE_GROUPS.filter(g => g.bloc).map(chip).join('') + '</div>';
+    + '<span class="gl-chip-sep" aria-hidden="true"></span>' + GLOBE_GROUPS.filter(g => g.bloc).map(chip).join('')
+    + '<span class="gl-more" hidden><button type="button" class="at-chip gl-more-btn" aria-haspopup="true" aria-expanded="false">More <span aria-hidden="true">▾</span></button>'
+    + '<span class="gl-more-menu" role="menu" hidden></span></span></div>';
 }
+// The tools row: the search box takes the free width, the group chips sit on the right. When the chips
+// would leave the search box less than SEARCH_MIN, the last ones fold into a "More" menu.
+const SEARCH_MIN = 280;
+function globeFitChips() {
+  const row = document.querySelector('.gl-chips'), search = document.getElementById('browse-search'); if (!row || !search) return;
+  const more = row.querySelector('.gl-more'), menu = row.querySelector('.gl-more-menu'), sep = row.querySelector('.gl-chip-sep');
+  // start from everything on the row, in the original order
+  menu.querySelectorAll('.gl-menu-sep').forEach(x => x.remove());
+  [...menu.children].forEach(c => row.insertBefore(c, more)); more.hidden = true;
+  if (matchMedia(GLOBE_WIDE).matches) {
+    const inRow = () => [...row.querySelectorAll(':scope > .at-chip')];
+    const fold = c => { more.hidden = false; menu.insertBefore(c, menu.firstChild); };
+    // the blocs fold together first, then continents one by one from the end
+    if (search.getBoundingClientRect().width < SEARCH_MIN) inRow().filter(c => groupOf(c.dataset.r).bloc).reverse().forEach(fold);
+    while (search.getBoundingClientRect().width < SEARCH_MIN && inRow().length > 2) fold(inRow().pop());
+    const firstCont = menu.querySelector('.at-chip:not([data-r="eu"]):not([data-r="g7"]):not([data-r="opec"]):not([data-r="brics"])');
+    if (firstCont && menu.querySelector('[data-r="eu"]')) menu.insertBefore(Object.assign(document.createElement('span'), { className: 'gl-menu-sep' }), menu.querySelector('[data-r="eu"]'));
+  }
+  sep.hidden = !row.querySelector(':scope > .at-chip[data-r="eu"], :scope > .at-chip[data-r="g7"], :scope > .at-chip[data-r="opec"], :scope > .at-chip[data-r="brics"]')
+    || !row.querySelector(':scope > .at-chip:not(.gl-more-btn)');
+  globeMoreSync();
+}
+function globeMoreSync() {
+  const more = document.querySelector('.gl-more'); if (!more) return;
+  const btn = more.querySelector('.gl-more-btn'), on = more.querySelector('.gl-more-menu .at-chip[aria-pressed="true"]');
+  btn.firstChild.textContent = on ? on.textContent + ' ' : 'More ';
+  btn.setAttribute('aria-pressed', String(!!on));
+}
+function globeMoreOpen(open) {
+  const more = document.querySelector('.gl-more'); if (!more) return;
+  more.querySelector('.gl-more-menu').hidden = !open;
+  more.querySelector('.gl-more-btn').setAttribute('aria-expanded', String(open));
+}
+let GLOBE_FIT_RAF = 0;
+window.addEventListener('resize', () => { cancelAnimationFrame(GLOBE_FIT_RAF); GLOBE_FIT_RAF = requestAnimationFrame(globeFitChips); });
+document.addEventListener('click', e => { if (!e.target.closest('.gl-more')) globeMoreOpen(false); });
 function globeApplyGroup() {
   const g = groupOf(ATLAS.region), byIso = Object.fromEntries(COUNTRIES.map(c => [c.iso3, c]));
   let shown = 0;
@@ -308,7 +356,8 @@ function globeApplyGroup() {
     r.hidden = !ok; if (ok) shown++;
   });
   const empty = document.getElementById('at-empty'); if (empty) empty.hidden = shown > 0;
-  document.querySelectorAll('.at-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === ATLAS.region)));
+  document.querySelectorAll('.at-chip[data-r]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === ATLAS.region)));
+  globeMoreSync();
 }
 
 async function globeMount() {
@@ -492,15 +541,19 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const chips = document.querySelector('.at-chips');
     if (chips) {
       chips.outerHTML = globeChipsHTML();
-      document.querySelectorAll('.at-chip').forEach(btn => btn.addEventListener('click', () => {
+      document.querySelectorAll('.at-chip[data-r]').forEach(btn => btn.addEventListener('click', () => {
+        globeMoreOpen(false);
         ATLAS.region = btn.dataset.r;
         if (ATLAS.view === 'globe') globeRegion(ATLAS.region); else globeApplyGroup();
       }));
     }
+    const mb = document.querySelector('.gl-more-btn');
+    if (mb) mb.addEventListener('click', () => globeMoreOpen(mb.getAttribute('aria-expanded') !== 'true'));
     const search = document.getElementById('browse-search');
     if (search) search.addEventListener('input', () => setTimeout(globeApplyGroup, 0));
     document.querySelectorAll('.at-sort select, select.at-sort, #at-sort').forEach(el => el.addEventListener('change', () => setTimeout(globeApplyGroup, 0)));
     globeApplyGroup();
+    globeFitChips();
   };
   // Practice uses the same groups as the Explore chips: continents split like the map, plus the blocs.
   // Asia & Pacific and Americas stay defined (old links and saved sessions) but leave the picker.

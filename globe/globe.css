@@ -111,7 +111,9 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   body.at-globe .gl-layout { flex: 1 1 auto; min-height: 0; }
   body.at-globe .gl-wrap, .gl-layout.has-sel .gl-wrap { position: relative; top: auto; height: 100%; min-height: 0; max-height: none; }
   body.at-globe .gl-layout { grid-template-rows: minmax(0, 1fr); align-items: stretch; }
-  body.at-globe .gl-side { height: 100%; min-height: 0; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+  body.at-globe .gl-side { height: 100%; min-height: 0; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  /* the panel scrolls without a visible bar; a thin one appears only while the pointer is over a panel that has more below */
+  body.at-globe .gl-side.gl-overflows:hover { scrollbar-color: #cfccc4 transparent; }
   body.at-globe #app > footer { display: none; }
   .gl-side footer { margin-top: 8px; }
 }
@@ -121,14 +123,24 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
 
 /* Explore tools: a short search box, so the group chips fit on one line */
 .gl-chip-sep { width: 1px; align-self: stretch; margin: 6px 4px; background: #e0ded8; }
-body.at-globe #browse-search { flex: 0 1 220px; }
 body.at-globe .at-tools { flex-wrap: nowrap; }
-body.at-globe .gl-chips { flex: 0 1 auto; margin-left: 4px; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+/* laptops: the search box takes all the free width; the chips keep their size and sit on the right */
+body.at-globe #browse-search { flex: 1 1 0; min-width: 0; }
+body.at-globe .gl-chips { flex: none; margin-left: 0; flex-wrap: nowrap; position: relative; }
+.gl-chip-sep[hidden], .gl-more[hidden], .gl-more-menu[hidden] { display: none; }
+.gl-more { position: relative; display: inline-flex; }
+.gl-more-btn[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
+.gl-more-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; display: flex; flex-direction: column; gap: 2px; min-width: 150px; padding: 4px;
+  border: 1px solid #ecebe8; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+.gl-more-menu .at-chip { text-align: left; border-radius: 6px; }
+.gl-more-menu .at-chip:hover { background: #f4f3ef; }
+.gl-more-menu .at-chip[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
 body.at-globe .gl-chips .at-chip { white-space: nowrap; flex-shrink: 0; padding: 0 11px; }
-@media (max-width: 1099px) { body.at-globe .at-tools { flex-wrap: wrap; } body.at-globe #browse-search { flex: 1 1 200px; } body.at-globe .gl-chips { flex: 1 1 100%; justify-content: flex-start; } }
+@media (max-width: 1099px) { body.at-globe .at-tools { flex-wrap: wrap; } body.at-globe #browse-search { flex: 1 1 200px; } body.at-globe .gl-chips { flex: 1 1 100%; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; } }
 /* the panel: a little more air between the cards */
 @media (min-width: 1100px) { body.at-globe .gl-side { gap: 16px; padding: 2px 10px 0 2px; } }
 /* the group panel's way into Practice */
 .gl-practice { flex-shrink: 0; white-space: nowrap; min-height: 34px; padding: 0 14px; border: 1.5px solid #1a1a1a; border-radius: 999px; background: #fff; color: #1a1a1a;
   font: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; }
 .gl-practice:hover { background: #1a1a1a; color: #fff; }
+.gl-menu-sep { height: 1px; margin: 3px 6px; background: #ecebe8; }
