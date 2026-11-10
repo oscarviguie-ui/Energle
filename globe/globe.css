@@ -15,11 +15,6 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
 .gl-loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: #888; font-size: .9rem; pointer-events: none; }
 .gl-canvas .maplibregl-ctrl-attrib { font-size: 10px; }
 
-/* Terrain / Map switch, top-left of the map */
-.gl-layers { position: absolute; top: 10px; left: 10px; z-index: 2; display: inline-flex; gap: 2px; padding: 2px; border-radius: 999px; background: rgba(255,255,255,.94); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-.gl-lbtn { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: #666; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
-.gl-lbtn[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
-
 /* The panel holds the daily puzzle's own cards (balance card, charts, legend). On phones and tablets it
    sits under the map; on laptops it is a column beside it, wide enough for the cards' desktop layout. */
 .gl-side { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
@@ -51,3 +46,13 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   .gl-wrap { height: 70vh; min-height: 380px; }
   .gl-layout.has-sel .gl-wrap { height: 46vh; }
 }
+
+/* ---------- guess map (in the game, under the charts) ---------- */
+.gm-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 10px; }
+.gm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.gm-head .chart-label { margin: 0; }
+.gm-hint { font-size: .78rem; color: #8a8984; }
+.gm-wrap { position: relative; height: 340px; border-radius: 6px; overflow: hidden; background: #dfe8f1; }
+#submit-btn.gm-ready { animation: gmReady 1.2s ease-out; }
+@keyframes gmReady { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); } 30% { box-shadow: 0 0 0 4px rgba(245,166,35,.55); } }
+@media (max-width: 600px) { .gm-card { padding: .9rem .9rem 1rem; } .gm-wrap { height: 300px; } }

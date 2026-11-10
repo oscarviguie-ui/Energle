@@ -1043,7 +1043,6 @@ function mixBarHTML(shares, cls) {
 function initApp() {
   try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}   // a reload opens at the top, not mid-page
   migrateDailyToHistory();
-  if (window.GLOBE_PAGE) { POOL = COUNTRIES; MODE = 'practice'; renderBrowseScreen(); loadPodium(); return; }   // test page: straight to the atlas globe
   POOL = COUNTRIES; renderGameScreen(); playIntro(); restoreDailyGame(); loadPodium();
   scheduleAmbientPulse();
   maybeShowNotice();
