@@ -232,7 +232,7 @@ function globeCountryHTML(c) {
 }
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
-    + (groupOf(r.region).trait ? groupOf(r.region).rule + ' · ' : '') + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
+    + (groupOf(r.region).trait ? '<span class="gl-sub-x">' + groupOf(r.region).rule + ' · </span>' : '') + r.n + ' countries<span class="gl-sub-x"> added together</span> · ' + r.latestYear + '</span></div>'
     + (r.region === 'all'      // the world: every practice group; a group: a round on just its countries
       ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>'
       : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice<span class="gl-pr-n"> these ' + r.n + '</span> →</button>')
@@ -411,11 +411,23 @@ const SEARCH_MIN = 280;
 function globeFitChips() {
   const row = document.querySelector('.gl-chips'), search = document.getElementById('browse-search'); if (!row || !search) return;
   const more = row.querySelector('.gl-overflow'), menu = more.querySelector('.gl-more-menu'), sep = row.querySelector('.gl-chip-sep');
-  // start from everything on the row, in the original order
-  menu.querySelectorAll('.gl-menu-sep').forEach(x => x.remove());
-  [...menu.children].forEach(c => row.insertBefore(c, more)); more.hidden = true;
-  if (matchMedia(GLOBE_WIDE).matches) {
-    const inRow = () => [...row.querySelectorAll(':scope > .at-chip')];
+  const traits = row.querySelector('.gl-traits'), tmenu = traits && traits.querySelector('.gl-more-menu'), tsep = row.querySelector('.gl-sep-traits');
+  // start from everything on the row, in the original order (trait items back in their own folder)
+  menu.querySelectorAll('.gl-menu-sep, .gl-menu-ph').forEach(x => x.remove());
+  [...menu.children].forEach(c => { if (c.matches('.gl-trait, .gl-menu-h')) tmenu.appendChild(c); else row.insertBefore(c, more); });
+  more.hidden = true; if (traits) traits.hidden = false; if (tsep) tsep.hidden = false;
+  const inRow = () => [...row.querySelectorAll(':scope > .at-chip')];
+  const head = t => Object.assign(document.createElement('span'), { className: 'gl-menu-h gl-menu-ph', textContent: t });
+  if (matchMedia(GLOBE_PHONE).matches) {
+    // phones: one "group" button next to the search box holds every group, so the map gets the chips' row
+    more.hidden = false;
+    menu.appendChild(head('Regions'));
+    inRow().forEach(c => { if (groupOf(c.dataset.r).bloc) return; menu.appendChild(c); });
+    menu.appendChild(head('Blocs'));
+    inRow().forEach(c => menu.appendChild(c));
+    if (tmenu) [...tmenu.children].forEach(c => menu.appendChild(c));
+    if (traits) traits.hidden = true; if (tsep) tsep.hidden = true;
+  } else if (matchMedia(GLOBE_WIDE).matches) {
     const fold = c => { more.hidden = false; menu.insertBefore(c, menu.firstChild); };
     // the blocs fold together first, then continents one by one from the end
     if (search.getBoundingClientRect().width < SEARCH_MIN) inRow().filter(c => groupOf(c.dataset.r).bloc).reverse().forEach(fold);

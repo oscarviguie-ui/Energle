@@ -354,3 +354,27 @@ body.at-globe .at-tools { margin-top: 14px; }
   body.at-globe .gl-p-head:has(.gl-tabs) { flex-wrap: wrap; }
 }
 .gl-p-head .gl-x { margin-left: auto; }
+
+/* phones: the tools on one line — Globe/List, search, and one button that holds every group */
+@media (max-width: 700px) {
+  body.at-globe .at-tools { flex-wrap: nowrap !important; gap: 6px; }
+  body.at-globe .at-view .at-vbtn { min-height: 34px; padding: 0 10px; font-size: .76rem; }
+  body.at-globe #browse-search { flex: 1 1 0 !important; min-width: 0; height: 40px; }
+  body.at-globe .gl-chips { flex: none !important; margin: 0; padding: 0; border: 0; background: none; overflow: visible; }
+  body.at-globe .gl-chips .gl-more-btn { min-height: 40px; max-width: 132px; padding: 0 12px; border: 1px solid #1a1a1a; border-radius: 999px; background: #1a1a1a; color: #fff;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.at-globe .gl-overflow .gl-more-menu { width: min(290px, calc(100vw - 24px)); max-height: 70dvh; }
+  /* the sheet's header in one tight line: name · count · year, Practice, close */
+  body.at-globe .gl-p-head { gap: 8px; align-items: center; }
+  body.at-globe .gl-reg-ico { display: none; }
+  body.at-globe .gl-flag { width: 24px; height: 17px; }
+  body.at-globe .gl-p-head > div { display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1 1 auto; }
+  body.at-globe .gl-p-head h3 { flex-shrink: 0; font-size: 1.02rem; }
+  body.at-globe .gl-p-head > div > span { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  body.at-globe .gl-p-head .gl-practice { min-height: 30px; padding: 0 10px; font-size: .76rem; }
+  body.at-globe .gl-p-head .gl-x { width: 28px; height: 28px; font-size: 16px; margin-left: 0; }
+  body.at-globe .gl-p-head .gl-tabs { margin-top: 2px; }
+  body.at-globe .gl-p-head .gl-tab { min-height: 28px; padding: 0 10px; font-size: .74rem; }
+  body.at-globe .gl-side { gap: 8px; }
+}
+@media (max-width: 700px) { body.at-globe .gl-sub-x { display: none; } }
