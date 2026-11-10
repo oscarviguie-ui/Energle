@@ -232,6 +232,7 @@ function globeCountryHTML(c) {
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
     + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
+    + '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice ' + (r.region === 'all' ? 'all' : 'these ' + r.n) + ' →</button>'
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
     + globeCardsHTML() + '<p class="gl-hint">Click a country on the map to see its full profile, clue cards included.</p>';
 }
@@ -501,10 +502,29 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.at-sort select, select.at-sort, #at-sort').forEach(el => el.addEventListener('change', () => setTimeout(globeApplyGroup, 0)));
     globeApplyGroup();
   };
+  // Practice uses the same groups as the Explore chips: continents split like the map, plus the blocs.
+  // Asia & Pacific and Americas stay defined (old links and saved sessions) but leave the picker.
+  PRACTICE_CATEGORIES.forEach(c => { if (c.id === 'asia' || c.id === 'americas') c.group = 'retired'; });
+  const at = PRACTICE_CATEGORIES.findIndex(c => c.group !== 'region' && c.group !== 'retired');
+  const RULES = { eu: 'The 27 member states', g7: 'The seven largest advanced economies', opec: 'The 12 oil-exporting members', brics: 'Brazil, Russia, India, China, South Africa and the 2024 joiners' };
+  const added = GLOBE_GROUPS.filter(g => !PRACTICE_CATEGORIES.some(c => c.id === g.id)).map(g => ({
+    id: g.id, group: g.bloc ? 'bloc' : 'region', label: g.name,
+    rule: RULES[g.id] || '', filter: g.test }));
+  PRACTICE_CATEGORIES.splice(at, 0, ...added);
+  Object.assign(CAT_EMOJIS, { asiaonly: '🌏', oceania: '🌏', namerica: '🌎', samerica: '🌎', eu: '🇪🇺', g7: '🏛️', opec: '🛢️', brics: '🌐' });
   const _picker = renderPracticePickerScreen;
   window.renderPracticePickerScreen = function () {
     document.body.classList.remove('gm-on');
-    _picker();
+    // the picker draws region, profile and trend; the blocs ride in the region grid, then move to their own section
+    const blocs = PRACTICE_CATEGORIES.filter(c => c.group === 'bloc'); blocs.forEach(c => c.group = 'region');
+    try { _picker(); } finally { blocs.forEach(c => c.group = 'bloc'); }
+    const reg = document.querySelector('.pc-section[aria-label="By region"]');
+    if (reg) {
+      reg.insertAdjacentHTML('afterend', '<section class="pc-section" aria-label="By bloc"><div class="pc-head"><span class="pc-h">By bloc</span>'
+        + '<span class="pc-sub">Economic and political groups</span></div><div class="pc-grid"></div></section>');
+      const grid = reg.nextElementSibling.querySelector('.pc-grid');
+      blocs.forEach(c => { const b = reg.querySelector('.pc-main[onclick="startPractice(\'' + c.id + '\')"]'); if (b) grid.appendChild(b.closest('.pc-card')); });
+    }
     const t = document.querySelector('.pc-atlas-title'), s = document.querySelector('.pc-atlas-sub'), c = document.querySelector('.pc-atlas-cta');
     if (t) t.textContent = 'Explore the map'; if (s) s.textContent = 'Every country on a terrain globe, with its profile a click away'; if (c) c.textContent = 'Back to the map →';
   };

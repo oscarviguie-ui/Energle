@@ -128,3 +128,7 @@ body.at-globe .gl-chips .at-chip { white-space: nowrap; flex-shrink: 0; padding:
 @media (max-width: 1099px) { body.at-globe .at-tools { flex-wrap: wrap; } body.at-globe #browse-search { flex: 1 1 200px; } body.at-globe .gl-chips { flex: 1 1 100%; justify-content: flex-start; } }
 /* the panel: a little more air between the cards */
 @media (min-width: 1100px) { body.at-globe .gl-side { gap: 16px; padding: 2px 10px 0 2px; } }
+/* the group panel's way into Practice */
+.gl-practice { flex-shrink: 0; white-space: nowrap; min-height: 34px; padding: 0 14px; border: 1.5px solid #1a1a1a; border-radius: 999px; background: #fff; color: #1a1a1a;
+  font: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; }
+.gl-practice:hover { background: #1a1a1a; color: #fff; }
