@@ -695,7 +695,7 @@ function tryBrowse() {
   renderBrowseScreen();
 }
 
-let ATLAS = { q: '', region: 'all', sort: 'name' };
+let ATLAS = { q: '', region: 'all', sort: 'name', view: 'globe', last: null };
 function renderBrowseScreen() {
   if (lineChart) { lineChart.destroy(); lineChart = null; }
   if (barChart)  { barChart.destroy();  barChart  = null; }
@@ -716,6 +716,7 @@ function renderBrowseScreen() {
     pageHeaderHTML()
     + pageSubtitleHTML('Country atlas', 'every country’s electricity profile', '<button type="button" id="back-to-cats">← Practice</button>')
     + '<div class="at-tools">'
+    +   (globeOn() ? '<div class="at-view" role="group" aria-label="View"><button type="button" class="at-vbtn" data-v="globe">Globe</button><button type="button" class="at-vbtn" data-v="list">List</button></div>' : '')
     +   '<label class="cr-sr" for="browse-search">Search countries</label>'
     +   '<input id="browse-search" type="search" placeholder="Search a country…" autocomplete="off" />'
     +   '<div class="at-chips" role="group" aria-label="Region">' + regions.map(([id, l]) => '<button type="button" class="at-chip" data-r="' + id + '">' + l + '</button>').join('') + '</div>'
@@ -723,6 +724,7 @@ function renderBrowseScreen() {
     +     '<option value="name">A–Z</option><option value="g">Generation</option><option value="dpc">Use per person</option><option value="ren">Renewable share</option>'
     +   '</select></label>'
     + '</div>'
+    + (globeOn() ? globeHTML() : '')
     + '<div class="at-head" aria-hidden="true"><span>Country</span><span class="at-keyhead">' + CATEGORIES.map(g => '<span class="pc-key-i"><span class="pc-key-sw" style="background:' + g.color + '80;box-shadow:inset 0 0 0 1px ' + g.color + 'b3"></span>' + g.key + '</span>').join('') + '</span><span>Generation</span><span>Per person</span></div>'
     + '<div class="browse-list at-list" id="at-list">' + rows + '</div>'
     + '<p class="at-empty" id="at-empty" hidden>No country matches.</p>'
@@ -732,8 +734,24 @@ function renderBrowseScreen() {
   search.value = ATLAS.q; sort.value = ATLAS.sort;
   search.addEventListener('input', () => { ATLAS.q = search.value.toLowerCase().trim(); applyAtlas(); });
   sort.addEventListener('change', () => { ATLAS.sort = sort.value; applyAtlas(); });
-  document.querySelectorAll('.at-chip').forEach(b => b.addEventListener('click', () => { ATLAS.region = b.dataset.r; applyAtlas(); }));
+  document.querySelectorAll('.at-chip').forEach(b => b.addEventListener('click', () => { ATLAS.region = b.dataset.r; applyAtlas(); if (globeOn() && ATLAS.view === 'globe') globeRegion(ATLAS.region); }));
+  if (globeOn()) {
+    document.querySelectorAll('.at-vbtn').forEach(b => b.addEventListener('click', () => { ATLAS.view = b.dataset.v; atlasView(); }));
+    search.addEventListener('keydown', e => {            // on the globe, Enter flies to the first country that matches
+      if (e.key !== 'Enter' || ATLAS.view !== 'globe') return;
+      const hit = [...document.querySelectorAll('#at-list .at-row')].find(r => !r.hidden);
+      if (hit) globeFlyTo(hit.getAttribute('onclick').match(/'(\w+)'/)[1]);
+    });
+    atlasView();
+  }
   applyAtlas();
+}
+// Atlas view: the globe (behind ?globe=on while tested) or the list
+function atlasView() {
+  const g = ATLAS.view === 'globe';
+  document.body.classList.toggle('at-globe', g);
+  document.querySelectorAll('.at-vbtn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === ATLAS.view)));
+  if (g) globeMount().then(() => { if (ATLAS.last) { globeFlyTo(ATLAS.last); ATLAS.last = null; } });
 }
 function applyAtlas() {
   const cat = PRACTICE_CATEGORIES.find(c => c.id === ATLAS.region);
@@ -771,7 +789,7 @@ function browseCountry(iso3) {
   document.getElementById('back-to-browse').addEventListener('click', () => {
     if (lineChart) { lineChart.destroy(); lineChart = null; }
     if (barChart)  { barChart.destroy();  barChart  = null; }
-    target = prevTarget; renderBrowseScreen();
+    target = prevTarget; ATLAS.last = iso3; renderBrowseScreen();
   });
   renderStatBar(); renderFlowBar(); renderCharts();
   if (typeof renderAtlasCards === 'function') renderAtlasCards();
