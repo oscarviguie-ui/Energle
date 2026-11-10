@@ -753,7 +753,7 @@ function atlasView() {
   const g = ATLAS.view === 'globe';
   document.body.classList.toggle('at-globe', g);
   document.querySelectorAll('.at-vbtn').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === ATLAS.view)));
-  if (g) globeMount().then(() => { if (ATLAS.last) { globeFlyTo(ATLAS.last); ATLAS.last = null; } });
+  if (g) globeMount();                                 // flies back to ATLAS.last itself once the map is ready
 }
 function applyAtlas() {
   const cat = PRACTICE_CATEGORIES.find(c => c.id === ATLAS.region);
