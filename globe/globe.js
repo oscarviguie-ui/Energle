@@ -231,7 +231,7 @@ function globeCountryHTML(c) {
 }
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
-    + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
+    + (groupOf(r.region).trait ? groupOf(r.region).rule + ' · ' : '') + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
     + '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice ' + (r.region === 'all' ? 'all' : 'these ' + r.n) + ' →</button>'
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
     + globeCardsHTML() + '<p class="gl-hint">Click a country on the map to see its full profile, clue cards included.</p>';
@@ -293,7 +293,7 @@ function globeRegion(r) {
   globeApplyGroup();
   GLOBE_SEL = null; globeSide(); globeHighlight();
   if (!GLOBE) return;
-  if (GLOBE_REGION === 'all') { GLOBE.flyTo({ center: [10, 25], zoom: 1.5, duration: 1200 }); return; }
+  if (GLOBE_REGION === 'all' || groupOf(GLOBE_REGION).trait) { GLOBE.flyTo({ center: [10, 25], zoom: 1.5, duration: 1200 }); return; }
   // frame the group's countries: their centre on the sphere, and a zoom from how far apart they are
   const ms = COUNTRIES.filter(groupOf(GLOBE_REGION).test), R = Math.PI / 180;
   const x = ms.reduce((a, c) => a + Math.cos(c.lat * R) * Math.cos(c.lng * R), 0), y = ms.reduce((a, c) => a + Math.cos(c.lat * R) * Math.sin(c.lng * R), 0),
@@ -306,17 +306,26 @@ function globeRegion(r) {
 // The chips (continents, then blocs) and the list view's filter for them
 function globeChipsHTML() {
   const chip = g => '<button type="button" class="at-chip" data-r="' + g.id + '" aria-pressed="' + (g.id === ATLAS.region) + '">' + g.chip + '</button>';
-  return '<div class="at-chips gl-chips" role="group" aria-label="Group">' + GLOBE_GROUPS.filter(g => !g.bloc).map(chip).join('')
+  const item = g => '<button type="button" class="at-chip gl-trait" role="menuitem" data-r="' + g.id + '" aria-pressed="' + (g.id === ATLAS.region) + '">'
+    + '<span class="gl-trait-name">' + g.chip + '</span><span class="gl-trait-rule">' + g.rule + '</span></button>';
+  const traits = GLOBE_GROUPS.filter(g => g.trait);
+  const folder = (cls, label, menu) => '<span class="gl-more ' + cls + '"' + (cls === 'gl-overflow' ? ' hidden' : '') + '>'
+    + '<button type="button" class="at-chip gl-more-btn" data-label="' + label + '" aria-haspopup="true" aria-expanded="false">' + label + ' <span aria-hidden="true">▾</span></button>'
+    + '<span class="gl-more-menu" role="menu" hidden>' + menu + '</span></span>';
+  return '<div class="at-chips gl-chips" role="group" aria-label="Group">' + GLOBE_GROUPS.filter(g => !g.bloc && !g.trait).map(chip).join('')
     + '<span class="gl-chip-sep" aria-hidden="true"></span>' + GLOBE_GROUPS.filter(g => g.bloc).map(chip).join('')
-    + '<span class="gl-more" hidden><button type="button" class="at-chip gl-more-btn" aria-haspopup="true" aria-expanded="false">More <span aria-hidden="true">▾</span></button>'
-    + '<span class="gl-more-menu" role="menu" hidden></span></span></div>';
+    + folder('gl-overflow', 'More', '')
+    + (traits.length ? '<span class="gl-chip-sep gl-sep-traits" aria-hidden="true"></span>' + folder('gl-traits', 'By trait',
+        '<span class="gl-menu-h">Profile</span>' + traits.filter(g => g.trait === 'profile').map(item).join('')
+        + '<span class="gl-menu-h">Trend &amp; trade</span>' + traits.filter(g => g.trait === 'trend').map(item).join('')) : '')
+    + '</div>';
 }
 // The tools row: the search box takes the free width, the group chips sit on the right. When the chips
 // would leave the search box less than SEARCH_MIN, the last ones fold into a "More" menu.
 const SEARCH_MIN = 280;
 function globeFitChips() {
   const row = document.querySelector('.gl-chips'), search = document.getElementById('browse-search'); if (!row || !search) return;
-  const more = row.querySelector('.gl-more'), menu = row.querySelector('.gl-more-menu'), sep = row.querySelector('.gl-chip-sep');
+  const more = row.querySelector('.gl-overflow'), menu = more.querySelector('.gl-more-menu'), sep = row.querySelector('.gl-chip-sep');
   // start from everything on the row, in the original order
   menu.querySelectorAll('.gl-menu-sep').forEach(x => x.remove());
   [...menu.children].forEach(c => row.insertBefore(c, more)); more.hidden = true;
@@ -333,20 +342,31 @@ function globeFitChips() {
     || !row.querySelector(':scope > .at-chip:not(.gl-more-btn)');
   globeMoreSync();
 }
+// a folder shows the name of the group picked inside it
 function globeMoreSync() {
-  const more = document.querySelector('.gl-more'); if (!more) return;
-  const btn = more.querySelector('.gl-more-btn'), on = more.querySelector('.gl-more-menu .at-chip[aria-pressed="true"]');
-  btn.firstChild.textContent = on ? on.textContent + ' ' : 'More ';
-  btn.setAttribute('aria-pressed', String(!!on));
+  document.querySelectorAll('.gl-more').forEach(more => {
+    const btn = more.querySelector('.gl-more-btn'), on = more.querySelector('.gl-more-menu .at-chip[aria-pressed="true"]');
+    btn.firstChild.textContent = (on ? (on.querySelector('.gl-trait-name') || on).textContent : btn.dataset.label) + ' ';
+    btn.setAttribute('aria-pressed', String(!!on));
+  });
 }
-function globeMoreOpen(open) {
-  const more = document.querySelector('.gl-more'); if (!more) return;
-  more.querySelector('.gl-more-menu').hidden = !open;
-  more.querySelector('.gl-more-btn').setAttribute('aria-expanded', String(open));
+// menus are placed on the page (fixed), so the chip row's own scrolling on phones never clips them
+function globeMoreOpen(open, more) {
+  document.querySelectorAll('.gl-more').forEach(m => {
+    const on = !!open && m === more, menu = m.querySelector('.gl-more-menu'), btn = m.querySelector('.gl-more-btn');
+    menu.hidden = !on; btn.setAttribute('aria-expanded', String(on));
+    if (on) {
+      const r = btn.getBoundingClientRect();
+      menu.style.top = Math.round(r.bottom + 6) + 'px';
+      menu.style.right = Math.max(8, Math.round(document.documentElement.clientWidth - r.right)) + 'px';
+    }
+  });
 }
 let GLOBE_FIT_RAF = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(GLOBE_FIT_RAF); GLOBE_FIT_RAF = requestAnimationFrame(globeFitChips); });
 document.addEventListener('click', e => { if (!e.target.closest('.gl-more')) globeMoreOpen(false); });
+document.addEventListener('scroll', () => globeMoreOpen(false), true);
+window.addEventListener('resize', () => globeMoreOpen(false));
 function globeApplyGroup() {
   const g = groupOf(ATLAS.region), byIso = Object.fromEntries(COUNTRIES.map(c => [c.iso3, c]));
   let shown = 0;
@@ -545,16 +565,22 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
         globeMoreOpen(false);
         ATLAS.region = btn.dataset.r;
         if (ATLAS.view === 'globe') globeRegion(ATLAS.region); else globeApplyGroup();
+        globeFitChips();                     // a folder now shows the group's name, which can change what fits
       }));
     }
-    const mb = document.querySelector('.gl-more-btn');
-    if (mb) mb.addEventListener('click', () => globeMoreOpen(mb.getAttribute('aria-expanded') !== 'true'));
+    document.querySelectorAll('.gl-more-btn').forEach(mb => mb.addEventListener('click', () => globeMoreOpen(mb.getAttribute('aria-expanded') !== 'true', mb.closest('.gl-more'))));
     const search = document.getElementById('browse-search');
     if (search) search.addEventListener('input', () => setTimeout(globeApplyGroup, 0));
     document.querySelectorAll('.at-sort select, select.at-sort, #at-sort').forEach(el => el.addEventListener('change', () => setTimeout(globeApplyGroup, 0)));
     globeApplyGroup();
     globeFitChips();
   };
+  // Explore also adds up the practice profiles and trends (big producers, green leaders, importers...)
+  PRACTICE_CATEGORIES.filter(c => c.group === 'profile' || c.group === 'trend').forEach(c => {
+    if (GLOBE_GROUPS.some(g => g.id === c.id)) return;
+    GLOBE_GROUPS.push({ id: c.id, chip: c.label, name: c.label, trait: c.group, rule: c.rule, test: c.filter });
+    REGION_NAMES[c.id] = c.label; GLOBE_REGIONS[c.id] = true;
+  });
   // Practice uses the same groups as the Explore chips: continents split like the map, plus the blocs.
   // Asia & Pacific and Americas stay defined (old links and saved sessions) but leave the picker.
   PRACTICE_CATEGORIES.forEach(c => { if (c.id === 'asia' || c.id === 'americas') c.group = 'retired'; });

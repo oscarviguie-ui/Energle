@@ -130,7 +130,7 @@ body.at-globe .gl-chips { flex: none; margin-left: 0; flex-wrap: nowrap; positio
 .gl-chip-sep[hidden], .gl-more[hidden], .gl-more-menu[hidden] { display: none; }
 .gl-more { position: relative; display: inline-flex; }
 .gl-more-btn[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
-.gl-more-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; display: flex; flex-direction: column; gap: 2px; min-width: 150px; padding: 4px;
+.gl-more-menu { position: fixed; z-index: 50; display: flex; flex-direction: column; gap: 2px; min-width: 150px; max-height: min(70vh, 560px); overflow-y: auto; padding: 4px;
   border: 1px solid #ecebe8; border-radius: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 .gl-more-menu .at-chip { text-align: left; border-radius: 6px; }
 .gl-more-menu .at-chip:hover { background: #f4f3ef; }
@@ -144,3 +144,10 @@ body.at-globe .gl-chips .at-chip { white-space: nowrap; flex-shrink: 0; padding:
   font: inherit; font-size: .84rem; font-weight: 700; cursor: pointer; }
 .gl-practice:hover { background: #1a1a1a; color: #fff; }
 .gl-menu-sep { height: 1px; margin: 3px 6px; background: #ecebe8; }
+/* the By trait folder: profiles and trends, each with its rule */
+.gl-traits .gl-more-menu { width: 270px; }
+.gl-menu-h { padding: 8px 10px 2px; font-size: .68rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #a3a19b; }
+body.at-globe .gl-more-menu .gl-trait, .gl-more-menu .gl-trait { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-height: 0; padding: 7px 10px; white-space: normal; }
+.gl-trait-name { color: #1a1a1a; font-weight: 600; }
+.gl-trait-rule { font-size: .74rem; font-weight: 400; color: #8a8984; }
+.gl-more-menu .gl-trait[aria-pressed="true"] .gl-trait-name, .gl-more-menu .gl-trait[aria-pressed="true"] .gl-trait-rule { color: #fff; }
