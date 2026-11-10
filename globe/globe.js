@@ -232,94 +232,94 @@ async function globeMount() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && GLOBE_SEL && GLOBE) globeSelect(null, false); });
 
 // ============================================================
-//  2. GUESS MAP — a map button in the guess bar opens a large map over the page (sized to the window).
-//     Tap a country to pick it, then Guess. Guessed countries are shaded in their closeness colour.
-//     Nothing is kept between puzzles: what it shows is worked out from the current game each time it opens.
+//  2. GUESS MAP — the Map button in the guess bar opens the globe inside the page, next to the
+//     information (on a laptop: a column on the right; on a phone: just above the guess bar), so the
+//     charts stay in view while you look around. Tap a country to put it in the guess box.
+//     Guessed countries are shaded in their closeness colour; at the end the answer is outlined.
+//     Nothing is stored between puzzles: the map is redrawn from the current game every time.
 // ============================================================
-let GMAP = null, GMAP_PICK = null, GMAP_LOADING = null;
+let GMAP = null, GMAP_PICK = null;
+let GMAP_ON = (() => { try { return localStorage.getItem('energle_gmap') === 'on'; } catch (e) { return false; } })();
 const GMAP_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">'
   + '<path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13M15 6.5v13"/></svg>';
-function gmapButtonHTML() { return '<button type="button" id="gm-btn" class="gm-btn" aria-label="Pick a country on the map" title="Pick on the map">' + GMAP_ICON + '<span class="gm-lbl">Map</span></button>'; }
+function gmapButtonHTML() { return '<button type="button" id="gm-btn" class="gm-btn" aria-pressed="false" title="Show the map">' + GMAP_ICON + '<span class="gm-lbl">Map</span></button>'; }
 function gmapUpdate() {
-  const m = GMAP; if (!m || !m.getLayer('gm-fill')) return;
-  const done = guesses.filter(g => !target || g.iso3 !== target.iso3);
+  const m = GMAP; if (!m || !m.getLayer('gm-fill') || !target) return;
+  const done = guesses.filter(g => g.iso3 !== target.iso3);
   const fills = done.flatMap(g => [['==', ['get', 'iso3'], g.iso3], 'rgb(' + closeRGB(guessInfo(g).prox).join(',') + ')']);
   m.setPaintProperty('gm-fill', 'fill-color', fills.length ? ['case', ...fills, 'rgba(0,0,0,0)'] : 'rgba(0,0,0,0)');
   m.setFilter('gm-fill', ['in', ['get', 'iso3'], ['literal', done.map(g => g.iso3)]]);
-  m.setFilter('gm-pick', ['==', ['get', 'iso3'], GMAP_PICK || '']);
-  m.setFilter('gm-pick-fill', ['==', ['get', 'iso3'], GMAP_PICK || '']);
-  const c = GMAP_PICK && COUNTRIES.find(x => x.iso3 === GMAP_PICK), go = document.getElementById('gm-go'), nm = document.getElementById('gm-name');
-  if (nm) nm.innerHTML = c ? flagImg(c.iso3) + '<span>' + escHtml(c.name) + '</span>' : '<span class="gm-none">Tap a country</span>';
-  if (go) { go.disabled = !c; go.textContent = c ? 'Guess ' + c.name : 'Guess'; }
+  const pick = ['==', ['get', 'iso3'], gameOver ? '' : (GMAP_PICK || '')];
+  m.setFilter('gm-pick', pick); m.setFilter('gm-pick-fill', pick);
+  const ans = ['==', ['get', 'iso3'], gameOver ? target.iso3 : ''];
+  m.setFilter('gm-answer', ans); m.setFilter('gm-answer-line', ans);
 }
 function gmapPick(iso3) {
   if (gameOver) return;
   const c = COUNTRIES.find(x => x.iso3 === iso3); if (!c) return;
-  const msg = document.getElementById('gm-msg');
-  if (guesses.some(g => g.iso3 === iso3)) { GMAP_PICK = null; if (msg) msg.textContent = c.name + ' is already guessed'; gmapUpdate(); return; }
-  if (msg) msg.textContent = '';
+  const input = document.getElementById('guess-input'), err = document.getElementById('error');
+  if (guesses.some(g => g.iso3 === iso3)) { if (err) err.textContent = c.name + ' is already guessed.'; return; }
+  if (err) err.textContent = '';
+  if (input) { input.value = c.name; syncInputFlag(); }
   GMAP_PICK = iso3; gmapUpdate();
+  const btn = document.getElementById('submit-btn'); if (btn) { btn.classList.remove('gm-ready'); void btn.offsetWidth; btn.classList.add('gm-ready'); }
 }
-function gmapClose() {
-  const ov = document.getElementById('gm-overlay'); if (ov) ov.hidden = true;
-  document.body.classList.remove('gm-open');
-  document.removeEventListener('keydown', gmapKey);
+// Where the map goes: beside the information on wide screens, right above the guess bar otherwise
+const GMAP_WIDE = '(min-width: 1100px)';
+function gmapPlace() {
+  const card = document.getElementById('gm-card'); if (!card) return;
+  const col = document.getElementById('gw-map'), head = document.getElementById('guess-head');
+  if (matchMedia(GMAP_WIDE).matches) { if (col && card.parentNode !== col) col.appendChild(card); }
+  else if (head && card.nextSibling !== head) head.before(card);
 }
-function gmapKey(e) { if (e.key === 'Escape') gmapClose(); }
-function gmapGuess() {
-  const c = GMAP_PICK && COUNTRIES.find(x => x.iso3 === GMAP_PICK); if (!c) return;
-  const input = document.getElementById('guess-input'); if (!input) return;
-  input.value = c.name; syncInputFlag();
-  GMAP_PICK = null; gmapClose(); submitGuess();
-}
-async function gmapOpen() {
-  if (gameOver) return;
-  let ov = document.getElementById('gm-overlay');
-  if (!ov) {
-    ov = document.createElement('div'); ov.id = 'gm-overlay'; ov.className = 'gm-overlay';
-    ov.innerHTML = '<div class="gm-backdrop"></div><div class="gm-sheet" role="dialog" aria-modal="true" aria-label="Pick a country on the map">'
-      + '<div class="gm-top"><span class="gm-title">Pick a country</span><span class="gm-msg" id="gm-msg" role="status"></span>'
-      + '<button type="button" class="gm-x" id="gm-x" aria-label="Close the map">×</button></div>'
-      + '<div class="gm-wrap"><div class="gl-canvas" id="gm-canvas"></div><p class="gl-loading" id="gm-loading">Loading the map…</p></div>'
-      + '<div class="gm-bar"><span class="gm-name" id="gm-name"></span><button type="button" class="gm-go" id="gm-go" disabled>Guess</button></div></div>';
-    document.body.appendChild(ov);
-    ov.querySelector('.gm-backdrop').addEventListener('click', gmapClose);
-    document.getElementById('gm-x').addEventListener('click', gmapClose);
-    document.getElementById('gm-go').addEventListener('click', gmapGuess);
+function gmapShow(on) {
+  GMAP_ON = on; try { localStorage.setItem('energle_gmap', on ? 'on' : 'off'); } catch (e) {}
+  document.body.classList.toggle('gm-on', on);
+  const b = document.getElementById('gm-btn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Hide the map' : 'Show the map'; }
+  let card = document.getElementById('gm-card');
+  if (!on) { if (card) card.hidden = true; return; }
+  if (!card) {
+    card = document.createElement('section'); card.id = 'gm-card'; card.className = 'gm-card'; card.setAttribute('aria-label', 'Map');
+    card.innerHTML = '<div class="gm-wrap"><div class="gl-canvas" id="gm-canvas"></div><p class="gl-loading" id="gm-loading">Loading the map…</p>'
+      + '<button type="button" class="gm-x" id="gm-x" aria-label="Hide the map">×</button></div>';
+    document.body.appendChild(card); gmapPlace();
+    card.querySelector('#gm-x').addEventListener('click', () => gmapShow(false));
+    const cv = document.getElementById('gm-canvas'), fill = Math.log2(1.0 * Math.min(cv.clientWidth || 400, cv.clientHeight || 400) * Math.PI / 512);
+    GMAP = null;
+    globeMakeMap(cv, { zoom: Math.max(0.5, fill), center: target ? [target.lng > 0 ? 60 : -40, 25] : [10, 25] }, (m, labelFont) => {
+      m.addLayer({ id: 'gm-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': 'rgba(0,0,0,0)', 'fill-opacity': 0.55 } });
+      m.addLayer({ id: 'gm-pick-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.25 } });
+      m.addLayer({ id: 'gm-pick', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2.5 } });
+      m.addLayer({ id: 'gm-answer', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': '#22a35a', 'fill-opacity': 0.4 } });
+      m.addLayer({ id: 'gm-answer-line', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': '#15803d', 'line-width': 2 } });
+      globeAddNames(m, labelFont);
+      const l = document.getElementById('gm-loading'); if (l) l.remove();
+      GMAP = m; gmapUpdate();
+    }).then(map => {
+      if (!map) return;
+      map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) gmapPick(iso); });
+      map._onGone = () => { if (GMAP === map) GMAP = null; };
+    }).catch(() => { const l = document.getElementById('gm-loading'); if (l) l.textContent = 'The map could not load here.'; });
   }
-  GMAP_PICK = null; const msg = document.getElementById('gm-msg'); if (msg) msg.textContent = '';
-  ov.hidden = false; document.body.classList.add('gm-open');
-  document.addEventListener('keydown', gmapKey);
-  if (GMAP) { GMAP.resize(); gmapUpdate(); return; }
-  if (GMAP_LOADING) return;
-  const cv = document.getElementById('gm-canvas'), fill = Math.log2(1.05 * Math.min(cv.clientWidth, cv.clientHeight) * Math.PI / 512);
-  GMAP_LOADING = globeMakeMap(cv, { zoom: Math.max(0.6, fill) }, (m, labelFont) => {      // the globe fills the map's height
-    m.addLayer({ id: 'gm-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': 'rgba(0,0,0,0)', 'fill-opacity': 0.55 } });
-    m.addLayer({ id: 'gm-pick-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.25 } });
-    m.addLayer({ id: 'gm-pick', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2.5 } });
-    globeAddNames(m, labelFont);
-    const l = document.getElementById('gm-loading'); if (l) l.remove();
-    GMAP = m; gmapUpdate();
-  }).then(map => {
-    if (!map) return;
-    map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) gmapPick(iso); });
-  }).catch(() => { const l = document.getElementById('gm-loading'); if (l) l.textContent = 'The map could not load here.'; GMAP_LOADING = null; });
+  card.hidden = false; gmapPlace();
+  if (GMAP) { GMAP.resize(); gmapUpdate(); }
 }
+matchMedia(GMAP_WIDE).addEventListener('change', () => { gmapPlace(); if (GMAP) setTimeout(() => GMAP.resize(), 50); });
 
 // ============================================================
-//  3. WIDE SCREENS — the game in two columns when one column would not fit the window:
-//     charts, legend and clue cards on the left; the totals, the guess bar and the guesses on the right.
-//     Narrow or tall windows keep the single column (the wrappers then don't change the layout).
+//  3. LAYOUT — the information (charts, mix, totals, legend) as one block, the guess bar always under it.
+//     Wide, short windows put the charts and the totals side by side, so the guess bar is on screen.
+//     With the map open on a wide screen, the map is a column on the right and everything else stays left.
 // ============================================================
 function gwLayout() {
-  const app = document.getElementById('app'), charts = document.getElementById('charts-section'), guessesEl = document.getElementById('guesses');
-  if (!app || !charts || !guessesEl || document.getElementById('gw-cols')) return;
+  const charts = document.getElementById('charts-section'), bal = document.getElementById('balance-card');
+  if (!charts || !bal || document.getElementById('gw-cols')) return;
   const cols = document.createElement('div'); cols.id = 'gw-cols'; cols.className = 'gw-cols';
-  const L = document.createElement('div'); L.className = 'gw-left'; const R = document.createElement('div'); R.className = 'gw-right';
-  cols.append(L, R);
-  document.getElementById('balance-card').before(cols);
-  ['charts-section', 'legend-shared', 'clue-cards'].forEach(id => { const n = document.getElementById(id); if (n) L.appendChild(n); });
-  ['balance-card', 'guess-head', 'input-area', 'error', 'banner', 'guesses'].forEach(id => { const n = document.getElementById(id); if (n) R.appendChild(n); });
+  cols.innerHTML = '<div class="gw-main" id="gw-main"><div class="gw-info" id="gw-info"></div></div><div class="gw-map" id="gw-map"></div>';
+  bal.before(cols);
+  const info = cols.querySelector('#gw-info'), main = cols.querySelector('#gw-main');
+  ['charts-section', 'balance-card', 'legend-shared'].forEach(id => { const n = document.getElementById(id); if (n) info.appendChild(n); });
+  ['clue-cards', 'guess-head', 'input-area', 'error', 'banner', 'guesses'].forEach(id => { const n = document.getElementById(id); if (n) main.appendChild(n); });
 }
 
 // ============================================================
@@ -343,6 +343,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   };
   const _browse = renderBrowseScreen;
   window.renderBrowseScreen = function () {
+    document.body.classList.remove('gm-on');
     _browse();
     const t = document.querySelector('.sub-lead'), r = document.querySelector('.sub-rest');
     if (t) t.textContent = 'Explore'; if (r) r.textContent = 'every country’s electricity on the map';
@@ -350,17 +351,27 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   };
   const _picker = renderPracticePickerScreen;
   window.renderPracticePickerScreen = function () {
+    document.body.classList.remove('gm-on');
     _picker();
     const t = document.querySelector('.pc-atlas-title'), s = document.querySelector('.pc-atlas-sub'), c = document.querySelector('.pc-atlas-cta');
     if (t) t.textContent = 'Explore the map'; if (s) s.textContent = 'Every country on a terrain globe, with its profile a click away'; if (c) c.textContent = 'Back to the map →';
   };
-  // the game screen: two columns on wide, short windows; a Map button in the guess bar
+  const _archive = renderArchiveScreen;
+  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on'); return _archive(d); };
+  // the game screen: one information block, the guess bar under it, a Map button in the guess bar
   const _game = renderGameScreen;
   window.renderGameScreen = function () {
+    const old = document.getElementById('gm-card'); if (old) old.remove();
     _game();
     gwLayout();
     const sub = document.getElementById('submit-btn');
-    if (sub && !document.getElementById('gm-btn')) { sub.insertAdjacentHTML('beforebegin', gmapButtonHTML()); document.getElementById('gm-btn').addEventListener('click', gmapOpen); }
-    gmapClose(); GMAP_PICK = null;
+    if (sub && !document.getElementById('gm-btn')) { sub.insertAdjacentHTML('beforebegin', gmapButtonHTML()); document.getElementById('gm-btn').addEventListener('click', () => gmapShow(!GMAP_ON)); }
+    GMAP_PICK = null; gmapShow(GMAP_ON);
   };
+  const _row = addGuessRow;
+  window.addGuessRow = function (country, isCorrect, animate) { _row(country, isCorrect, animate); GMAP_PICK = null; gmapUpdate(); };
+  const _end = endGame;
+  window.endGame = function () { _end(); gmapUpdate(); };
+  const _new = newGame;
+  window.newGame = function () { _new(); GMAP_PICK = null; gmapUpdate(); };
 });
