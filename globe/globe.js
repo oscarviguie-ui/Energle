@@ -46,6 +46,14 @@ function globeLoad() {
     const known = new Set(COUNTRIES.map(c => c.iso3));
     GLOBE_GEO = topojson.feature(topo, topo.objects.countries);
     GLOBE_GEO.features = GLOBE_GEO.features.filter(f => known.has(f.properties.iso3));
+    // shapes that cross the date line (Russia's far east, Fiji) jump from +180 to -180 inside one ring, which
+    // draws a band across the globe; moving their western-hemisphere points past +180 keeps each ring in one piece
+    GLOBE_GEO.features.forEach(f => {
+      const polys = f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+      polys.forEach(p => p.forEach(r => {
+        if (r.some((pt, i) => i && Math.abs(pt[0] - r[i - 1][0]) > 180)) r.forEach(pt => { if (pt[0] < 0) pt[0] += 360; });
+      }));
+    });
     GLOBE_GEO.features.forEach((f, i) => { f.id = i; f.properties.span = globeSpan(f); });
   })().catch(e => { GLOBE_LOADING = null; throw e; });
   return GLOBE_LOADING;
@@ -158,32 +166,79 @@ function globeRestoreTarget() {
   if (typeof lineChart !== 'undefined' && lineChart) { lineChart.destroy(); lineChart = null; }
   if (typeof barChart !== 'undefined' && barChart) { barChart.destroy(); barChart = null; }
 }
-// The daily puzzle's own cards; the mix and its history first, since they say the most about a country
-function globeCountryHTML(c) {
-  return '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + escHtml(c.name) + '</h3><span>' + (REGION_LABEL[c.continent] || c.continent || '') + '</span></div>'
-    + '<button type="button" class="gl-x" id="gl-x" aria-label="Close">×</button></div>'
+// ---------- regions: the same cards for a whole region, summed over its countries ----------
+// Generation by source, demand and net imports add up; CO2 intensity is weighted by generation; demand per
+// person is total demand over total population (each country's population = its demand / its demand per person).
+// A country whose data stops a year early carries its last year forward, so the latest year isn't short of countries.
+const REGION_NAMES = { all: 'The world', europe: 'Europe', africa: 'Africa', asia: 'Asia & Pacific', americas: 'Americas' };
+const AGG_CACHE = {};
+function globeAggregate(rid) {
+  if (AGG_CACHE[rid]) return AGG_CACHE[rid];
+  const cat = PRACTICE_CATEGORIES.find(c => c.id === rid);
+  const members = COUNTRIES.filter(c => !cat || cat.filter(c));
+  const yrsCount = {}; members.forEach(c => { yrsCount[c.latestYear] = (yrsCount[c.latestYear] || 0) + 1; });
+  const latest = +Object.entries(yrsCount).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
+  const first = Math.min(...members.map(c => Math.min(...Object.keys(ALL_DATA[c.name].years).map(Number))));
+  const years = {}, dpc = {};
+  for (let y = first; y <= latest; y++) {
+    const o = { Total: 0, Demand: 0, NetImports: 0 }; let co2 = 0, co2Gen = 0, pop = 0, popDem = 0;
+    members.forEach(c => {
+      const Y = ALL_DATA[c.name].years, d = Y[y] || (y > c.latestYear ? Y[c.latestYear] : null); if (!d) return;
+      SOURCES.forEach(k => { o[k] = (o[k] || 0) + (d[k] || 0); });
+      o.Total += d.Total || 0; o.Demand += d.Demand || 0; o.NetImports += d.NetImports || 0;
+      if (typeof d.CO2 === 'number' && d.CO2 > 0) { co2 += d.CO2 * (d.Total || 0); co2Gen += d.Total || 0; }
+      const cd = (ALL_DATA[c.name].dpc || {})[y] ?? (y > c.latestYear ? c.latestDpc : null);
+      if (cd > 0 && d.Demand > 0) { pop += d.Demand / cd; popDem += d.Demand; }
+    });
+    if (co2Gen > 0) o.CO2 = co2 / co2Gen;
+    years[y] = o;
+    if (pop > 0) dpc[y] = popDem / pop;
+  }
+  const name = REGION_NAMES[rid] || 'Region';
+  ALL_DATA[name] = { iso3: 'R_' + rid, years, dpc, latestYear: latest, latestDpc: dpc[latest] ?? null };
+  return (AGG_CACHE[rid] = { name, iso3: 'R_' + rid, latestYear: latest, latestDpc: dpc[latest] ?? null, latestTotal: years[latest].Total,
+    region: rid, n: members.length, members: members.map(c => c.iso3) });
+}
+
+// The daily puzzle's own cards, in the game's order: totals and trade flow, charts, legend, then the clue cards
+function globeCardsHTML() {
+  return balanceCardHTML()
     + '<div id="charts-section">'
     +   '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
     +   '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
     + '</div>'
-    + '<div id="legend-shared"></div>'
-    + balanceCardHTML()
-    + '<section id="clue-cards" class="gl-cards"></section>'
-    + '<button type="button" class="gl-open" id="gl-open">Open the full profile →</button>';
+    + '<div id="legend-shared"></div>';
 }
+function globeCountryHTML(c) {
+  return '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + escHtml(c.name) + '</h3><span>' + (REGION_LABEL[c.continent] || c.continent || '') + '</span></div>'
+    + '<button type="button" class="gl-x" id="gl-x" aria-label="Close">×</button></div>'
+    + globeCardsHTML() + '<section id="clue-cards" class="gl-cards"></section>';
+}
+function globeRegionHTML(r) {
+  return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
+    + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
+    + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
+    + globeCardsHTML() + '<p class="gl-hint">Click a country on the map to see its full profile, clue cards included.</p>';
+}
+let GLOBE_REGION = 'all';
 function globeSide() {
   const el = document.getElementById('gl-side'), lay = document.getElementById('gl-layout'); if (!el) return;
-  const wide = matchMedia(GLOBE_WIDE).matches;
   globeRestoreTarget();
-  if (GLOBE_SEL) {
-    GLOBE_PREV_TARGET = target; target = GLOBE_SEL;
-    el.innerHTML = globeCountryHTML(GLOBE_SEL);
-  } else el.innerHTML = wide ? '<p class="gl-empty"><b>Click a country</b>to see its electricity profile, laid out as in the daily puzzle.</p>' : '';
-  el.hidden = !GLOBE_SEL && !wide;
-  if (lay) lay.classList.toggle('has-sel', !!GLOBE_SEL);
-  if (GLOBE_SEL) { renderCharts(); renderStatBar(); renderFlowBar(); if (typeof renderAtlasCards === 'function') renderAtlasCards(); }
-  const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => globeSelect(null));
-  const o = document.getElementById('gl-open'); if (o) o.addEventListener('click', () => { const iso = GLOBE_SEL.iso3; globeRestoreTarget(); browseCountry(iso); });
+  const reg = !GLOBE_SEL ? globeAggregate(GLOBE_REGION) : null;
+  GLOBE_PREV_TARGET = target; target = GLOBE_SEL || reg;
+  el.innerHTML = GLOBE_SEL ? globeCountryHTML(GLOBE_SEL) : globeRegionHTML(reg);
+  el.classList.toggle('is-region', !GLOBE_SEL);
+  el.hidden = false;
+  if (lay) lay.classList.add('has-sel');
+  renderStatBar(); renderFlowBar(); renderCharts();
+  if (!GLOBE_SEL) {                      // a world average next to a regional total says nothing: show its share of the world instead
+    const pill = document.getElementById('stat-world-gen'), w = globeAggregate('all');
+    if (pill) { const fresh = pill.cloneNode(false); fresh.removeAttribute('id');      // a fresh node: the count-up keeps writing to the old one
+      fresh.textContent = reg.region === 'all' ? reg.n + ' countries' : Math.round(100 * reg.latestTotal / w.latestTotal) + '% of world generation'; pill.replaceWith(fresh); }
+  } else if (typeof renderAtlasCards === 'function') renderAtlasCards();
+  el.scrollTop = 0;
+  const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
+  const foot = document.querySelector('#app > footer'); if (foot && matchMedia(GLOBE_WIDE).matches) el.appendChild(foot);   // credits at the end of the panel
 }
 function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
@@ -192,29 +247,41 @@ function globeHTML() {
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
 }
-function globeSelect(c, fly = true) {
-  GLOBE_SEL = c || null;
-  globeSide();
+function globeHighlight() {
   if (!GLOBE || !GLOBE.getLayer('energle-sel-fill')) return;
   const f = ['==', ['get', 'iso3'], GLOBE_SEL ? GLOBE_SEL.iso3 : ''];
   GLOBE.setFilter('energle-sel-fill', f); GLOBE.setFilter('energle-sel-line', f);
-  if (fly && GLOBE_SEL) GLOBE.flyTo({ center: [GLOBE_SEL.lng, GLOBE_SEL.lat], zoom: globeZoomFor(GLOBE, GLOBE_SEL.iso3), duration: 1400, essential: true });
+  const reg = !GLOBE_SEL && GLOBE_REGION !== 'all' ? globeAggregate(GLOBE_REGION).members : [];
+  GLOBE.setFilter('energle-reg-fill', ['in', ['get', 'iso3'], ['literal', reg]]);
+}
+function globeSelect(c, fly = true) {
+  GLOBE_SEL = c || null;
+  globeSide(); globeHighlight();
+  if (fly && GLOBE_SEL && GLOBE) GLOBE.flyTo({ center: [GLOBE_SEL.lng, GLOBE_SEL.lat], zoom: globeZoomFor(GLOBE, GLOBE_SEL.iso3), duration: 1400, essential: true });
 }
 function globeFlyTo(iso3) { const c = COUNTRIES.find(x => x.iso3 === iso3); if (c) globeSelect(c); }
 const GLOBE_REGIONS = { all: [10, 25, 1.5], europe: [15, 52, 2.6], africa: [20, 3, 2.1], asia: [95, 25, 1.9], americas: [-80, 10, 1.6] };
-function globeRegion(r) { const v = GLOBE_REGIONS[r]; if (GLOBE && v) GLOBE.flyTo({ center: [v[0], v[1]], zoom: v[2], duration: 1200 }); }
+function globeRegion(r) {
+  GLOBE_REGION = GLOBE_REGIONS[r] ? r : 'all';
+  if (ATLAS.region !== GLOBE_REGION) { ATLAS.region = GLOBE_REGION; document.querySelectorAll('.at-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === GLOBE_REGION))); }
+  GLOBE_SEL = null; globeSide(); globeHighlight();
+  const v = GLOBE_REGIONS[GLOBE_REGION]; if (GLOBE) GLOBE.flyTo({ center: [v[0], v[1]], zoom: v[2], duration: 1200 });
+}
 
 async function globeMount() {
   const el = document.getElementById('gl-canvas'); if (!el) return;
   if (GLOBE) { try { GLOBE.remove(); } catch (e) {} GLOBE = null; }
-  GLOBE_SEL = null;
+  GLOBE_SEL = null; GLOBE_REGION = ATLAS.region && GLOBE_REGIONS[ATLAS.region] ? ATLAS.region : 'all';
+  globeSide();                               // the region's cards show while the map loads
   let map;
   try {
     map = await globeMakeMap(el, { zoom: matchMedia('(max-width: 600px)').matches ? 0.7 : 1.5 }, (m, labelFont) => {
+      m.addLayer({ id: 'energle-reg-fill', type: 'fill', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.12 } });
       m.addLayer({ id: 'energle-sel-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.22 } });
       m.addLayer({ id: 'energle-sel-line', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2 } });
       globeAddNames(m, labelFont);
       const l = document.getElementById('gl-loading'); if (l) l.remove();
+      globeHighlight();
       if (ATLAS.last) { const iso = ATLAS.last; ATLAS.last = null; globeFlyTo(iso); }
     });
   } catch (e) { const l = document.getElementById('gl-loading'); if (l) l.textContent = 'The map could not load here. The list view still works.'; return; }
@@ -222,10 +289,10 @@ async function globeMount() {
   GLOBE = map;
   map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) globeFlyTo(iso); });
   map.on('click', e => { if (!map.queryRenderedFeatures(e.point, { layers: ['energle-hit'] }).length && GLOBE_SEL) globeSelect(null, false); });
-  globeSide();
   const mq = matchMedia(GLOBE_WIDE), onMq = () => { if (GLOBE_SEL) globeSelect(GLOBE_SEL, false); else globeSide(); }; mq.addEventListener('change', onMq);
   map._onGone = () => {                     // left the page: put the game back as it was
     mq.removeEventListener('change', onMq); document.body.classList.remove('at-globe');
+    const foot = document.querySelector('.gl-side footer'); if (foot) foot.remove();
     GLOBE_SEL = null; if (GLOBE_PREV_TARGET !== undefined) { target = GLOBE_PREV_TARGET; GLOBE_PREV_TARGET = undefined; }
     if (GLOBE === map) GLOBE = null;
   };

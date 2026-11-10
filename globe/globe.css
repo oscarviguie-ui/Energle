@@ -103,3 +103,18 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
 .gl-side .ic-card.is-half { grid-column: 1 / -1; }
 .gl-side #clue-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .gl-side #clue-cards .ic-sechead { margin-bottom: 0; }
+
+/* Explore on laptops: the page stops scrolling; the header, tools and map stay put and only the panel scrolls */
+@media (min-width: 1100px) {
+  body.at-globe { height: 100vh; overflow: hidden; padding-bottom: 1.25rem; }
+  body.at-globe #app { height: 100%; min-height: 0; }
+  body.at-globe .gl-layout { flex: 1 1 auto; min-height: 0; }
+  body.at-globe .gl-wrap, .gl-layout.has-sel .gl-wrap { position: relative; top: auto; height: 100%; min-height: 0; max-height: none; }
+  body.at-globe .gl-layout { grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+  body.at-globe .gl-side { height: 100%; min-height: 0; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; }
+  body.at-globe #app > footer { display: none; }
+  .gl-side footer { margin-top: 8px; }
+}
+.gl-reg-ico { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: #fdf3e1; color: #c98410; flex-shrink: 0; }
+.gl-reg-ico .hd-ico { width: 18px; height: 18px; }
+.gl-hint { margin: 2px 0 0; padding: 12px 14px; border: 1px dashed #e0dcd2; border-radius: 6px; font-size: .85rem; color: #777; text-align: center; }
