@@ -17,6 +17,10 @@ const GLOBE_LIBS = [
 ];
 const GLOBE_CSS = 'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css';
 const GLOBE_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+// Terrain: open elevation tiles (Mapzen "Terrarium" on AWS Open Data, no key), shaded and tinted by height in the browser
+const GLOBE_DEM = { type: 'raster-dem', tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], encoding: 'terrarium',
+  tileSize: 256, maxzoom: 12, attribution: 'Terrain: Mapzen, AWS Open Data (SRTM, GMTED2010, ETOPO1)' };
+let GLOBE_TERRAIN = (() => { try { return localStorage.getItem('energle_globe_terrain') !== 'off'; } catch (e) { return true; } })();
 const GLOBE_WIDE = '(min-width: 1100px)';
 const GLOBE_ACCENT = '#f5a623';
 const FOSSIL = ['Coal', 'Gas', 'Other Fossil'];
@@ -59,68 +63,44 @@ function globeSpan(f) {
   return Math.max(latSpan, lngSpan, 0.5);
 }
 
-// ---------- the profile shown in the panel ----------
-function globeProfile(c) {
-  const yd = (ALL_DATA[c.name] && ALL_DATA[c.name].years[c.latestYear]) || {}, tot = yd.Total || 0;
-  const src = SOURCES.map(k => ({ k, p: tot ? (yd[k] || 0) / tot : 0, v: yd[k] || 0 })).sort((a, b) => b.p - a.p);
-  return { src, low: src.filter(x => !FOSSIL.includes(x.k)).reduce((a, x) => a + x.p, 0), tot, dpc: c.latestDpc };
-}
-const pct = p => Math.round(p * 100) + '%';
-function worldDpcNow() { if (!WORLD_DPC) return null; const ys = Object.keys(WORLD_DPC).map(Number); return WORLD_DPC[Math.max(...ys)]; }
-let GLOBE_RANKS = null;
-function globeRanks() {
-  if (!GLOBE_RANKS) {
-    const ps = COUNTRIES.map(c => ({ iso: c.iso3, ...globeProfile(c) }));
-    const rank = key => Object.fromEntries([...ps].sort((a, b) => (key(b) || 0) - (key(a) || 0)).map((p, i) => [p.iso, i + 1]));
-    GLOBE_RANKS = { tot: rank(p => p.tot), low: rank(p => p.low), dpc: rank(p => p.dpc), n: ps.length };
-  }
-  return GLOBE_RANKS;
-}
-// Generation by source over the years, as a small stacked area chart (SVG)
-function globeTrend(c) {
-  const Y = (ALL_DATA[c.name] || {}).years || {}, yrs = Object.keys(Y).map(Number).sort((a, b) => a - b);
-  if (yrs.length < 3) return '';
-  const W = 320, H = 96, P = 2, max = Math.max(...yrs.map(y => Y[y].Total || 0)) || 1;
-  const x = i => P + i * (W - 2 * P) / (yrs.length - 1), y = v => H - 14 - v / max * (H - 22);
-  const base = yrs.map(() => 0);
-  const layers = SOURCES.map(k => {
-    const lo = base.slice(), hi = yrs.map((yr, i) => (base[i] += (Y[yr][k] || 0)));
-    if (!hi.some((v, i) => v - lo[i] > 0)) return '';
-    return '<polygon points="' + hi.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ') + ' '
-      + lo.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).reverse().join(' ') + '" fill="' + COLORS[k] + '" opacity=".85"/>';
-  }).join('');
-  return '<svg class="gl-trend" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Generation by source, ' + yrs[0] + ' to ' + yrs[yrs.length - 1] + '">'
-    + layers + '<text x="' + P + '" y="' + (H - 2) + '">' + yrs[0] + '</text><text x="' + (W - P) + '" y="' + (H - 2) + '" text-anchor="end">' + yrs[yrs.length - 1] + '</text>'
-    + '<text x="' + (W - P) + '" y="9" text-anchor="end">peak ' + fmtTwh(max) + '</text></svg>';
+// ---------- the profile shown in the panel: the daily puzzle's own cards ----------
+let GLOBE_PREV_TARGET;                      // the game's `target`, put back when the panel closes or the atlas is left
+function globeRestoreTarget() {
+  if (GLOBE_PREV_TARGET !== undefined) { target = GLOBE_PREV_TARGET; GLOBE_PREV_TARGET = undefined; }
+  if (typeof lineChart !== 'undefined' && lineChart) { lineChart.destroy(); lineChart = null; }
+  if (typeof barChart !== 'undefined' && barChart) { barChart.destroy(); barChart = null; }
 }
 function globeCountryHTML(c) {
-  const p = globeProfile(c), wd = worldDpcNow(), R = globeRanks();
-  return '<button type="button" class="gl-x" id="gl-x" aria-label="Close">×</button>'
-    + '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + escHtml(c.name) + '</h3><span>' + (REGION_LABEL[c.continent] || '') + ' · ' + c.latestYear + '</span></div></div>'
-    + '<div class="gl-p-nums"><span><b>' + fmtTwh(p.tot) + '</b>generated<em>#' + R.tot[c.iso3] + ' of ' + R.n + '</em></span>'
-    +   '<span><b>' + (p.dpc != null ? p.dpc.toFixed(1) + ' MWh' : '–') + '</b>per person<em>' + (wd && p.dpc != null ? (p.dpc / wd).toFixed(1) + '× world avg.' : '') + '</em></span>'
-    +   '<span><b>' + pct(p.low) + '</b>low-carbon<em>#' + R.low[c.iso3] + ' of ' + R.n + '</em></span></div>'
-    + '<span class="gl-p-bar">' + p.src.filter(x => x.p >= 0.005).map(x => '<i style="flex:' + x.p.toFixed(3) + ';background:' + COLORS[x.k] + '"></i>').join('') + '</span>'
-    + '<ul class="gl-p-src">' + p.src.filter(x => x.p >= 0.005).map(x => '<li><i style="background:' + COLORS[x.k] + '"></i>' + x.k
-      + '<span>' + fmtTwh(x.v) + '</span><b>' + pct(x.p) + '</b></li>').join('') + '</ul>'
-    + '<div class="gl-p-trend"><span class="gl-side-h">Generation since ' + Object.keys(ALL_DATA[c.name].years)[0] + '</span>' + globeTrend(c) + '</div>'
-    + '<button type="button" class="gl-open" id="gl-open">Open the full profile →</button>';
+  return '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + escHtml(c.name) + '</h3><span>' + (REGION_LABEL[c.continent] || c.continent || '') + '</span></div>'
+    + '<button type="button" class="gl-x" id="gl-x" aria-label="Close">×</button></div>'
+    + balanceCardHTML()
+    + '<div id="charts-section">'
+    +   '<div id="chart-left"><p class="chart-label" id="line-label">Generation by source over time (TWh)</p><div id="line-wrapper"><canvas id="line-chart"></canvas></div></div>'
+    +   '<div id="chart-right"><p class="chart-label" id="bar-label">Latest year mix</p><div id="bar-wrapper"><canvas id="bar-chart"></canvas></div></div>'
+    + '</div>'
+    + '<div id="legend-shared"></div>'
+    + '<button type="button" class="gl-open" id="gl-open">Open the full profile and clue cards →</button>';
 }
 function globeSide() {
-  const el = document.getElementById('gl-side'); if (!el) return;
+  const el = document.getElementById('gl-side'), lay = document.getElementById('gl-layout'); if (!el) return;
   const wide = matchMedia(GLOBE_WIDE).matches;
-  el.innerHTML = GLOBE_SEL ? globeCountryHTML(GLOBE_SEL)
-    : wide ? '<p class="gl-empty"><b>Click a country</b>to see its electricity profile: what it generates, how much per person, and how its mix has changed.</p>' : '';
+  globeRestoreTarget();
+  if (GLOBE_SEL) {
+    GLOBE_PREV_TARGET = target; target = GLOBE_SEL;
+    el.innerHTML = globeCountryHTML(GLOBE_SEL);
+  } else el.innerHTML = wide ? '<p class="gl-empty"><b>Click a country</b>to see its electricity profile, laid out as in the daily puzzle.</p>' : '';
   el.hidden = !GLOBE_SEL && !wide;
-  el.classList.toggle('is-country', !!GLOBE_SEL);
+  if (lay) lay.classList.toggle('has-sel', !!GLOBE_SEL);
+  if (GLOBE_SEL) { renderStatBar(); renderFlowBar(); renderCharts(); }
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => globeSelect(null));
-  const o = document.getElementById('gl-open'); if (o) o.addEventListener('click', () => browseCountry(GLOBE_SEL.iso3));
+  const o = document.getElementById('gl-open'); if (o) o.addEventListener('click', () => { const iso = GLOBE_SEL.iso3; globeRestoreTarget(); browseCountry(iso); });
 }
 
 // ---------- markup ----------
 function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
     + '<div class="gl-wrap" id="gl-wrap"><div class="gl-canvas" id="gl-canvas" aria-label="Map of the world. Click a country for its electricity profile; the list view is keyboard-friendly."></div>'
+    + '<div class="gl-layers" role="group" aria-label="Map style"><button type="button" class="gl-lbtn" data-l="terrain">Terrain</button><button type="button" class="gl-lbtn" data-l="map">Map</button></div>'
     + '<p class="gl-loading" id="gl-loading">Loading the map…</p></div>'
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
@@ -136,11 +116,9 @@ function globeSelect(c, fly = true) {
   if (!fly || !GLOBE_SEL) return;
   const f = GLOBE_GEO.features.filter(x => x.properties.iso3 === GLOBE_SEL.iso3).sort((a, b) => b.properties.span - a.properties.span)[0];
   const span = f ? f.properties.span : 10;
-  // on laptops the panel sits beside the map; on phones it covers the bottom, so frame the country in the top part
-  const phone = !matchMedia(GLOBE_WIDE).matches, cv = GLOBE.getContainer();
-  const room = Math.min(cv.clientWidth, cv.clientHeight * (phone ? 0.5 : 0.9));
+  const cv = GLOBE.getContainer(), room = Math.min(cv.clientWidth, cv.clientHeight * 0.9);
   const zoom = Math.max(1, Math.min(6.5, Math.log2(0.6 * room * 360 / (512 * span))));      // the country fills ~60% of the room
-  GLOBE.flyTo({ center: [GLOBE_SEL.lng, GLOBE_SEL.lat], zoom, duration: 1400, essential: true, offset: phone ? [0, -80] : [0, 0] });
+  GLOBE.flyTo({ center: [GLOBE_SEL.lng, GLOBE_SEL.lat], zoom, duration: 1400, essential: true });
 }
 function globeFlyTo(iso3) { const c = COUNTRIES.find(x => x.iso3 === iso3); if (c) globeSelect(c); }
 const GLOBE_REGIONS = { all: [10, 25, 1.5], europe: [15, 52, 2.6], africa: [20, 3, 2.1], asia: [95, 25, 1.9], americas: [-80, 10, 1.6] };
@@ -158,6 +136,24 @@ function globeAddLayers(map, labelFont) {
     layout: { 'text-field': ['get', 'name'], 'text-font': labelFont, 'text-size': ['interpolate', ['linear'], ['zoom'], 1, 10, 4, 13, 6, 15],
               'symbol-sort-key': ['get', 'rank'], 'text-max-width': 7, 'text-padding': 2 },
     paint: { 'text-color': '#3a3a3a', 'text-halo-color': 'rgba(255,255,255,0.9)', 'text-halo-width': 1.4 } });
+}
+// Terrain under the water, roads and names: green lowlands, ochre hills, brown and grey mountains, snowy peaks
+function globeAddTerrain(map) {
+  map.addSource('dem', GLOBE_DEM);
+  const L = map.getStyle().layers;
+  const below = (L.find(l => /water|ocean/i.test(l.id) && l.type === 'fill') || L.find(l => l.type !== 'background') || {}).id;
+  const vis = GLOBE_TERRAIN ? 'visible' : 'none';
+  map.addLayer({ id: 'relief', type: 'color-relief', source: 'dem', layout: { visibility: vis }, paint: {
+    'color-relief-opacity': 0.75,
+    'color-relief-color': ['interpolate', ['linear'], ['elevation'],
+      0, '#cfe3c0', 150, '#bfdaa6', 400, '#d9dca8', 800, '#e3cf9c', 1500, '#cfae82', 2500, '#b48f72', 3500, '#a4958c', 4500, '#e4e1de', 6000, '#ffffff'] } }, below);
+  map.addLayer({ id: 'hillshade', type: 'hillshade', source: 'dem', layout: { visibility: vis }, paint: {
+    'hillshade-exaggeration': 0.45, 'hillshade-shadow-color': '#5b5146', 'hillshade-highlight-color': '#ffffff', 'hillshade-accent-color': '#7a6a58' } }, below);
+}
+function globeSetTerrain(on) {
+  GLOBE_TERRAIN = on; try { localStorage.setItem('energle_globe_terrain', on ? 'on' : 'off'); } catch (e) {}
+  if (GLOBE && GLOBE.getLayer('relief')) ['relief', 'hillshade'].forEach(id => GLOBE.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'));
+  document.querySelectorAll('.gl-lbtn').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.l === 'terrain') === on)));
 }
 function globeFallbackStyle() {        // if the map tiles can't load: plain land on a blue sea, no names
   return { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#cfe0ee' } }] };
@@ -194,6 +190,7 @@ async function globeMount() {
   map.touchZoomRotate.disableRotation();
   map.on('style.load', () => {
     map.setProjection({ type: 'globe' });
+    try { globeAddTerrain(map); } catch (e) { /* terrain is a bonus: the plain map still works */ }
     globeAddLayers(map, labelFont);
     const l = document.getElementById('gl-loading'); if (l) l.remove();
     if (ATLAS.last) { const iso = ATLAS.last; ATLAS.last = null; globeFlyTo(iso); }
@@ -203,11 +200,15 @@ async function globeMount() {
   map.on('mouseenter', 'energle-hit', () => { map.getCanvas().style.cursor = 'pointer'; });
   map.on('mouseleave', 'energle-hit', () => { map.getCanvas().style.cursor = ''; });
   globeSide();
-  const mq = matchMedia(GLOBE_WIDE), onMq = () => { globeSide(); map.resize(); }; mq.addEventListener('change', onMq);
+  document.querySelectorAll('.gl-lbtn').forEach(b => b.addEventListener('click', () => globeSetTerrain(b.dataset.l === 'terrain')));
+  globeSetTerrain(GLOBE_TERRAIN);
+  const ro = new ResizeObserver(() => map.resize()); ro.observe(el);
+  const mq = matchMedia(GLOBE_WIDE), onMq = () => { if (GLOBE_SEL) globeSelect(GLOBE_SEL, false); else globeSide(); }; mq.addEventListener('change', onMq);
   // leaving the atlas: free the map and its WebGL context
   const mo = new MutationObserver(() => {
     if (document.body.contains(el)) return;
-    mo.disconnect(); mq.removeEventListener('change', onMq); document.body.classList.remove('at-globe');
+    mo.disconnect(); ro.disconnect(); mq.removeEventListener('change', onMq); document.body.classList.remove('at-globe');
+    GLOBE_SEL = null; if (GLOBE_PREV_TARGET !== undefined) { target = GLOBE_PREV_TARGET; GLOBE_PREV_TARGET = undefined; }
     try { map.remove(); } catch (e) {}
     if (GLOBE === map) GLOBE = null;
   });
