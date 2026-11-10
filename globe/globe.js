@@ -694,3 +694,93 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   const _new = newGame;
   window.newGame = function () { _new(); GMAP_PICK = null; gmapUpdate(); };
 });
+
+// ============================================================
+//  WHAT'S NEW (test page): a wider window that fits one screen on laptops, led by the Explore update
+//  with a small demo that plays through what Explore does, using the real numbers.
+// ============================================================
+const EXPLORE_UPDATE = ['10 Nov', 'Explore: the world on a map',
+  'Practice is now Explore. Spin the globe and click any country for its full profile, clue cards included, or add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders. Every group is also a practice round.'];
+let NX_SVG = null;
+function nxMapSVG() {
+  if (!NX_SVG) NX_SVG = fetch(GLOBE_DIR + 'explore-demo.svg').then(r => r.ok ? r.text() : '').catch(() => '');
+  return NX_SVG;
+}
+const nxGen = v => v >= 1000 ? (v / 1000).toFixed(2) + ' PWh' : fmtTwh(v);
+// the demo's steps: the world, a continent, a bloc, a trait, then one country
+function nxSteps() {
+  const grp = (id, cap) => {
+    const g = groupOf(id), r = globeAggregate(id), list = COUNTRIES.filter(g.test);
+    return { cap, iso: new Set(list.map(c => c.iso3)), all: id === 'all',
+      head: '<b>' + g.name + '</b><span>' + (id === 'all' ? r.n + ' countries' : r.n + ' countries added together') + ' · ' + r.latestYear + '</span>',
+      big: nxGen(r.latestTotal), def: g.trait ? '<span class="gl-key-tag">Energle’s definition</span> ' + g.rule : '', mix: groupShares(list) };
+  };
+  const fr = COUNTRIES.find(c => c.iso3 === 'FRA');
+  return [
+    grp('all', 'Every country, on the map'),
+    grp('europe', 'Add up a continent'),
+    grp('eu', '…or a bloc'),
+    grp('green', '…or a trait'),
+    fr && { cap: 'Click a country for its full profile', iso: new Set(['FRA']), one: true,
+      head: flagImg('FRA', 'nx-flag') + '<b>France</b><span>' + fr.latestYear + ' · clue cards included</span>', big: nxGen(fr.latestTotal), def: '', mix: sharesOf(fr) },
+  ].filter(Boolean);
+}
+function nxDemoHTML() {
+  return '<div class="nx-demo" id="nx-demo"><div class="nx-mapbox" id="nx-mapbox"></div>'
+    + '<div class="nx-card" id="nx-card" aria-live="polite"></div><div class="nx-cap" id="nx-cap"></div>'
+    + '<div class="nx-dots" id="nx-dots" role="tablist" aria-label="Demo steps"></div></div>';
+}
+function nxDemoStart(root) {
+  const steps = nxSteps(); let i = 0, timer = null, paths = [];
+  const box = root.querySelector('#nx-mapbox'), card = root.querySelector('#nx-card'), cap = root.querySelector('#nx-cap'), dots = root.querySelector('#nx-dots');
+  dots.innerHTML = steps.map((s, k) => '<button type="button" class="nx-dot" role="tab" aria-label="' + s.cap + '" data-k="' + k + '"></button>').join('');
+  const show = k => {
+    i = k; const s = steps[k];
+    paths.forEach(p => { const on = s.all ? true : s.iso.has(p.dataset.i); p.classList.toggle('on', on && !s.all); p.classList.toggle('lit', on && s.all); p.classList.toggle('pick', !!s.one && on); });
+    card.innerHTML = '<div class="nx-row"><div class="nx-card-h">' + s.head + '</div><div class="nx-big">' + s.big + '<small>generated</small></div>' + mixBarHTML(s.mix, 'nx-mix') + '</div>'
+      + '<p class="nx-def">' + (s.def || '&nbsp;') + '</p>';
+    cap.textContent = s.cap;
+    dots.querySelectorAll('.nx-dot').forEach((d, j) => d.setAttribute('aria-selected', String(j === k)));
+  };
+  const play = () => { clearInterval(timer); if (!REDUCED_MOTION) timer = setInterval(() => { if (!document.body.contains(root)) return clearInterval(timer); show((i + 1) % steps.length); }, 3000); };
+  dots.addEventListener('click', e => { const d = e.target.closest('.nx-dot'); if (d) { show(+d.dataset.k); play(); } });
+  root.addEventListener('mouseenter', () => clearInterval(timer)); root.addEventListener('mouseleave', play);
+  nxMapSVG().then(svg => { box.innerHTML = svg; paths = [...box.querySelectorAll('path[data-i]')]; show(i); });
+  show(0); play();
+}
+function showNoticeWide() {
+  if (document.getElementById('notice-modal')) return;
+  try { localStorage.setItem(NOTICE_KEY, '1'); localStorage.setItem(NEWS_SEEN_KEY, newsId()); } catch (e) {}
+  const sd = document.getElementById('sub-date'); if (sd) { sd.classList.remove('has-news'); const ic = sd.querySelector('.sd-ico'); if (ic) ic.remove(); }
+  const [d0, t0, x0] = UPDATES[0], open = practiceUnlocked();
+  const modal = document.createElement('div'); modal.id = 'notice-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="nt-box nt-box--log nt-wide" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
+    + '<div class="nx-top"><div><span class="nt-eyebrow">What’s new</span><h2 class="nt-title" id="nt-title">Latest updates</h2></div>'
+    + '<button type="button" class="gl-x nx-close" aria-label="Close">×</button></div>'
+    + '<section class="nx-feature">' + nxDemoHTML()
+    + '<div class="nx-text"><span class="nx-new">New · ' + d0 + '</span><h3>' + t0 + '</h3><p>' + x0 + '</p>'
+    + (open ? '<button type="button" class="nx-cta" id="nx-cta">Open Explore →</button>'
+            : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
+    + '<div class="nx-earlier"><span class="nt-eyebrow nx-sub">Earlier updates</span><ol class="nt-log nx-log">'
+    + UPDATES.slice(1).map(([d, t, x]) => '<li title="' + escHtml(x.replace(/<[^>]+>/g, '')) + '"><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong><span class="nx-x">' + x + '</span></span></li>').join('') + '</ol></div>'
+    + '<div class="nx-foot"><div class="nt-soon"><span class="nt-eyebrow">Coming soon</span><div class="nx-soon-row">'
+    + COMING.map(([t, x]) => '<div class="nt-soon-item"><strong>' + t + '</strong><span>' + x + '</span></div>').join('') + '</div></div>'
+    + '<div class="nx-foot-end"><p class="nt-fb">Have an idea for the next update? <button type="button" class="ft-link nt-fb-link" onclick="showFeedback()">Send feedback</button></p>'
+    + '<button type="button" class="nt-btn" id="nt-ok">Got it</button></div></div>'
+    + '</div>';
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  document.body.appendChild(modal);
+  modal.querySelector('.nx-close').addEventListener('click', close);
+  document.getElementById('nt-ok').addEventListener('click', close);
+  const cta = document.getElementById('nx-cta'); if (cta) cta.addEventListener('click', () => { close(); switchMode('practice'); });
+  document.addEventListener('keydown', onKey);
+  nxDemoStart(modal.querySelector('.nx-feature'));
+  document.getElementById('nt-ok').focus({ preventScroll: true });
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (typeof UPDATES !== 'undefined' && UPDATES[0][1] !== EXPLORE_UPDATE[1]) UPDATES.unshift(EXPLORE_UPDATE);
+  window.showNotice = showNoticeWide;
+});
