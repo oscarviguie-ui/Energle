@@ -314,3 +314,69 @@ body.at-globe .at-tools { margin-top: 14px; }
 }
 /* the map's hint only while no group key is on the map */
 .gl-key:not([hidden]) ~ .gl-maphint { display: none; }
+
+/* ---------- search suggestions under the box (map view) ---------- */
+.at-tools { position: relative; }
+.gl-sugg { position: absolute; z-index: 30; top: calc(100% + 6px); width: min(360px, calc(100vw - 32px)); padding: 4px; border: 1px solid #ecebe8; border-radius: 12px; background: #fff; box-shadow: 0 10px 28px rgba(0,0,0,.14); }
+.gl-sugg[hidden] { display: none; }
+.gl-sugg-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: .9rem; color: #1a1a1a; text-align: left; cursor: pointer; }
+.gl-sugg-row:hover, .gl-sugg-row:focus-visible { background: #f4f3ef; }
+.gl-sugg-row span { flex: 1; }
+.gl-sugg-row small { color: #8a8984; font-size: .76rem; }
+.gl-sugg-flag { width: 22px; height: 16px; border-radius: 2px; object-fit: cover; box-shadow: 0 0 0 1px rgba(0,0,0,.1); }
+.gl-sugg-none { margin: 0; padding: 10px 12px; font-size: .85rem; color: #8a8984; }
+.gph-logo, .gph-list, .gph-nav, .gl-grab { display: none; }
+
+/* ---------- phones: a maps-app layout ---------- */
+@media (max-width: 700px) {
+  body.at-globe { height: 100dvh; overflow: hidden; padding: 0 !important; }
+  body.at-globe #app { padding: 0; margin: 0; max-width: none; height: 100dvh; }
+  body.at-globe header, body.at-globe #app > footer, body.at-globe .gl-layout > footer { display: none !important; }
+  /* the map fills the screen */
+  body.at-globe .gl-layout { margin: 0; }
+  body.at-globe .gl-wrap, body.at-globe .gl-layout.has-sel .gl-wrap { position: fixed; inset: 0; height: auto; min-height: 0; border: 0; border-radius: 0; z-index: 0; }
+  /* floating search bar and chips */
+  body.at-globe .at-tools { position: fixed; z-index: 20; top: calc(env(safe-area-inset-top, 0px) + 10px); left: 10px; right: 10px; margin: 0;
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; pointer-events: none; }
+  body.at-globe .at-tools > * { pointer-events: auto; }
+  body.at-globe .at-view { display: none; }
+  body.at-globe .gph-logo { display: grid; place-items: center; position: absolute; z-index: 2; top: 0; left: 0; width: 48px; height: 48px; border: 0; background: none; font-size: 1.3rem; cursor: pointer; }
+  body.at-globe #browse-search { grid-row: 1; width: 100%; height: 48px; padding: 0 52px 0 48px; border: 0; border-radius: 999px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); font-size: 1rem; }
+  body.at-globe .gph-list { display: grid; place-items: center; position: absolute; z-index: 2; top: 4px; right: 4px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #f4f3ef; color: #1a1a1a; cursor: pointer; }
+  body.at-globe .gph-list .hd-ico { width: 18px; height: 18px; }
+  body.at-globe .gl-sugg { top: 54px; left: 0; width: 100%; }
+  body.at-globe .gl-chips { grid-row: 2; flex: none; margin: 0 -10px; padding: 0 10px 4px; border: 0; background: none; box-shadow: none; overflow-x: auto; scrollbar-width: none; gap: 6px; }
+  body.at-globe .gl-chips::-webkit-scrollbar { display: none; }
+  body.at-globe .gl-chips .at-chip { min-height: 34px; padding: 0 13px; border: 0; border-radius: 999px; background: #fff; box-shadow: 0 1px 5px rgba(0,0,0,.18); font-size: .84rem; }
+  body.at-globe .gl-chips .at-chip[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
+  body.at-globe .gl-chip-sep { display: none; }
+  /* things on the map clear the floating bar and the sheet */
+  body.at-globe .gl-key { top: calc(var(--gph-top, 110px) + 4px); left: 10px; }
+  body.at-globe .gl-key--low { top: calc(var(--gph-top, 110px) + 4px); bottom: auto; }
+  body.at-globe .gl-maphint { bottom: calc(var(--gph-sheet, 120px) + var(--gph-nav, 60px) + 48px); }
+  body.at-globe .gl-canvas .maplibregl-ctrl-bottom-right { bottom: calc(var(--gph-sheet, 120px) + var(--gph-nav, 60px)); }
+  /* the sheet */
+  body.at-globe .gl-side { position: fixed; z-index: 15; left: 0; right: 0; bottom: var(--gph-nav, 60px); margin: 0; height: 120px;
+    padding: 0 14px 16px; border-radius: 16px 16px 0 0; background: #fff; box-shadow: 0 -4px 20px rgba(0,0,0,.14);
+    overflow-y: auto; overscroll-behavior: contain; transition: height .25s ease; }
+  body.at-globe .gl-side.is-dragging { transition: none; }
+  body.at-globe .gl-side[data-sheet="peek"] { overflow: hidden; }
+  body.at-globe .gl-grab { display: block; flex: none; position: sticky; top: 0; z-index: 3; width: calc(100% + 28px); height: 22px; margin: 0 -14px -10px;
+    background: linear-gradient(#d6d3cc, #d6d3cc) center 8px / 38px 5px no-repeat, #fff; touch-action: none; cursor: grab; }
+  body.at-globe .gl-p-head { touch-action: none; padding-bottom: 4px; }
+  /* the bottom tab bar */
+  body.at-globe .gph-nav { display: flex; position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; padding: 6px 6px calc(env(safe-area-inset-bottom, 0px) + 6px);
+    background: #fff; border-top: 1px solid #ecebe8; }
+  .gph-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; border: 0; background: none; font: inherit; font-size: .72rem; font-weight: 600; color: #777; cursor: pointer; }
+  .gph-ico { display: grid; place-items: center; width: 56px; height: 28px; border-radius: 999px; }
+  .gph-ico .hd-ico, .gph-ico svg { width: 20px; height: 20px; }
+  .gph-tab.is-on { color: #1a1a1a; }
+  .gph-tab.is-on .gph-ico { background: #fdf0d5; color: #b07209; }
+}
+@media (max-width: 700px) {
+  body.at-globe .gl-p-head { flex-wrap: nowrap; }
+  body.at-globe .gl-pr-n { display: none; }
+  body.at-globe .gl-p-head .gl-practice { padding: 0 12px; }
+  body.at-globe .gl-p-head:has(.gl-tabs) { flex-wrap: wrap; }
+}
+.gl-p-head .gl-x { margin-left: auto; }

@@ -234,8 +234,8 @@ function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
     + (groupOf(r.region).trait ? groupOf(r.region).rule + ' · ' : '') + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
     + (r.region === 'all'      // the world: every practice group; a group: a round on just its countries
-      ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice by group →</button>'
-      : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice these ' + r.n + ' →</button>')
+      ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>'
+      : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice<span class="gl-pr-n"> these ' + r.n + '</span> →</button>')
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
     + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div>';
 }
@@ -260,6 +260,7 @@ function globeSide() {
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
   const foot = document.querySelector('#app > footer'); if (foot && lay && matchMedia(GLOBE_WIDE).matches) lay.appendChild(foot);   // credits under the map
   globeSideFit();
+  gphAfterSide();
 }
 // A country's panel: Profile, then one tab per clue card, so everything fits without scrolling.
 // The tab you're on stays when you click the next country, to compare one card across countries.
@@ -471,7 +472,7 @@ async function globeMount() {
   globeSide();                               // the region's cards show while the map loads
   let map;
   try {
-    map = await globeMakeMap(el, { zoom: matchMedia('(max-width: 600px)').matches ? 0.7 : 1.5 }, (m, labelFont) => {
+    map = await globeMakeMap(el, { zoom: matchMedia('(max-width: 600px)').matches ? 1.05 : 1.5 }, (m, labelFont) => {
       m.addLayer({ id: 'energle-reg-fill', type: 'fill', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.38 } });
       m.addLayer({ id: 'energle-reg-line', type: 'line', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'line-color': '#c97d0a', 'line-width': 1.1 } });
       m.addLayer({ id: 'energle-sel-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.22 } });
@@ -485,6 +486,7 @@ async function globeMount() {
   } catch (e) { const l = document.getElementById('gl-loading'); if (l) l.textContent = 'The map could not load here. The list view still works.'; return; }
   if (!map) return;
   GLOBE = map; GLOBE_PROJ = 'globe';
+  if (matchMedia(GLOBE_PHONE).matches) map.once('idle', () => map.fire('drag'));   // phones: fold the map credits behind their (i)
   map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) globeFlyTo(iso); });
   map.on('click', e => { if (!map.queryRenderedFeatures(e.point, { layers: ['energle-hit'] }).length && GLOBE_SEL) globeSelect(null, false); });
   const mq = matchMedia(GLOBE_WIDE), onMq = () => { if (GLOBE_SEL) globeSelect(GLOBE_SEL, false); else globeSide(); }; mq.addEventListener('change', onMq);
@@ -668,6 +670,8 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.at-sort select, select.at-sort, #at-sort').forEach(el => el.addEventListener('change', () => setTimeout(globeApplyGroup, 0)));
     globeApplyGroup();
     globeFitChips();
+    gphMount();
+    globeSuggestBind();
   };
   if (typeof ISO3_CONTINENT !== 'undefined' && !ISO3_CONTINENT.TUR) ISO3_CONTINENT.TUR = 'Europe';
   // Explore also adds up the practice profiles and trends (big producers, green leaders, importers...)
@@ -811,3 +815,97 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (typeof UPDATES !== 'undefined' && UPDATES[0][1] !== EXPLORE_UPDATE[1]) UPDATES.unshift(EXPLORE_UPDATE);
   window.showNotice = showNoticeWide;
 });
+
+
+// ============================================================
+//  SEARCH SUGGESTIONS (every width): as you type on the map view, the matching countries drop down under the box
+// ============================================================
+function globeSuggestBind() {
+  const inp = document.getElementById('browse-search'); if (!inp || inp.dataset.sugg) return; inp.dataset.sugg = '1';
+  const box = document.createElement('div'); box.className = 'gl-sugg'; box.id = 'gl-sugg'; box.setAttribute('role', 'listbox'); box.hidden = true;
+  inp.insertAdjacentElement('afterend', box);
+  const close = () => { box.hidden = true; };
+  const pick = iso => { close(); inp.value = ''; inp.dispatchEvent(new Event('input')); inp.blur(); globeFlyTo(iso); };
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim().toLowerCase();
+    if (!q || ATLAS.view !== 'globe') return close();
+    const hits = COUNTRIES.filter(c => c.name.toLowerCase().includes(q) || (NAME_ALIAS[c.name] || '').toLowerCase().includes(q))
+      .sort((a, b) => a.name.toLowerCase().indexOf(q) - b.name.toLowerCase().indexOf(q) || a.name.localeCompare(b.name)).slice(0, 6);
+    box.innerHTML = hits.length ? hits.map(c => '<button type="button" class="gl-sugg-row" role="option" data-i="' + c.iso3 + '">' + flagImg(c.iso3, 'gl-sugg-flag')
+      + '<span>' + escHtml(c.name) + '</span><small>' + fmtTwh(c.latestTotal) + '</small></button>').join('') : '<p class="gl-sugg-none">No country matches.</p>';
+    box.hidden = false;
+  });
+  box.addEventListener('pointerdown', e => e.preventDefault());           // keep the box open while tapping a row
+  box.addEventListener('click', e => { const r = e.target.closest('.gl-sugg-row'); if (r) pick(r.dataset.i); });
+  inp.addEventListener('blur', () => setTimeout(close, 120));
+  inp.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+}
+
+// ============================================================
+//  PHONES: Explore works like a maps app. The map fills the screen; the search box and the group chips float on
+//  top; the panel is a sheet you pull up from the bottom (peek → half → full); a tab bar sits at the very bottom.
+// ============================================================
+const GLOBE_PHONE = '(max-width: 700px)';
+let GPH_STATE = 'peek';
+const gphOn = () => document.body.classList.contains('at-globe') && matchMedia(GLOBE_PHONE).matches;
+function gphMount() {
+  const tools = document.querySelector('.at-tools'), app = document.getElementById('app'); if (!tools || !app) return;
+  if (!tools.querySelector('.gph-logo')) {
+    tools.insertAdjacentHTML('afterbegin', '<button type="button" class="gph-logo" aria-label="Today’s puzzle" onclick="switchMode(\'normal\')">⚡</button>');
+    const inp = document.getElementById('browse-search');
+    if (inp) inp.insertAdjacentHTML('afterend', '<button type="button" class="gph-list" aria-label="Show as a list">' + HD_SVG('<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>') + '</button>');
+    const lb = tools.querySelector('.gph-list'); if (lb) lb.addEventListener('click', () => { ATLAS.view = 'list'; atlasView(); });
+  }
+  if (!document.getElementById('gph-nav')) {
+    const it = (label, ico, on, act) => '<button type="button" class="gph-tab' + (on ? ' is-on' : '') + '" onclick="' + act + '"' + (on ? ' aria-current="page"' : '') + '><span class="gph-ico">' + ico + '</span>' + label + '</button>';
+    app.insertAdjacentHTML('beforeend', '<nav class="gph-nav" id="gph-nav" aria-label="Game mode">'
+      + it('Daily', HD_ICO.daily, false, "switchMode('normal')") + it('Archive', HD_ICO.archive, false, "switchMode('archive')")
+      + it('Explore', GLOBE_ICON, true, '') + it('Stats', HD_ICO.stats, false, 'showStatsModal(false)') + '</nav>');
+  }
+  gphAfterSide();
+}
+// the sheet's three heights
+function gphHeights() {
+  const side = document.getElementById('gl-side'), head = side && side.querySelector('.gl-p-head');
+  const nav = (document.getElementById('gph-nav') || {}).offsetHeight || 0, tools = document.querySelector('.at-tools');
+  const top = tools ? tools.getBoundingClientRect().bottom + 8 : 120, H = window.innerHeight;
+  const peek = head ? Math.round(head.offsetTop + head.offsetHeight + 14) : 110;
+  return { peek, half: Math.round(Math.max(peek + 40, (H - nav) * 0.52)), full: Math.round(H - nav - top), nav, top };
+}
+function gphSheet(state, h) {
+  const side = document.getElementById('gl-side'); if (!side || !gphOn()) return;
+  const hs = gphHeights(); GPH_STATE = state || GPH_STATE;
+  const px = h != null ? h : hs[GPH_STATE];
+  side.style.height = px + 'px'; side.dataset.sheet = GPH_STATE;
+  document.body.style.setProperty('--gph-sheet', px + 'px'); document.body.style.setProperty('--gph-nav', hs.nav + 'px'); document.body.style.setProperty('--gph-top', hs.top + 'px');
+  if (GLOBE && h == null) try { GLOBE.setPadding({ top: hs.top, bottom: Math.min(px, hs.half), left: 0, right: 0 }); } catch (e) {}
+}
+function gphAfterSide() {
+  const side = document.getElementById('gl-side'); if (!side) return;
+  if (!gphOn()) { side.style.height = ''; delete side.dataset.sheet; if (GLOBE) try { GLOBE.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {} return; }
+  if (!side.querySelector('.gl-grab')) side.insertAdjacentHTML('afterbegin', '<div class="gl-grab" aria-hidden="true"></div>');
+  if (!side.dataset.gphBound) { side.dataset.gphBound = '1'; gphDrag(side); }
+  gphSheet(GLOBE_SEL ? (GPH_STATE === 'full' ? 'full' : 'half') : 'peek');
+}
+// drag the sheet by its handle or its header; a tap toggles between peek and half
+function gphDrag(side) {
+  let y0 = null, h0 = 0, moved = false;
+  side.addEventListener('pointerdown', e => {
+    if (!gphOn() || e.target.closest('button, a, input, .gl-tabs')) return;
+    if (!e.target.closest('.gl-grab, .gl-p-head')) return;
+    y0 = e.clientY; h0 = side.offsetHeight; moved = false; side.classList.add('is-dragging'); side.setPointerCapture(e.pointerId);
+  });
+  side.addEventListener('pointermove', e => {
+    if (y0 == null) return; const dy = y0 - e.clientY; if (Math.abs(dy) > 6) moved = true;
+    const hs = gphHeights(); gphSheet(null, Math.max(hs.peek, Math.min(hs.full, h0 + dy)));
+  });
+  const end = () => {
+    if (y0 == null) return; side.classList.remove('is-dragging');
+    const hs = gphHeights(), h = side.offsetHeight; y0 = null;
+    if (!moved) return gphSheet(GPH_STATE === 'peek' ? 'half' : 'peek');
+    const near = ['peek', 'half', 'full'].sort((a, b) => Math.abs(hs[a] - h) - Math.abs(hs[b] - h))[0];
+    gphSheet(near);
+  };
+  side.addEventListener('pointerup', end); side.addEventListener('pointercancel', end);
+}
+window.addEventListener('resize', () => { if (document.getElementById('gl-side')) gphAfterSide(); });
