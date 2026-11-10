@@ -135,7 +135,7 @@ async function globeMakeMap(el, opts, ready) {
   }, opts));
   map.touchZoomRotate.disableRotation();
   map.on('style.load', () => {
-    map.setProjection({ type: 'globe' });
+    map.setProjection({ type: opts && opts.flat ? 'mercator' : 'globe' });
     try { globeAddTerrain(map); } catch (e) { /* terrain is a bonus: the plain map still works */ }
     globeAddCountries(map);
     ready(map, labelFont);
@@ -507,12 +507,15 @@ function gmapPick(iso3) {
 const GMAP_WIDE = '(min-width: 1100px)';
 function gmapPlace() {
   const card = document.getElementById('gm-card'); if (!card) return;
-  const col = document.getElementById('gw-map'), head = document.getElementById('guess-head');
-  const info = document.getElementById('gw-info');
-  if (matchMedia(GMAP_WIDE).matches) { if (info && card.parentNode !== info) info.appendChild(card); }   // the middle of the information block
-  else if (head && card.nextSibling !== head) head.before(card);
+  // a full-width strip between the cards and the guess bar, on every screen
+  const head = document.getElementById('guess-head') || document.getElementById('input-area');
+  if (head && card.nextSibling !== head) head.before(card);
 }
-function gmapShow(on) {
+function gmapFitZoom(cv) {
+  // the world's width fits the strip (Antarctica and the far Arctic may crop at the top and bottom)
+  return Math.log2((cv.clientWidth || 800) / 512) - 0.02;
+}
+function gmapShow(on, scroll) {
   GMAP_ON = on; try { localStorage.setItem('energle_gmap', on ? 'on' : 'off'); } catch (e) {}
   document.body.classList.toggle('gm-on', on);
   const b = document.getElementById('gm-btn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Hide the map' : 'Show the map'; }
@@ -524,9 +527,10 @@ function gmapShow(on) {
       + '<button type="button" class="gm-x" id="gm-x" aria-label="Hide the map">×</button></div>';
     document.body.appendChild(card); gmapPlace();
     card.querySelector('#gm-x').addEventListener('click', () => gmapShow(false));
-    const cv = document.getElementById('gm-canvas'), fill = Math.log2(1.0 * Math.min(cv.clientWidth || 400, cv.clientHeight || 400) * Math.PI / 512);
+    // a wide, short strip: the whole world laid flat fills it, every country one tap away
+    const cv = document.getElementById('gm-canvas');
     GMAP = null;
-    globeMakeMap(cv, { zoom: Math.max(0.5, fill), center: target ? [target.lng > 0 ? 60 : -40, 25] : [10, 25] }, (m, labelFont) => {
+    globeMakeMap(cv, { flat: true, minZoom: -1, zoom: gmapFitZoom(cv), center: [10, 16] }, (m, labelFont) => {
       m.addLayer({ id: 'gm-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': 'rgba(0,0,0,0)', 'fill-opacity': 0.55 } });
       m.addLayer({ id: 'gm-pick-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.25 } });
       m.addLayer({ id: 'gm-pick', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2.5 } });
@@ -535,6 +539,8 @@ function gmapShow(on) {
       globeAddNames(m, labelFont);
       const l = document.getElementById('gm-loading'); if (l) l.remove();
       GMAP = m; gmapUpdate();
+      // credits folded behind their (i) so they don't cover the short strip
+      m.once('idle', () => m.fire('drag'));   // MapLibre folds compact credits on the first drag
     }).then(map => {
       if (!map) return;
       map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) gmapPick(iso); });
@@ -543,6 +549,8 @@ function gmapShow(on) {
   }
   card.hidden = false; gmapPlace();
   if (GMAP) { GMAP.resize(); gmapUpdate(); }
+  // opened from the button: bring the map and the guess bar into view together
+  if (scroll) requestAnimationFrame(() => { const ia = document.getElementById('input-area'); if (ia) ia.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
   gmapRedrawFlow();
 }
 // the trade flow is drawn to the width it had: redraw it when the map opens or closes and the column changes width
@@ -676,7 +684,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     _game();
     gwLayout();
     const sub = document.getElementById('submit-btn');
-    if (sub && !document.getElementById('gm-btn')) { sub.insertAdjacentHTML('beforebegin', gmapButtonHTML()); document.getElementById('gm-btn').addEventListener('click', () => gmapShow(!GMAP_ON)); }
+    if (sub && !document.getElementById('gm-btn')) { sub.insertAdjacentHTML('beforebegin', gmapButtonHTML()); document.getElementById('gm-btn').addEventListener('click', () => gmapShow(!GMAP_ON, true)); }
     GMAP_PICK = null; gmapShow(GMAP_ON);
   };
   const _row = addGuessRow;

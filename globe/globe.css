@@ -56,7 +56,7 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
 #submit-btn.gm-ready { animation: gmReady 1.1s ease-out; }
 @keyframes gmReady { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); } 30% { box-shadow: 0 0 0 4px rgba(245,166,35,.6); } }
 .gm-card[hidden] { display: none; }
-.gm-wrap { position: relative; height: 56vh; min-height: 300px; border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; background: #dfe8f1; }
+.gm-wrap { position: relative; height: clamp(300px, 42vh, 520px); border: 1px solid #e0e0e0; border-radius: 6px; overflow: hidden; background: #dfe8f1; }
 .gm-x { position: absolute; top: 8px; right: 8px; z-index: 2; width: 32px; height: 32px; border: 0; border-radius: 50%; background: rgba(255,255,255,.95);
   box-shadow: 0 1px 4px rgba(0,0,0,.15); font-size: 19px; line-height: 1; color: #555; cursor: pointer; }
 .gm-x:hover { color: #1a1a1a; }
@@ -64,7 +64,7 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   .gm-btn { height: 40px; padding: 0 9px; }
   #input-area > .gm-btn { height: 40px; }
   .gm-lbl { display: none; }
-  .gm-wrap { height: 46vh; }
+  .gm-wrap { height: clamp(200px, 58vw, 300px); }   /* the flat world fits the phone's width with little empty ocean */
 }
 
 /* ---------- layout (globe.js gwLayout): one information block, the guess bar always below it ---------- */
@@ -76,25 +76,11 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   body.gl-page .gw-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   body.gl-page .gw-map { display: none; }
   body.gl-page #legend-shared { grid-column: 1 / -1; }
-  /* map open: a wider page with the map in the middle, right above the guess bar; the cards fold around it:
-     totals, trade flow and legend on the left, the two charts stacked on the right */
-  body.gl-page.gm-on #app { max-width: min(1640px, calc(100vw - 64px)); }
-  body.gl-page.gm-on .gw-info { grid-template-columns: clamp(280px, 22%, 360px) minmax(0, 1fr) clamp(300px, 25%, 400px);
-    grid-template-areas: "bal map charts" "leg map charts"; grid-template-rows: auto 1fr; align-items: start; }
-  body.gl-page.gm-on .gw-info > #balance-card { grid-area: bal; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  body.gl-page.gm-on .gw-info .bc-stats { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 14px 10px; gap: 10px; }
-  body.gl-page.gm-on .gw-info .bc-stat { flex: 1; min-width: 0; }
-  body.gl-page.gm-on .gw-info > #legend-shared { grid-area: leg; grid-column: auto; }
-  body.gl-page.gm-on .gw-info > #gm-card { grid-area: map; align-self: stretch; display: flex; flex-direction: column; }
-  body.gl-page.gm-on .gw-info > #charts-section { grid-area: charts; align-self: stretch; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
-  body.gl-page.gm-on #chart-right #bar-wrapper { min-height: 190px; }
-  body.gl-page.gm-on .gm-wrap { flex: 1; height: auto; min-height: clamp(380px, calc(100vh - 400px), 860px); }
   /* the chart row's height is set by the line chart alone (no fixed minimums), and the mix fills the same height;
      it takes the height the window has, so the guess bar stays on screen */
   body.gl-page #line-wrapper, body.gl-page #bar-wrapper { min-height: 0; }
   body.gl-page #line-wrapper { flex: none; height: clamp(160px, calc(100vh - 660px), 440px); }
   body.gl-page #bar-wrapper { flex: 1 1 0; }
-  body.gl-page.gm-on #line-wrapper { height: clamp(140px, calc(50vh - 270px), 280px); }
 }
 
 /* Explore panel: the clue cards in one column, under the profile */
