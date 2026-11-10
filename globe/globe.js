@@ -234,7 +234,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && GLOBE_SEL 
 // ============================================================
 //  2. GUESS MAP — the Map button in the guess bar opens the globe inside the page, next to the
 //     information (on a laptop: a column on the right; on a phone: just above the guess bar), so the
-//     charts stay in view while you look around. Tap a country to put it in the guess box.
+//     charts stay in view while you look around (laptop: the map on the left). Tap a country to put it in the guess box.
 //     Guessed countries are shaded in their closeness colour; at the end the answer is outlined.
 //     Nothing is stored between puzzles: the map is redrawn from the current game every time.
 // ============================================================
@@ -277,7 +277,7 @@ function gmapShow(on) {
   document.body.classList.toggle('gm-on', on);
   const b = document.getElementById('gm-btn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Hide the map' : 'Show the map'; }
   let card = document.getElementById('gm-card');
-  if (!on) { if (card) card.hidden = true; return; }
+  if (!on) { if (card) card.hidden = true; gmapRedrawFlow(); return; }
   if (!card) {
     card = document.createElement('section'); card.id = 'gm-card'; card.className = 'gm-card'; card.setAttribute('aria-label', 'Map');
     card.innerHTML = '<div class="gm-wrap"><div class="gl-canvas" id="gm-canvas"></div><p class="gl-loading" id="gm-loading">Loading the map…</p>'
@@ -303,8 +303,11 @@ function gmapShow(on) {
   }
   card.hidden = false; gmapPlace();
   if (GMAP) { GMAP.resize(); gmapUpdate(); }
+  gmapRedrawFlow();
 }
-matchMedia(GMAP_WIDE).addEventListener('change', () => { gmapPlace(); if (GMAP) setTimeout(() => GMAP.resize(), 50); });
+// the trade flow is drawn to the width it had: redraw it when the map opens or closes and the column changes width
+function gmapRedrawFlow() { if (document.getElementById('flow-chart') && target) requestAnimationFrame(() => renderFlowBar(false)); }
+matchMedia(GMAP_WIDE).addEventListener('change', () => { gmapPlace(); if (GMAP) setTimeout(() => GMAP.resize(), 50); gmapRedrawFlow(); });
 
 // ============================================================
 //  3. LAYOUT — the information (charts, mix, totals, legend) as one block, the guess bar always under it.
@@ -318,7 +321,7 @@ function gwLayout() {
   cols.innerHTML = '<div class="gw-main" id="gw-main"><div class="gw-info" id="gw-info"></div></div><div class="gw-map" id="gw-map"></div>';
   bal.before(cols);
   const info = cols.querySelector('#gw-info'), main = cols.querySelector('#gw-main');
-  ['charts-section', 'balance-card', 'legend-shared'].forEach(id => { const n = document.getElementById(id); if (n) info.appendChild(n); });
+  ['balance-card', 'charts-section', 'legend-shared'].forEach(id => { const n = document.getElementById(id); if (n) info.appendChild(n); });   // the game's own order
   ['clue-cards', 'guess-head', 'input-area', 'error', 'banner', 'guesses'].forEach(id => { const n = document.getElementById(id); if (n) main.appendChild(n); });
 }
 

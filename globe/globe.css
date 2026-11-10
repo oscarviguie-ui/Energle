@@ -76,28 +76,15 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   body.gl-page .gw-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   body.gl-page .gw-map { display: block; }
   body.gl-page #legend-shared { grid-column: 1 / -1; }
-  /* map open: the page widens and the map takes a column on the right, as tall as the window */
+  /* map open: the page widens and the map takes a column on the left, as tall as the window */
   body.gl-page.gm-on #app { max-width: min(1560px, calc(100vw - 64px)); }
-  body.gl-page.gm-on .gw-cols { grid-template-columns: minmax(0, 1fr) clamp(380px, 40%, 680px); }
-  body.gl-page.gm-on .gw-map { position: sticky; top: 16px; }
+  body.gl-page.gm-on .gw-cols { grid-template-columns: clamp(380px, 40%, 680px) minmax(0, 1fr); }
+  body.gl-page.gm-on .gw-map { order: -1; position: sticky; top: 16px; }
   body.gl-page.gm-on .gm-wrap { height: calc(100vh - 32px); max-height: 980px; }
-  /* the charts take the height the window has, so the guess bar stays on screen */
-  /* the chart row's height is set by the line chart alone (no fixed minimums), and the mix fills the same height */
+  /* the chart row's height is set by the line chart alone (no fixed minimums), and the mix fills the same height;
+     it takes the height the window has, so the guess bar stays on screen */
   body.gl-page #line-wrapper, body.gl-page #bar-wrapper { min-height: 0; }
-  body.gl-page #line-wrapper { flex: none; }
+  body.gl-page #line-wrapper { flex: none; height: clamp(160px, calc(100vh - 660px), 440px); }
   body.gl-page #bar-wrapper { flex: 1 1 0; }
-  body.gl-page #line-wrapper { height: clamp(220px, calc(100vh - 520px), 420px); }
   body.gl-page.gm-on #line-wrapper { height: clamp(150px, calc(100vh - 700px), 380px); }
-}
-/* wide but short windows: the charts and the totals side by side, so everything above the guess bar fits */
-@media (min-width: 1100px) and (max-height: 1100px) {
-  body.gl-page:not(.gm-on) #app { max-width: min(1320px, calc(100vw - 96px)); }
-  @container (min-width: 1000px) {
-    body.gl-page .gw-info { grid-template-columns: minmax(0, 1fr) 380px; }
-    body.gl-page .gw-info #balance-card { grid-template-columns: minmax(0, 1fr); gap: 12px; grid-column: 2; grid-row: 1; }
-    body.gl-page .gw-info .bc-stats { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 16px 12px; gap: 12px; }
-    body.gl-page .gw-info .bc-stat { flex: 1; min-width: 0; }
-    body.gl-page .gw-info #charts-section { grid-column: 1; grid-row: 1; }
-    body.gl-page #line-wrapper { height: clamp(200px, calc(100vh - 560px), 440px); }
-  }
 }
