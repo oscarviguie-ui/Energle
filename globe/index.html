@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Test page for the atlas globe. <base> makes every path resolve from the site root, so this
+         page reuses the game's own scripts, styles and data; everything globe-only sits in /globe/. -->
+    <base href="/" />
+    <title>Energle – Atlas globe (test)</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#f7f7f5" />
+    <link rel="stylesheet" href="css/styles.css?v=20261110b" />
+    <link rel="stylesheet" href="css/shop.css?v=20261110b" />
+    <link rel="stylesheet" href="globe/globe.css?v=20261110b" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>window.GLOBE_PAGE = true;</script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="loading">Loading data…</div>
+    </div>
+    <div id="tooltip"></div>
+    <script src="js/practice-art.js?v=20261110b"></script>
+    <script src="js/shop-cards.js?v=20261110b"></script>
+    <script src="js/shop.js?v=20261110b"></script>
+    <script src="globe/globe.js?v=20261110b"></script>
+    <script src="js/script.js?v=20261110b"></script>
+  </body>
+</html>
