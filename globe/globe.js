@@ -168,7 +168,8 @@ function globeCountryHTML(c) {
     + '</div>'
     + '<div id="legend-shared"></div>'
     + balanceCardHTML()
-    + '<button type="button" class="gl-open" id="gl-open">Open the full profile and clue cards →</button>';
+    + '<section id="clue-cards" class="gl-cards"></section>'
+    + '<button type="button" class="gl-open" id="gl-open">Open the full profile →</button>';
 }
 function globeSide() {
   const el = document.getElementById('gl-side'), lay = document.getElementById('gl-layout'); if (!el) return;
@@ -180,7 +181,7 @@ function globeSide() {
   } else el.innerHTML = wide ? '<p class="gl-empty"><b>Click a country</b>to see its electricity profile, laid out as in the daily puzzle.</p>' : '';
   el.hidden = !GLOBE_SEL && !wide;
   if (lay) lay.classList.toggle('has-sel', !!GLOBE_SEL);
-  if (GLOBE_SEL) { renderCharts(); renderStatBar(); renderFlowBar(); }
+  if (GLOBE_SEL) { renderCharts(); renderStatBar(); renderFlowBar(); if (typeof renderAtlasCards === 'function') renderAtlasCards(); }
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => globeSelect(null));
   const o = document.getElementById('gl-open'); if (o) o.addEventListener('click', () => { const iso = GLOBE_SEL.iso3; globeRestoreTarget(); browseCountry(iso); });
 }
@@ -234,7 +235,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && GLOBE_SEL 
 // ============================================================
 //  2. GUESS MAP — the Map button in the guess bar opens the globe inside the page, next to the
 //     information (on a laptop: a column on the right; on a phone: just above the guess bar), so the
-//     charts stay in view while you look around (laptop: the map on the left). Tap a country to put it in the guess box.
+//     charts stay in view while you look around (laptop: the map in the middle, the cards around it). Tap a country to put it in the guess box.
 //     Guessed countries are shaded in their closeness colour; at the end the answer is outlined.
 //     Nothing is stored between puzzles: the map is redrawn from the current game every time.
 // ============================================================
@@ -246,7 +247,7 @@ function gmapButtonHTML() { return '<button type="button" id="gm-btn" class="gm-
 function gmapUpdate() {
   const m = GMAP; if (!m || !m.getLayer('gm-fill') || !target) return;
   const done = guesses.filter(g => g.iso3 !== target.iso3);
-  const fills = done.flatMap(g => [['==', ['get', 'iso3'], g.iso3], 'rgb(' + closeRGB(guessInfo(g).prox).join(',') + ')']);
+  const fills = done.flatMap(g => [['==', ['get', 'iso3'], g.iso3], 'rgb(' + closeRGB(kmBand(guessInfo(g).km).prox).join(',') + ')']);
   m.setPaintProperty('gm-fill', 'fill-color', fills.length ? ['case', ...fills, 'rgba(0,0,0,0)'] : 'rgba(0,0,0,0)');
   m.setFilter('gm-fill', ['in', ['get', 'iso3'], ['literal', done.map(g => g.iso3)]]);
   const pick = ['==', ['get', 'iso3'], gameOver ? '' : (GMAP_PICK || '')];
@@ -269,7 +270,8 @@ const GMAP_WIDE = '(min-width: 1100px)';
 function gmapPlace() {
   const card = document.getElementById('gm-card'); if (!card) return;
   const col = document.getElementById('gw-map'), head = document.getElementById('guess-head');
-  if (matchMedia(GMAP_WIDE).matches) { if (col && card.parentNode !== col) col.appendChild(card); }
+  const info = document.getElementById('gw-info');
+  if (matchMedia(GMAP_WIDE).matches) { if (info && card.parentNode !== info) info.appendChild(card); }   // the middle of the information block
   else if (head && card.nextSibling !== head) head.before(card);
 }
 function gmapShow(on) {
@@ -308,6 +310,31 @@ function gmapShow(on) {
 // the trade flow is drawn to the width it had: redraw it when the map opens or closes and the column changes width
 function gmapRedrawFlow() { if (document.getElementById('flow-chart') && target) requestAnimationFrame(() => renderFlowBar(false)); }
 matchMedia(GMAP_WIDE).addEventListener('change', () => { gmapPlace(); if (GMAP) setTimeout(() => GMAP.resize(), 50); gmapRedrawFlow(); });
+
+// ============================================================
+//  DISTANCE LEVELS — with a map at hand, an exact distance pins the answer down too easily (above all for
+//  close guesses), so the guess rows show a band instead. The closeness ring and colour step with the band.
+//  The exact distances stay in the result's pathway, once the game is over.
+// ============================================================
+const KM_BANDS = [[1000, '<1k km', 'less than 1,000 km'], [2500, '1\u20132.5k km', '1,000 to 2,500 km'], [5000, '2.5\u20135k km', '2,500 to 5,000 km'],
+  [10000, '5\u201310k km', '5,000 to 10,000 km'], [Infinity, '>10k km', 'more than 10,000 km']];
+const BAND_MID = [600, 1750, 3750, 7500, 13000];
+function kmBand(km) { const i = KM_BANDS.findIndex(b => km < b[0]); return { i, short: KM_BANDS[i][1], long: KM_BANDS[i][2], prox: closeness(BAND_MID[i]) }; }
+// rewrite a freshly drawn guess row: band instead of kilometres, ring and colour by band
+function bandRow(country) {
+  const row = document.getElementById('guesses') && document.getElementById('guesses').firstElementChild;
+  if (!row || row.classList.contains('gr-row--win')) return;
+  const h = guessInfo(country), b = kmBand(h.km), col = closeRGB(b.prox), name = country.name;
+  const L = 2 * Math.PI * 13, filled = L * b.prox / 100;
+  row.style.setProperty('--cl', col.join(','));
+  const ring = row.querySelector('.gr-ring'); if (ring) { ring.setAttribute('stroke-dasharray', filled.toFixed(1) + ' ' + L.toFixed(1)); ring.style.setProperty('--c', filled.toFixed(1)); }
+  const num = row.querySelector('.gr-num'); if (num) num.setAttribute('aria-label', 'Guess, ' + b.long + ' from the answer');
+  const tip = row.querySelector('.gr-tip'); if (tip) tip.textContent = 'The answer is ' + b.long + ' away. The fuller and greener the ring, the closer this guess is.';
+  const km = row.querySelector('.gr-km'); if (km) { km.textContent = b.short; km.style.color = darker(col); }
+  const hint = row.querySelector('.gr-hint'); if (hint) hint.setAttribute('aria-label', 'Hint: the answer is ' + b.long + ' ' + DIR_NAMES[h.dir] + ' of ' + name);
+  const ht = row.querySelector('.gr-htip'); if (ht) ht.textContent = 'Hint toward the answer: it lies ' + b.long + ' to the ' + DIR_NAMES[h.dir] + ' of ' + name + '. The figures on the left are ' + name + '\u2019s own. Exact distances show in your path once the game is over.';
+  const wire = row.querySelector('.gr-wire-fill'); if (wire) wire.style.width = b.prox + '%';
+}
 
 // ============================================================
 //  3. LAYOUT — the information (charts, mix, totals, legend) as one block, the guess bar always under it.
@@ -372,7 +399,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     GMAP_PICK = null; gmapShow(GMAP_ON);
   };
   const _row = addGuessRow;
-  window.addGuessRow = function (country, isCorrect, animate) { _row(country, isCorrect, animate); GMAP_PICK = null; gmapUpdate(); };
+  window.addGuessRow = function (country, isCorrect, animate) { _row(country, isCorrect, animate); if (!isCorrect) bandRow(country); GMAP_PICK = null; gmapUpdate(); };
   const _end = endGame;
   window.endGame = function () { _end(); gmapUpdate(); };
   const _new = newGame;

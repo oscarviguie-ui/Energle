@@ -74,17 +74,32 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   body.gl-page .gw-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
   body.gl-page .gw-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; container-type: inline-size; }
   body.gl-page .gw-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  body.gl-page .gw-map { display: block; }
+  body.gl-page .gw-map { display: none; }
   body.gl-page #legend-shared { grid-column: 1 / -1; }
-  /* map open: the page widens and the map takes a column on the left, as tall as the window */
-  body.gl-page.gm-on #app { max-width: min(1560px, calc(100vw - 64px)); }
-  body.gl-page.gm-on .gw-cols { grid-template-columns: clamp(380px, 40%, 680px) minmax(0, 1fr); }
-  body.gl-page.gm-on .gw-map { order: -1; position: sticky; top: 16px; }
-  body.gl-page.gm-on .gm-wrap { height: calc(100vh - 32px); max-height: 980px; }
+  /* map open: a wider page with the map in the middle, right above the guess bar; the cards fold around it:
+     totals, trade flow and legend on the left, the two charts stacked on the right */
+  body.gl-page.gm-on #app { max-width: min(1640px, calc(100vw - 64px)); }
+  body.gl-page.gm-on .gw-info { grid-template-columns: clamp(280px, 22%, 360px) minmax(0, 1fr) clamp(300px, 25%, 400px);
+    grid-template-areas: "bal map charts" "leg map charts"; grid-template-rows: auto 1fr; align-items: start; }
+  body.gl-page.gm-on .gw-info > #balance-card { grid-area: bal; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  body.gl-page.gm-on .gw-info .bc-stats { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 14px 10px; gap: 10px; }
+  body.gl-page.gm-on .gw-info .bc-stat { flex: 1; min-width: 0; }
+  body.gl-page.gm-on .gw-info > #legend-shared { grid-area: leg; grid-column: auto; }
+  body.gl-page.gm-on .gw-info > #gm-card { grid-area: map; align-self: stretch; display: flex; flex-direction: column; }
+  body.gl-page.gm-on .gw-info > #charts-section { grid-area: charts; align-self: stretch; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+  body.gl-page.gm-on #chart-right #bar-wrapper { min-height: 190px; }
+  body.gl-page.gm-on .gm-wrap { flex: 1; height: auto; min-height: clamp(380px, calc(100vh - 400px), 860px); }
   /* the chart row's height is set by the line chart alone (no fixed minimums), and the mix fills the same height;
      it takes the height the window has, so the guess bar stays on screen */
   body.gl-page #line-wrapper, body.gl-page #bar-wrapper { min-height: 0; }
   body.gl-page #line-wrapper { flex: none; height: clamp(160px, calc(100vh - 660px), 440px); }
   body.gl-page #bar-wrapper { flex: 1 1 0; }
-  body.gl-page.gm-on #line-wrapper { height: clamp(150px, calc(100vh - 700px), 380px); }
+  body.gl-page.gm-on #line-wrapper { height: clamp(140px, calc(50vh - 270px), 280px); }
 }
+
+/* Explore panel: the clue cards in one column, under the profile */
+.gl-side .ic-slot { grid-template-columns: minmax(0, 1fr); }
+.gl-side .ic-cols { display: flex; flex-direction: column; gap: 12px; grid-column: 1 / -1; }
+.gl-side .ic-card.is-half { grid-column: 1 / -1; }
+.gl-side #clue-cards { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.gl-side #clue-cards .ic-sechead { margin-bottom: 0; }
