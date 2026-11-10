@@ -303,3 +303,13 @@ body.at-globe .at-tools { margin-top: 14px; }
   body.at-globe .gl-side #legend-shared .legend-members { display: none; }
 }
 .gl-p-head .gl-practice { margin-left: auto; }
+
+/* wide windows: the header on one line (logo · modes … Stats & Leaderboard · podium), giving the page ~50px back */
+@media (min-width: 1240px) {
+  body.gl-page .hd-grid { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes . lb podium"; column-gap: 22px; row-gap: 0; }
+  body.gl-page .hd-grid #mode-nav { width: auto; align-self: center; }
+  body.gl-page .hd-grid .lb-split { align-self: center; }
+  body.gl-page .hd-grid .podium { align-self: center; }
+}
+/* the map's hint only while no group key is on the map */
+.gl-key:not([hidden]) ~ .gl-maphint { display: none; }
