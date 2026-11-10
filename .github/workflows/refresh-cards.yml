@@ -54,12 +54,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for f in cards.json data/cards_raw.json data/cards_report.md data/power_cache.json data/elevation_cache.json; do if [ -f "$f" ]; then git add "$f"; fi; done
+          for f in data/cards.json data/build/cards_raw.json data/build/cards_report.md data/build/power_cache.json data/build/elevation_cache.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --staged --quiet || git commit -m "Auto-refresh: clue cards $(date +'%Y-%m-%d')"
           git pull --rebase --autostash && git push
 
       - name: Fail loudly if the cards were not published
         if: steps.build.outputs.status != '0'
         run: |
-          echo "::error::cards.json was not fully refreshed - see data/cards_report.md"
+          echo "::error::cards.json was not fully refreshed - see data/build/cards_report.md"
           exit 1

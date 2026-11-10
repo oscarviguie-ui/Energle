@@ -170,7 +170,7 @@ for (area, iso3), group in gen.groupby(['Area','ISO 3 code']):
 # Prepend world average DPC
 final = {'__world_dpc__': world_avg, **result}
 
-with open('energle_data.json', 'w') as f:
+with open('data/energle_data.json', 'w') as f:
     json.dump(final, f, separators=(',', ':'))
 
 print(f"Done. Countries: {len(result)}")

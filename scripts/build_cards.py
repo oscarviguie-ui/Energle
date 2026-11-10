@@ -1,11 +1,11 @@
 """
-Builds cards.json, the data behind the Clue Shop's cards, from open sources. Run monthly by
+Builds data/cards.json, the data behind the Clue Shop's cards, from open sources. Run monthly by
 .github/workflows/refresh-cards.yml (after the Ember refresh), or by hand:
 
     python scripts/build_cards.py                  # due sources only (see the cadences below)
     python scripts/build_cards.py wdi eia          # just these sources
     python scripts/build_cards.py --all            # every source, whatever is due
-    python scripts/build_cards.py --assemble       # no downloads: rebuild cards.json from data/cards_raw.json
+    python scripts/build_cards.py --assemble       # no downloads: rebuild data/cards.json from data/build/cards_raw.json
 
 Sources and how often they are fetched (a source that fails, or has no key, keeps its last data):
     wdi        World Bank indicators          monthly    no key
@@ -14,11 +14,11 @@ Sources and how often they are fetched (a source that fails, or has no key, keep
     entsoe     ENTSO-E border flows (Europe)  monthly    ENTSOE_API_KEY (optional)
     baci       CEPII BACI trade               yearly     no key - re-read only when a new release is out
     usgs       USGS minerals                  yearly     no key - re-read only when a new release is out
-    power      NASA POWER climatology         yearly     no key - points cached in data/power_cache.json
-    elevation  NOAA ETOPO via OpenTopoData    once       no key - cached in data/elevation_cache.json
+    power      NASA POWER climatology         yearly     no key - points cached in data/build/power_cache.json
+    elevation  NOAA ETOPO via OpenTopoData    once       no key - cached in data/build/elevation_cache.json
 
-Files: data/cards_raw.json (every source's figures), cards.json (what the game reads, published
-only if scripts/cards/checks.py passes), data/cards_report.md (coverage, gaps, what changed).
+Files: data/build/cards_raw.json (every source's figures), data/cards.json (what the game reads, published
+only if scripts/cards/checks.py passes), data/build/cards_report.md (coverage, gaps, what changed).
 """
 import os
 import sys
@@ -89,7 +89,7 @@ def main(argv):
     sources = {s: {k: v for k, v in (raw.get(s) or {}).get('meta', {}).items() if k in ('updated', 'release', 'year', 'countries')} for s in SOURCES}
     out = {'version': 1, 'built': today().isoformat(), 'sources': sources, 'world': world, 'countries': cards}
     report = ['# Clue cards build %s' % today().isoformat(), '',
-              'Published: **%s**' % ('yes' if ok else 'no, the live cards.json was kept'), '',
+              'Published: **%s**' % ('yes' if ok else 'no, the live data/cards.json was kept'), '',
               '## Sources', ''] + ['- %s: %s' % (s, v or 'never fetched') for s, v in sources.items()]
     if failed:
         report += ['', 'Failed this run (kept their previous figures): ' + ', '.join(failed)]
@@ -97,9 +97,9 @@ def main(argv):
     open(REPORT_FILE, 'w', encoding='utf-8').write('\n'.join(report) + '\n')
     if ok:
         save_json(CARDS_FILE, out)
-        print('cards.json: %d countries, %d with the shop' % (len(cards), sum(1 for C in cards.values() if len(C['cards']) >= checks.MIN_CARDS)))
+        print('data/cards.json: %d countries, %d with the shop' % (len(cards), sum(1 for C in cards.values() if len(C['cards']) >= checks.MIN_CARDS)))
     else:
-        print('cards.json NOT updated, see data/cards_report.md')
+        print('data/cards.json NOT updated, see data/build/cards_report.md')
     return 0 if ok and len(failed) < len(SOURCES) else 1
 
 

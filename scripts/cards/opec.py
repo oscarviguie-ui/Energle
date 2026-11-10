@@ -108,7 +108,7 @@ def build(countries, state=None, log=print):
     gas = parse(pages['gas'], lookup, pycountry)      # billion standard m3
     log('  opec ASB %d (%s): oil reserves for %d countries, gas for %d' % (year, url, len(oil), len(gas)))
     if len(oil) < 20 or len(gas) < 20:
-        raise RuntimeError('OPEC tables read badly (oil %d, gas %d countries): see data/opec_debug.txt' % (len(oil), len(gas)))
+        raise RuntimeError('OPEC tables read badly (oil %d, gas %d countries): see data/build/opec_debug.txt' % (len(oil), len(gas)))
     data_year = year - 1                               # the 2026 edition gives end-2025 reserves
     out = {}
     for iso, v in oil.items():

@@ -408,7 +408,7 @@ function practiceUnlocked() {
 async function loadData() {
   document.getElementById('app').innerHTML = '<div id="loading">Loading data…</div>';
   try {
-    const [res, released] = await Promise.all([fetch('energle_data.json'), sbReleasedPuzzles(), shopLoadData()]);
+    const [res, released] = await Promise.all([fetch('data/energle_data.json'), sbReleasedPuzzles(), shopLoadData()]);
     const raw = await res.json();
     RELEASED = released;
     WORLD_DPC = raw['__world_dpc__'];
@@ -2967,7 +2967,7 @@ function showLeaderboardModal(tab = 'today') {
   const modal = document.createElement('div'); modal.id = 'lb-modal';
   modal.innerHTML =
     '<div class="st-backdrop"></div>'
-    // `lb-box` makes this modal larger than the shared .st-box (see style.css)
+    // `lb-box` makes this modal larger than the shared .st-box (see css/styles.css)
     + '<div class="st-box lb-box hub-box" role="dialog" aria-label="Stats and leaderboard">'
     + hubBarHTML(tab, 'lb-close-btn')
     + '<div class="lb-body" id="lb-body"><div class="lb-loading">Loading…</div></div>'

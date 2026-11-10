@@ -3,7 +3,7 @@ Shared helpers for the clue-card data pipeline (scripts/build_cards.py).
 
 Every source module has build(countries, state, log) -> (data, meta) or (None, None) when it skips.
   data:  {ISO3: {...raw figures...}}
-  meta:  small dict kept in data/cards_raw.json (release name, year, world figures...)
+  meta:  small dict kept in data/build/cards_raw.json (release name, year, world figures...)
 Sources never raise for one bad country: they log and move on. Network calls go through get().
 """
 import datetime
@@ -14,10 +14,10 @@ import time
 import requests
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-GAME_FILE = os.path.join(ROOT, 'energle_data.json')        # the base game's data (names, ISO3, lat/lng, Ember)
-DATA_DIR = os.path.join(ROOT, 'data')
+GAME_FILE = os.path.join(ROOT, 'data', 'energle_data.json')        # the base game's data (names, ISO3, lat/lng, Ember)
+DATA_DIR = os.path.join(ROOT, 'data', 'build')                # the pipeline's own files (raw figures, caches, report)
 RAW_FILE = os.path.join(DATA_DIR, 'cards_raw.json')        # every source's raw figures + when they were fetched
-CARDS_FILE = os.path.join(ROOT, 'cards.json')              # what the game reads (published only if the checks pass)
+CARDS_FILE = os.path.join(ROOT, 'data', 'cards.json')              # what the game reads (published only if the checks pass)
 REPORT_FILE = os.path.join(DATA_DIR, 'cards_report.md')    # what changed and what the checks found
 
 SESSION = requests.Session()
@@ -78,7 +78,7 @@ def save_json(path, obj, compact=True):
 
 
 def static(name):
-    """One of the made-once point files in data/ (elevation_points, land_points, city_points)."""
+    """One of the made-once point files in data/build/ (elevation_points, land_points, city_points)."""
     return json.load(open(os.path.join(DATA_DIR, name + '.json'), encoding='utf-8'))['points']
 
 

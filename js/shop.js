@@ -5,9 +5,9 @@
 //  The score counts cards like guesses. Unopened cards are revealed for free when the game ends.
 //
 //  Switch: SHOP_LIVE. While it is false the guess row shows the "Soon" teaser and nothing else changes.
-//  Test before launch: add ?shop=on to the address (needs cards.json next to index.html).
+//  Test before launch: add ?shop=on to the address (needs data/cards.json).
 //  Card figures come from cards.json (built monthly by scripts/build_cards.py); markup and figure
-//  builders are in shop-cards.js; styles in shop.css. Loaded before script.js; everything here runs
+//  builders are in shop-cards.js; styles in css/shop.css. Loaded before script.js; everything here runs
 //  only when the game calls it.
 // ============================================================
 const SHOP_LIVE = true;
@@ -30,7 +30,7 @@ const SHOP_CARDS = [
 let CARDS_DATA = null;
 async function shopLoadData() {
   if (!shopLive()) return;
-  try { const r = await fetch('cards.json', { cache: 'no-cache' }); if (r.ok) CARDS_DATA = await r.json(); } catch (e) { CARDS_DATA = null; }
+  try { const r = await fetch('data/cards.json', { cache: 'no-cache' }); if (r.ok) CARDS_DATA = await r.json(); } catch (e) { CARDS_DATA = null; }
 }
 function shopEntry() { return (CARDS_DATA && CARDS_DATA.countries && target && CARDS_DATA.countries[target.iso3]) || null; }
 

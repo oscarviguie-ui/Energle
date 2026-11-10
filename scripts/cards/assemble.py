@@ -1,11 +1,11 @@
 """
-Turns the raw source figures (data/cards_raw.json) into cards.json, in the shape the cards draw
+Turns the raw source figures (data/build/cards_raw.json) into data/cards.json, in the shape the cards draw
 (see shop-cards.js), applying the giveaway rules on the way:
   - ranks are only ever shown as bands (Top 3 / Top 5 / Top 10), never as the exact rank;
   - the highest point of a country is never stored;
   - figures are rounded the way the cards print them.
 
-cards.json:
+data/cards.json:
   {"version": 1, "built": "YYYY-MM-DD", "sources": {source: {"updated", "release"/"year"}},
    "world": {...averages for the cards...},
    "countries": {ISO3: {"cards": ["nature", "under", "trade", "market", "people"], "europe": bool,
@@ -33,7 +33,7 @@ SHORT_NAMES = {
 
 def _script_maps():
     """ISO3 -> ISO2 and ISO3 -> continent, read from the game script so both always agree."""
-    src = open(os.path.join(ROOT, 'script.js'), encoding='utf-8').read()
+    src = open(os.path.join(ROOT, 'js', 'script.js'), encoding='utf-8').read()
     m = re.search(r'const ISO3_TO_ISO2 = \{(.*?)\};', src, re.S)
     iso2 = dict(re.findall(r"([A-Z]{3}):'([a-z]{2})'", m.group(1))) if m else {}
     m = re.search(r'const ISO3_CONTINENT = \{(.*?)\};', src, re.S)
@@ -46,7 +46,7 @@ def _display_names():
     """The everyday names the game shows ('Bosnia Herzegovina' -> 'Bosnia and Herzegovina'), from script.js."""
     global _DISPLAY
     if _DISPLAY is None:
-        src = open(os.path.join(ROOT, 'script.js'), encoding='utf-8').read()
+        src = open(os.path.join(ROOT, 'js', 'script.js'), encoding='utf-8').read()
         m = re.search(r'const DISPLAY_NAMES = \{(.*?)\};', src, re.S)
         _DISPLAY = {a: b for _, a, b in re.findall(r"""(['"])(.*?)\1:\s*'([^']*)'""", m.group(1))} if m else {}
     return _DISPLAY

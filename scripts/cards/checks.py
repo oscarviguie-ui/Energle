@@ -1,11 +1,11 @@
 """
-Checks run on every build before cards.json is published.
+Checks run on every build before data/cards.json is published.
 
 Blocking (the card is dropped for that country, the rest still publishes):
   - a figure outside its possible range (a share above 100 %, negative rain, a month with no value...)
-Blocking for the whole build (the previous cards.json stays live):
+Blocking for the whole build (the previous data/cards.json stays live):
   - no country keeps the shop, or fewer than 60 % of the countries that had it in the live file
-Reported only (data/cards_report.md):
+Reported only (data/build/cards_report.md):
   - countries with fewer than 3 cards (no shop for them)
   - electricity: gross imports minus exports far from Ember's net imports
   - big jumps against the previous build (a figure more than doubled or halved)

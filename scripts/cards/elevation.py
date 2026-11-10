@@ -3,9 +3,9 @@ Elevation of each country's land - NOAA ETOPO1 global relief (via the free OpenT
 
 Feeds:  Renewables Potential  "Elevation": share of the land in each height band, and the average.
 
-About 100 points spread over each country (data/elevation_points.json, from Natural Earth) are
+About 100 points spread over each country (data/build/elevation_points.json, from Natural Earth) are
 looked up 100 at a time (OpenTopoData allows 1 call a second and 1,000 a day). Land does not move,
-so the results are kept in data/elevation_cache.json and only countries still missing are fetched.
+so the results are kept in data/build/elevation_cache.json and only countries still missing are fetched.
 Points that fall in the sea on the coarse grid count as 0 m. The highest point is never stored:
 it gives the country away.
 """

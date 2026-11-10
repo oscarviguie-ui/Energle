@@ -26,7 +26,7 @@ import sys
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA = os.path.join(ROOT, 'energle_data.json')
+DATA = os.path.join(ROOT, 'data', 'energle_data.json')
 SUPABASE_URL = os.environ.get('SUPABASE_URL', 'https://chjipjiaemwfvwgdhccn.supabase.co').rstrip('/')
 KEY = os.environ.get('SUPABASE_SERVICE_KEY', '').strip()
 EPOCH = datetime.date(2026, 6, 2)          # puzzle #1

@@ -7,7 +7,7 @@ Feeds:  Renewables Potential  sunshine and wind, month by month, over the whole 
 Points (made once from Natural Earth, see data/*.json):
   land_points  up to 16 points spread over the country     -> ALLSKY_SFC_SW_DWN (kWh/m2/day), WS50M (m/s)
   city_points  the six largest places, weighted by people  -> T2M (deg C)
-Climate averages barely move, so every point is cached in data/power_cache.json and only missing
+Climate averages barely move, so every point is cached in data/build/power_cache.json and only missing
 points are fetched; the cache is cleared once a year to pick up POWER's updated climatology.
 """
 import time
