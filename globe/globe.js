@@ -842,43 +842,27 @@ function globeSuggestBind() {
 }
 
 // ============================================================
-//  PHONES: Explore works like a maps app. The map fills the screen; the search box and the group chips float on
-//  top; the panel is a sheet you pull up from the bottom (peek → half → full); a tab bar sits at the very bottom.
+//  PHONES: the header and tools stay as they are; the map takes the rest of the screen and the panel is a sheet
+//  that slides up over the map's lower part (peek → half → full).
 // ============================================================
 const GLOBE_PHONE = '(max-width: 700px)';
 let GPH_STATE = 'peek';
 const gphOn = () => document.body.classList.contains('at-globe') && matchMedia(GLOBE_PHONE).matches;
-function gphMount() {
-  const tools = document.querySelector('.at-tools'), app = document.getElementById('app'); if (!tools || !app) return;
-  if (!tools.querySelector('.gph-logo')) {
-    tools.insertAdjacentHTML('afterbegin', '<button type="button" class="gph-logo" aria-label="Today’s puzzle" onclick="switchMode(\'normal\')">⚡</button>');
-    const inp = document.getElementById('browse-search');
-    if (inp) inp.insertAdjacentHTML('afterend', '<button type="button" class="gph-list" aria-label="Show as a list">' + HD_SVG('<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>') + '</button>');
-    const lb = tools.querySelector('.gph-list'); if (lb) lb.addEventListener('click', () => { ATLAS.view = 'list'; atlasView(); });
-  }
-  if (!document.getElementById('gph-nav')) {
-    const it = (label, ico, on, act) => '<button type="button" class="gph-tab' + (on ? ' is-on' : '') + '" onclick="' + act + '"' + (on ? ' aria-current="page"' : '') + '><span class="gph-ico">' + ico + '</span>' + label + '</button>';
-    app.insertAdjacentHTML('beforeend', '<nav class="gph-nav" id="gph-nav" aria-label="Game mode">'
-      + it('Daily', HD_ICO.daily, false, "switchMode('normal')") + it('Archive', HD_ICO.archive, false, "switchMode('archive')")
-      + it('Explore', GLOBE_ICON, true, '') + it('Stats', HD_ICO.stats, false, 'showStatsModal(false)') + '</nav>');
-  }
-  gphAfterSide();
-}
+function gphMount() { gphAfterSide(); }
 // the sheet's three heights
 function gphHeights() {
-  const side = document.getElementById('gl-side'), head = side && side.querySelector('.gl-p-head');
-  const nav = (document.getElementById('gph-nav') || {}).offsetHeight || 0, tools = document.querySelector('.at-tools');
-  const top = tools ? tools.getBoundingClientRect().bottom + 8 : 120, H = window.innerHeight;
-  const peek = head ? Math.round(head.offsetTop + head.offsetHeight + 14) : 110;
-  return { peek, half: Math.round(Math.max(peek + 40, (H - nav) * 0.52)), full: Math.round(H - nav - top), nav, top };
+  const side = document.getElementById('gl-side'), head = side && side.querySelector('.gl-p-head'), lay = document.getElementById('gl-layout');
+  const H = lay ? lay.clientHeight : window.innerHeight * 0.6;
+  const peek = head ? Math.round(head.offsetTop + head.offsetHeight + 12) : 90;
+  return { peek, half: Math.round(Math.max(peek + 40, H * 0.5)), full: Math.round(H), nav: 0, top: 0 };
 }
 function gphSheet(state, h) {
   const side = document.getElementById('gl-side'); if (!side || !gphOn()) return;
   const hs = gphHeights(); GPH_STATE = state || GPH_STATE;
   const px = h != null ? h : hs[GPH_STATE];
   side.style.height = px + 'px'; side.dataset.sheet = GPH_STATE;
-  document.body.style.setProperty('--gph-sheet', px + 'px'); document.body.style.setProperty('--gph-nav', hs.nav + 'px'); document.body.style.setProperty('--gph-top', hs.top + 'px');
-  if (GLOBE && h == null) try { GLOBE.setPadding({ top: hs.top, bottom: Math.min(px, hs.half), left: 0, right: 0 }); } catch (e) {}
+  document.body.style.setProperty('--gph-sheet', px + 'px');
+  if (GLOBE && h == null) try { GLOBE.setPadding({ top: 0, bottom: Math.min(px, hs.half), left: 0, right: 0 }); } catch (e) {}
 }
 function gphAfterSide() {
   const side = document.getElementById('gl-side'); if (!side) return;
