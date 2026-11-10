@@ -269,39 +269,96 @@ function globeSideFit() {
 function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
     + '<div class="gl-wrap" id="gl-wrap"><div class="gl-canvas" id="gl-canvas" aria-label="Map of the world. Click a country for its electricity profile; the list view is keyboard-friendly."></div>'
-    + '<p class="gl-loading" id="gl-loading">Loading the map…</p></div>'
+    + '<p class="gl-loading" id="gl-loading">Loading the map…</p><div class="gl-key" id="gl-key" hidden></div></div>'
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
+}
+// How each group is defined, shown on the map next to the highlight
+const GLOBE_DEFS = {
+  eu: 'The 27 member states of the European Union.',
+  g7: 'Canada, France, Germany, Italy, Japan, the United Kingdom and the United States.',
+  opec: 'The 12 members of OPEC: Algeria, Congo, Equatorial Guinea, Gabon, Iran, Iraq, Kuwait, Libya, Nigeria, Saudi Arabia, the UAE and Venezuela.',
+  brics: 'Brazil, Russia, India, China and South Africa, plus Egypt, Ethiopia, Iran and the UAE (joined 2024) and Indonesia (2025).',
+  major: 'Generated 100 TWh or more in its latest year of data.',
+  highcap: 'Electricity demand of 7 MWh or more per person in its latest year of data.',
+  green: 'Renewables (hydro, wind, solar, bioenergy and other renewables) make up 70% or more of generation in its latest year. Nuclear does not count as renewable.',
+  fossil: 'Coal, gas and other fossil fuels make up 90% or more of generation in its latest year.',
+  lowcap: 'Electricity demand under 0.5 MWh per person in its latest year of data.',
+  movers: 'At least 30% of the generation mix moved from one source to another between 2010 (or its first year of data) and its latest year.',
+  growing: 'Generation in its latest year is at least double its 2010 level (or its first year of data).',
+  falling: 'Generation in its latest year is at least 10% below its 2010 level (or its first year of data).',
+  importers: 'Net imports cover 20% or more of electricity demand in its latest year.',
+  exporters: 'Net exports are 10% or more of what it generates in its latest year.',
+};
+// continents: the countries whose continent could be argued, named when they are in
+const GLOBE_EDGE = ['RUS', 'TUR', 'CYP', 'GEO', 'ARM', 'AZE', 'KAZ', 'EGY', 'PNG'];
+function globeDef(g) {
+  if (GLOBE_DEFS[g.id]) return GLOBE_DEFS[g.id];
+  const edge = COUNTRIES.filter(c => GLOBE_EDGE.includes(c.iso3) && g.test(c)).map(c => c.name);
+  return edge.length ? 'Includes ' + (edge.length > 1 ? edge.slice(0, -1).join(', ') + ' and ' + edge.at(-1) : edge[0]) + '.' : '';
+}
+function globeKey() {
+  const el = document.getElementById('gl-key'); if (!el) return;
+  if (GLOBE_SEL || GLOBE_REGION === 'all') { el.hidden = true; return; }
+  const g = groupOf(GLOBE_REGION), r = globeAggregate(GLOBE_REGION), def = globeDef(g);
+  // phones: the definition folds under the title (tap to open), so the key doesn't cover the map
+  const top = '<span class="gl-key-sw" aria-hidden="true"></span><b>' + g.name + '</b><span class="gl-key-n">' + r.n + ' countries</span>';
+  el.innerHTML = def
+    ? '<details' + (matchMedia('(max-width: 600px)').matches ? '' : ' open') + '><summary class="gl-key-top">' + top + '<span class="gl-key-i" aria-hidden="true">i</span></summary>'
+      + '<p class="gl-key-def">' + (g.trait ? '<span class="gl-key-tag">Energle’s definition</span> ' : '') + def + '</p></details>'
+    : '<div class="gl-key-top">' + top + '</div>';
+  el.classList.toggle('gl-key--low', !!g.trait);       // the flat world: keep the key over the southern ocean, clear of the countries
+  el.hidden = false;
 }
 function globeHighlight() {
   if (!GLOBE || !GLOBE.getLayer('energle-sel-fill')) return;
   const f = ['==', ['get', 'iso3'], GLOBE_SEL ? GLOBE_SEL.iso3 : ''];
   GLOBE.setFilter('energle-sel-fill', f); GLOBE.setFilter('energle-sel-line', f);
   const reg = !GLOBE_SEL && GLOBE_REGION !== 'all' ? globeAggregate(GLOBE_REGION).members : [];
-  GLOBE.setFilter('energle-reg-fill', ['in', ['get', 'iso3'], ['literal', reg]]);
+  GLOBE.setFilter('energle-reg-fill', ['in', ['get', 'iso3'], ['literal', reg]]); GLOBE.setFilter('energle-reg-line', ['in', ['get', 'iso3'], ['literal', reg]]);
+  globeKey();
 }
 function globeSelect(c, fly = true) {
   GLOBE_SEL = c || null;
   globeSide(); globeHighlight();
+  if (fly && GLOBE_SEL && GLOBE) globeProj('globe');
   if (fly && GLOBE_SEL && GLOBE) GLOBE.flyTo({ center: [GLOBE_SEL.lng, GLOBE_SEL.lat], zoom: globeZoomFor(GLOBE, GLOBE_SEL.iso3), duration: 1400, essential: true });
 }
 function globeFlyTo(iso3) { const c = COUNTRIES.find(x => x.iso3 === iso3); if (c) globeSelect(c); }
 const GLOBE_REGIONS = Object.fromEntries(GLOBE_GROUPS.map(g => [g.id, true]));
+// Where each geographic group sits: [longitude, latitude] of its middle and the radius (km) to keep in view.
+// Groups made of traits are spread around the world, so the map shows the whole globe for them.
+const GLOBE_VIEWS = {
+  europe: [16, 53, 2600], africa: [19, 3, 3900], asiaonly: [88, 32, 4600], oceania: [157, -25, 3200],
+  namerica: [-92, 33, 3900], samerica: [-60, -19, 3500],
+  eu: [13, 51, 2200], g7: [-35, 45, 6200], opec: [20, 18, 5200], brics: [62, 18, 6500],
+};
+let GLOBE_PROJ = 'globe';
+function globeProj(type) {
+  if (!GLOBE || GLOBE_PROJ === type) return;
+  GLOBE_PROJ = type; GLOBE.setProjection({ type });
+  GLOBE.setMinZoom(type === 'mercator' ? -1 : null);
+}
+function globeViewZoom(km) {
+  const cv = GLOBE.getContainer(), room = Math.min(cv.clientWidth, cv.clientHeight);
+  // the group's diameter takes ~85% of the map's shorter side
+  return Math.max(1, Math.min(5, Math.log2(0.85 * room * 40075 / (512 * 2 * km))));
+}
 function globeRegion(r) {
   GLOBE_REGION = GLOBE_REGIONS[r] ? r : 'all';
   if (ATLAS.region !== GLOBE_REGION) ATLAS.region = GLOBE_REGION;
   globeApplyGroup();
   GLOBE_SEL = null; globeSide(); globeHighlight();
   if (!GLOBE) return;
-  if (GLOBE_REGION === 'all' || groupOf(GLOBE_REGION).trait) { GLOBE.flyTo({ center: [10, 25], zoom: 1.5, duration: 1200 }); return; }
-  // frame the group's countries: their centre on the sphere, and a zoom from how far apart they are
-  const ms = COUNTRIES.filter(groupOf(GLOBE_REGION).test), R = Math.PI / 180;
-  const x = ms.reduce((a, c) => a + Math.cos(c.lat * R) * Math.cos(c.lng * R), 0), y = ms.reduce((a, c) => a + Math.cos(c.lat * R) * Math.sin(c.lng * R), 0),
-        z = ms.reduce((a, c) => a + Math.sin(c.lat * R), 0);
-  const lng = Math.atan2(y, x) / R, lat = Math.atan2(z, Math.hypot(x, y)) / R;
-  const far = Math.max(...ms.map(c => haversineKm(lat, lng, c.lat, c.lng)));
-  const cv = GLOBE.getContainer(), room = Math.min(cv.clientWidth, cv.clientHeight);
-  GLOBE.flyTo({ center: [lng, lat], zoom: Math.max(1, Math.min(4.5, Math.log2(0.42 * room * 40075 / (512 * Math.max(far, 600) * 2)))), duration: 1200 });
+  const v = GLOBE_VIEWS[GLOBE_REGION];
+  const flat = !!groupOf(GLOBE_REGION).trait;
+  globeProj(flat ? 'mercator' : 'globe');
+  if (flat) {                            // a trait is spread over the world: lay the whole world flat so every member shows
+    const cv = GLOBE.getContainer();
+    GLOBE.jumpTo({ center: [12, 22], zoom: Math.max(-1, Math.log2(cv.clientWidth / 512) - 0.05) }); return;
+  }
+  if (!v) { GLOBE.easeTo({ center: [10, 25], zoom: 1.5, duration: 1100 }); return; }
+  GLOBE.easeTo({ center: [v[0], v[1]], zoom: globeViewZoom(v[2]), duration: 1100 });
 }
 // The chips (continents, then blocs) and the list view's filter for them
 function globeChipsHTML() {
@@ -388,17 +445,19 @@ async function globeMount() {
   let map;
   try {
     map = await globeMakeMap(el, { zoom: matchMedia('(max-width: 600px)').matches ? 0.7 : 1.5 }, (m, labelFont) => {
-      m.addLayer({ id: 'energle-reg-fill', type: 'fill', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.12 } });
+      m.addLayer({ id: 'energle-reg-fill', type: 'fill', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.38 } });
+      m.addLayer({ id: 'energle-reg-line', type: 'line', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'line-color': '#c97d0a', 'line-width': 1.1 } });
       m.addLayer({ id: 'energle-sel-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.22 } });
       m.addLayer({ id: 'energle-sel-line', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2 } });
       globeAddNames(m, labelFont);
       const l = document.getElementById('gl-loading'); if (l) l.remove();
       globeHighlight();
       if (ATLAS.last) { const iso = ATLAS.last; ATLAS.last = null; globeFlyTo(iso); }
+      else if (GLOBE_REGION !== 'all') globeRegion(GLOBE_REGION);   // back on the map with a group picked: frame it again
     });
   } catch (e) { const l = document.getElementById('gl-loading'); if (l) l.textContent = 'The map could not load here. The list view still works.'; return; }
   if (!map) return;
-  GLOBE = map;
+  GLOBE = map; GLOBE_PROJ = 'globe';
   map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) globeFlyTo(iso); });
   map.on('click', e => { if (!map.queryRenderedFeatures(e.point, { layers: ['energle-hit'] }).length && GLOBE_SEL) globeSelect(null, false); });
   const mq = matchMedia(GLOBE_WIDE), onMq = () => { if (GLOBE_SEL) globeSelect(GLOBE_SEL, false); else globeSide(); }; mq.addEventListener('change', onMq);
@@ -575,6 +634,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     globeApplyGroup();
     globeFitChips();
   };
+  if (typeof ISO3_CONTINENT !== 'undefined' && !ISO3_CONTINENT.TUR) ISO3_CONTINENT.TUR = 'Europe';
   // Explore also adds up the practice profiles and trends (big producers, green leaders, importers...)
   PRACTICE_CATEGORIES.filter(c => c.group === 'profile' || c.group === 'trend').forEach(c => {
     if (GLOBE_GROUPS.some(g => g.id === c.id)) return;
@@ -585,7 +645,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   // Asia & Pacific and Americas stay defined (old links and saved sessions) but leave the picker.
   PRACTICE_CATEGORIES.forEach(c => { if (c.id === 'asia' || c.id === 'americas') c.group = 'retired'; });
   const at = PRACTICE_CATEGORIES.findIndex(c => c.group !== 'region' && c.group !== 'retired');
-  const RULES = { eu: 'The 27 member states', g7: 'The seven largest advanced economies', opec: 'The 12 oil-exporting members', brics: 'Brazil, Russia, India, China, South Africa and the 2024 joiners' };
+  const RULES = { eu: 'The 27 member states', g7: 'The seven largest advanced economies', opec: 'The 12 oil-exporting members', brics: 'Brazil, Russia, India, China, South Africa and the 2024–25 joiners' };
   const added = GLOBE_GROUPS.filter(g => !PRACTICE_CATEGORIES.some(c => c.id === g.id)).map(g => ({
     id: g.id, group: g.bloc ? 'bloc' : 'region', label: g.name,
     rule: RULES[g.id] || '', filter: g.test }));

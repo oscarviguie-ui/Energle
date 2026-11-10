@@ -151,3 +151,20 @@ body.at-globe .gl-more-menu .gl-trait, .gl-more-menu .gl-trait { display: flex; 
 .gl-trait-name { color: #1a1a1a; font-weight: 600; }
 .gl-trait-rule { font-size: .74rem; font-weight: 400; color: #8a8984; }
 .gl-more-menu .gl-trait[aria-pressed="true"] .gl-trait-name, .gl-more-menu .gl-trait[aria-pressed="true"] .gl-trait-rule { color: #fff; }
+/* the map key: what the highlight shows and how the group is defined */
+.gl-key { position: absolute; top: 12px; left: 12px; z-index: 2; max-width: min(340px, calc(100% - 24px)); padding: 10px 12px; border-radius: 8px;
+  background: rgba(255,255,255,.95); box-shadow: 0 1px 6px rgba(0,0,0,.14); font-size: .82rem; line-height: 1.4; color: #333; }
+.gl-key[hidden] { display: none; }
+.gl-key-top { display: flex; align-items: center; gap: 8px; }
+.gl-key-top b { color: #1a1a1a; }
+.gl-key-sw { width: 14px; height: 14px; flex-shrink: 0; border-radius: 3px; background: rgba(245,166,35,.45); box-shadow: inset 0 0 0 1.5px #c97d0a; }
+.gl-key-n { margin-left: auto; padding-left: 8px; color: #8a8984; white-space: nowrap; }
+.gl-key-def { margin: 6px 0 0; color: #555; }
+.gl-key-tag { font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #c98410; }
+@media (max-width: 600px) { .gl-key { top: 8px; left: 8px; font-size: .76rem; padding: 8px 10px; } }
+.gl-key--low { top: auto; bottom: 30px; }
+@media (max-width: 600px) { .gl-key--low { bottom: 26px; } }
+.gl-key summary { list-style: none; cursor: pointer; }
+.gl-key summary::-webkit-details-marker { display: none; }
+.gl-key-i { display: none; width: 16px; height: 16px; flex-shrink: 0; border-radius: 50%; border: 1px solid #c9c6be; font-size: .66rem; font-weight: 700; font-style: italic; line-height: 14px; text-align: center; color: #8a8984; }
+@media (max-width: 600px) { .gl-key-i { display: inline-block; } .gl-key details[open] .gl-key-i { background: #1a1a1a; border-color: #1a1a1a; color: #fff; } }
