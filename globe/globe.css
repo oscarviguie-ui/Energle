@@ -36,7 +36,7 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
 /* laptops: the atlas widens while the map is open; the cards sit in a column beside the map */
 @media (min-width: 1100px) {
   body.at-globe #app { max-width: min(1520px, calc(100vw - 64px)); }
-  body.at-globe .gl-layout { display: grid; grid-template-columns: minmax(0, 1fr) min(660px, 46%); gap: 16px; align-items: start; }
+  body.at-globe .gl-layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(560px, 53%, 860px); gap: 20px; align-items: start; }
   body.at-globe .gl-wrap, .gl-layout.has-sel .gl-wrap { position: sticky; top: 12px; height: calc(100vh - 230px); min-height: 520px; max-height: 900px; }
   .gl-side { margin-top: 0; }
   .gl-side[hidden] { display: flex; }
@@ -118,3 +118,13 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
 .gl-reg-ico { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: #fdf3e1; color: #c98410; flex-shrink: 0; }
 .gl-reg-ico .hd-ico { width: 18px; height: 18px; }
 .gl-hint { margin: 2px 0 0; padding: 12px 14px; border: 1px dashed #e0dcd2; border-radius: 6px; font-size: .85rem; color: #777; text-align: center; }
+
+/* Explore tools: a short search box, so the group chips fit on one line */
+.gl-chip-sep { width: 1px; align-self: stretch; margin: 6px 4px; background: #e0ded8; }
+body.at-globe #browse-search { flex: 0 1 220px; }
+body.at-globe .at-tools { flex-wrap: nowrap; }
+body.at-globe .gl-chips { flex: 0 1 auto; margin-left: auto; min-width: 0; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+body.at-globe .gl-chips .at-chip { white-space: nowrap; flex-shrink: 0; padding: 0 11px; }
+@media (max-width: 1099px) { body.at-globe .at-tools { flex-wrap: wrap; } body.at-globe #browse-search { flex: 1 1 200px; } body.at-globe .gl-chips { flex: 1 1 100%; justify-content: flex-start; } }
+/* the panel: a little more air between the cards */
+@media (min-width: 1100px) { body.at-globe .gl-side { gap: 16px; padding: 2px 10px 0 2px; } }

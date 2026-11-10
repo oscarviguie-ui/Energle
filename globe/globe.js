@@ -170,12 +170,27 @@ function globeRestoreTarget() {
 // Generation by source, demand and net imports add up; CO2 intensity is weighted by generation; demand per
 // person is total demand over total population (each country's population = its demand / its demand per person).
 // A country whose data stops a year early carries its last year forward, so the latest year isn't short of countries.
-const REGION_NAMES = { all: 'The world', europe: 'Europe', africa: 'Africa', asia: 'Asia & Pacific', americas: 'Americas' };
+// The groups on the chips: continents, then a few blocs (members as of 2026)
+const GLOBE_GROUPS = [
+  { id: 'all', chip: 'World', name: 'The world', test: () => true },
+  { id: 'europe', chip: 'Europe', name: 'Europe', test: c => c.continent === 'Europe' },
+  { id: 'africa', chip: 'Africa', name: 'Africa', test: c => c.continent === 'Africa' },
+  { id: 'asiaonly', chip: 'Asia', name: 'Asia', test: c => c.continent === 'Asia' },
+  { id: 'oceania', chip: 'Oceania', name: 'Oceania', test: c => c.continent === 'Oceania' },
+  { id: 'namerica', chip: 'N. America', name: 'North & Central America', test: c => c.continent === 'North America' },
+  { id: 'samerica', chip: 'S. America', name: 'South America', test: c => c.continent === 'South America' },
+  { id: 'eu', chip: 'EU', name: 'European Union', bloc: true, iso: 'AUT BEL BGR HRV CYP CZE DNK EST FIN FRA DEU GRC HUN IRL ITA LVA LTU LUX MLT NLD POL PRT ROU SVK SVN ESP SWE' },
+  { id: 'g7', chip: 'G7', name: 'G7', bloc: true, iso: 'CAN FRA DEU ITA JPN GBR USA' },
+  { id: 'opec', chip: 'OPEC', name: 'OPEC', bloc: true, iso: 'DZA COG GNQ GAB IRN IRQ KWT LBY NGA SAU ARE VEN' },
+  { id: 'brics', chip: 'BRICS', name: 'BRICS', bloc: true, iso: 'BRA RUS IND CHN ZAF EGY ETH IRN ARE IDN' },
+];
+GLOBE_GROUPS.forEach(g => { if (g.iso) { const set = new Set(g.iso.split(' ')); g.test = c => set.has(c.iso3); } });
+const groupOf = id => GLOBE_GROUPS.find(g => g.id === id) || GLOBE_GROUPS[0];
+const REGION_NAMES = Object.fromEntries(GLOBE_GROUPS.map(g => [g.id, g.name]));
 const AGG_CACHE = {};
 function globeAggregate(rid) {
   if (AGG_CACHE[rid]) return AGG_CACHE[rid];
-  const cat = PRACTICE_CATEGORIES.find(c => c.id === rid);
-  const members = COUNTRIES.filter(c => !cat || cat.filter(c));
+  const members = COUNTRIES.filter(groupOf(rid).test);
   const yrsCount = {}; members.forEach(c => { yrsCount[c.latestYear] = (yrsCount[c.latestYear] || 0) + 1; });
   const latest = +Object.entries(yrsCount).sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0];
   const first = Math.min(...members.map(c => Math.min(...Object.keys(ALL_DATA[c.name].years).map(Number))));
@@ -260,18 +275,45 @@ function globeSelect(c, fly = true) {
   if (fly && GLOBE_SEL && GLOBE) GLOBE.flyTo({ center: [GLOBE_SEL.lng, GLOBE_SEL.lat], zoom: globeZoomFor(GLOBE, GLOBE_SEL.iso3), duration: 1400, essential: true });
 }
 function globeFlyTo(iso3) { const c = COUNTRIES.find(x => x.iso3 === iso3); if (c) globeSelect(c); }
-const GLOBE_REGIONS = { all: [10, 25, 1.5], europe: [15, 52, 2.6], africa: [20, 3, 2.1], asia: [95, 25, 1.9], americas: [-80, 10, 1.6] };
+const GLOBE_REGIONS = Object.fromEntries(GLOBE_GROUPS.map(g => [g.id, true]));
 function globeRegion(r) {
   GLOBE_REGION = GLOBE_REGIONS[r] ? r : 'all';
-  if (ATLAS.region !== GLOBE_REGION) { ATLAS.region = GLOBE_REGION; document.querySelectorAll('.at-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === GLOBE_REGION))); }
+  if (ATLAS.region !== GLOBE_REGION) ATLAS.region = GLOBE_REGION;
+  globeApplyGroup();
   GLOBE_SEL = null; globeSide(); globeHighlight();
-  const v = GLOBE_REGIONS[GLOBE_REGION]; if (GLOBE) GLOBE.flyTo({ center: [v[0], v[1]], zoom: v[2], duration: 1200 });
+  if (!GLOBE) return;
+  if (GLOBE_REGION === 'all') { GLOBE.flyTo({ center: [10, 25], zoom: 1.5, duration: 1200 }); return; }
+  // frame the group's countries: their centre on the sphere, and a zoom from how far apart they are
+  const ms = COUNTRIES.filter(groupOf(GLOBE_REGION).test), R = Math.PI / 180;
+  const x = ms.reduce((a, c) => a + Math.cos(c.lat * R) * Math.cos(c.lng * R), 0), y = ms.reduce((a, c) => a + Math.cos(c.lat * R) * Math.sin(c.lng * R), 0),
+        z = ms.reduce((a, c) => a + Math.sin(c.lat * R), 0);
+  const lng = Math.atan2(y, x) / R, lat = Math.atan2(z, Math.hypot(x, y)) / R;
+  const far = Math.max(...ms.map(c => haversineKm(lat, lng, c.lat, c.lng)));
+  const cv = GLOBE.getContainer(), room = Math.min(cv.clientWidth, cv.clientHeight);
+  GLOBE.flyTo({ center: [lng, lat], zoom: Math.max(1, Math.min(4.5, Math.log2(0.42 * room * 40075 / (512 * Math.max(far, 600) * 2)))), duration: 1200 });
+}
+// The chips (continents, then blocs) and the list view's filter for them
+function globeChipsHTML() {
+  const chip = g => '<button type="button" class="at-chip" data-r="' + g.id + '" aria-pressed="' + (g.id === ATLAS.region) + '">' + g.chip + '</button>';
+  return '<div class="at-chips gl-chips" role="group" aria-label="Group">' + GLOBE_GROUPS.filter(g => !g.bloc).map(chip).join('')
+    + '<span class="gl-chip-sep" aria-hidden="true"></span>' + GLOBE_GROUPS.filter(g => g.bloc).map(chip).join('') + '</div>';
+}
+function globeApplyGroup() {
+  const g = groupOf(ATLAS.region), byIso = Object.fromEntries(COUNTRIES.map(c => [c.iso3, c]));
+  let shown = 0;
+  document.querySelectorAll('#at-list .at-row').forEach(r => {
+    const iso = (r.getAttribute('onclick').match(/'(\w+)'/) || [])[1], c = byIso[iso];
+    const ok = !!c && g.test(c) && (!ATLAS.q || r.dataset.name.includes(ATLAS.q) || r.dataset.alias.includes(ATLAS.q));
+    r.hidden = !ok; if (ok) shown++;
+  });
+  const empty = document.getElementById('at-empty'); if (empty) empty.hidden = shown > 0;
+  document.querySelectorAll('.at-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.r === ATLAS.region)));
 }
 
 async function globeMount() {
   const el = document.getElementById('gl-canvas'); if (!el) return;
   if (GLOBE) { try { GLOBE.remove(); } catch (e) {} GLOBE = null; }
-  GLOBE_SEL = null; GLOBE_REGION = ATLAS.region && GLOBE_REGIONS[ATLAS.region] ? ATLAS.region : 'all';
+  GLOBE_SEL = null; GLOBE_REGION = ATLAS.region && GLOBE_REGIONS[ATLAS.region] ? ATLAS.region : 'all'; ATLAS.region = GLOBE_REGION;
   globeSide();                               // the region's cards show while the map loads
   let map;
   try {
@@ -445,6 +487,19 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const t = document.querySelector('.sub-lead'), r = document.querySelector('.sub-rest');
     if (t) t.textContent = 'Explore'; if (r) r.textContent = 'every country’s electricity on the map';
     const b = document.getElementById('back-to-cats'); if (b) b.textContent = 'Practice by group →';
+    if (!GLOBE_REGIONS[ATLAS.region]) ATLAS.region = 'all';
+    const chips = document.querySelector('.at-chips');
+    if (chips) {
+      chips.outerHTML = globeChipsHTML();
+      document.querySelectorAll('.at-chip').forEach(btn => btn.addEventListener('click', () => {
+        ATLAS.region = btn.dataset.r;
+        if (ATLAS.view === 'globe') globeRegion(ATLAS.region); else globeApplyGroup();
+      }));
+    }
+    const search = document.getElementById('browse-search');
+    if (search) search.addEventListener('input', () => setTimeout(globeApplyGroup, 0));
+    document.querySelectorAll('.at-sort select, select.at-sort, #at-sort').forEach(el => el.addEventListener('change', () => setTimeout(globeApplyGroup, 0)));
+    globeApplyGroup();
   };
   const _picker = renderPracticePickerScreen;
   window.renderPracticePickerScreen = function () {
