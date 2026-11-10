@@ -232,7 +232,9 @@ function globeCountryHTML(c) {
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
     + (groupOf(r.region).trait ? groupOf(r.region).rule + ' · ' : '') + r.n + ' countries added together · ' + r.latestYear + '</span></div>'
-    + '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice ' + (r.region === 'all' ? 'all' : 'these ' + r.n) + ' →</button>'
+    + (r.region === 'all'      // the world: every practice group; a group: a round on just its countries
+      ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice by group →</button>'
+      : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice these ' + r.n + ' →</button>')
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
     + globeCardsHTML() + '<p class="gl-hint">Click a country on the map to see its full profile, clue cards included.</p>';
 }
