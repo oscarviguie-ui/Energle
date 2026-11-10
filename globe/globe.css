@@ -47,12 +47,50 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   .gl-layout.has-sel .gl-wrap { height: 46vh; }
 }
 
-/* ---------- guess map (in the game, under the charts) ---------- */
-.gm-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; padding: 1rem 1.1rem 1.1rem; display: flex; flex-direction: column; gap: 10px; }
-.gm-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.gm-head .chart-label { margin: 0; }
-.gm-hint { font-size: .78rem; color: #8a8984; }
-.gm-wrap { position: relative; height: 340px; border-radius: 6px; overflow: hidden; background: #dfe8f1; }
-#submit-btn.gm-ready { animation: gmReady 1.2s ease-out; }
-@keyframes gmReady { 0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); } 30% { box-shadow: 0 0 0 4px rgba(245,166,35,.55); } }
-@media (max-width: 600px) { .gm-card { padding: .9rem .9rem 1rem; } .gm-wrap { height: 300px; } }
+/* ---------- guess map: a Map button in the guess bar opens a big map over the page ---------- */
+.gm-btn { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 12px; border: 1.5px solid #1a1a1a; border-radius: 6px;
+  background: #fff; color: #1a1a1a; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.gm-btn:hover { background: #f4f3ef; }
+#input-area > .gm-btn { height: 44px; }
+.gm-overlay { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: stretch; justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+.gm-overlay[hidden] { display: none; }
+.gm-backdrop { position: absolute; inset: 0; background: rgba(20, 20, 20, .45); }
+.gm-sheet { position: relative; width: 100%; max-width: 1400px; display: flex; flex-direction: column; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.gm-top { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-bottom: 1px solid #eeede9; }
+.gm-title { font-weight: 700; }
+.gm-msg { flex: 1; font-size: .82rem; color: #b45309; }
+.gm-x { width: 34px; height: 34px; border: 1px solid #e0e0e0; border-radius: 50%; background: #fff; font-size: 20px; line-height: 1; color: #666; cursor: pointer; }
+.gm-x:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.gm-wrap { position: relative; flex: 1; min-height: 0; background: #dfe8f1; }
+.gm-bar { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 16px; border-top: 1px solid #eeede9; }
+.gm-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.gm-name span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gm-none { color: #999; font-weight: 500; }
+.gm-go { min-height: 42px; padding: 0 20px; border: 0; border-radius: 6px; background: #1a1a1a; color: #fff; font: inherit; font-size: .92rem; font-weight: 700; cursor: pointer; white-space: nowrap; max-width: 60%; overflow: hidden; text-overflow: ellipsis; }
+.gm-go:disabled { background: #d4d4d4; cursor: default; }
+body.gm-open { overflow: hidden; }
+@media (max-width: 600px) {
+  .gm-overlay { padding: 8px; }
+  .gm-btn { height: 40px; padding: 0 9px; }
+  #input-area > .gm-btn { height: 40px; }
+  .gm-lbl { display: none; }
+}
+
+/* ---------- wide, short windows: the game in two columns (globe.js gwLayout) ---------- */
+.gw-cols, .gw-left, .gw-right { display: contents; }
+@media (min-width: 1180px) and (max-height: 1100px) {
+  body.gl-page #app { max-width: min(1440px, calc(100vw - 96px)); }
+  body.gl-page .gw-cols { display: grid; grid-template-columns: minmax(0, 1fr) clamp(440px, 38%, 540px); gap: 16px; align-items: start; }
+  body.gl-page .gw-left, body.gl-page .gw-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  /* the charts fill the height the window has, instead of a fixed size */
+  body.gl-page .gw-left #line-wrapper { height: clamp(260px, calc(100vh - 430px), 520px); }
+  body.gl-page .gw-left #charts-section { grid-template-columns: minmax(0, 1fr) 230px; }
+  /* the totals stack above the guess bar */
+  body.gl-page .gw-right #balance-card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  body.gl-page .gw-right .bc-stats { flex-direction: row; justify-content: space-around; align-items: flex-start; padding: 16px 12px; gap: 12px; }
+  body.gl-page .gw-right .bc-stat { flex: 1; min-width: 0; }
+  body.gl-page .gw-right #balance-card .stat-value { font-size: 1.45rem; }
+  body.gl-page .gw-right #guess-head { margin-top: 6px; }
+  body.gl-page .gw-right .gm-lbl { display: none; }
+}
