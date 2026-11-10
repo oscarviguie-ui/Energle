@@ -226,8 +226,9 @@ function globeCardsHTML() {
 }
 function globeCountryHTML(c) {
   return '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + escHtml(c.name) + '</h3><span>' + (REGION_LABEL[c.continent] || c.continent || '') + '</span></div>'
+    + '<div class="gl-tabs" id="gl-tabs" role="tablist" aria-label="Profile and clue cards"></div>'
     + '<button type="button" class="gl-x" id="gl-x" aria-label="Close">×</button></div>'
-    + globeCardsHTML() + '<section id="clue-cards" class="gl-cards"></section>';
+    + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div><section id="clue-cards" class="gl-cards gl-pane"></section>';
 }
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
@@ -236,7 +237,7 @@ function globeRegionHTML(r) {
       ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice by group →</button>'
       : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice these ' + r.n + ' →</button>')
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
-    + globeCardsHTML() + '<p class="gl-hint">Click a country on the map to see its full profile, clue cards included.</p>';
+    + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div>';
 }
 let GLOBE_REGION = 'all';
 function globeSide() {
@@ -246,6 +247,7 @@ function globeSide() {
   GLOBE_PREV_TARGET = target; target = GLOBE_SEL || reg;
   el.innerHTML = GLOBE_SEL ? globeCountryHTML(GLOBE_SEL) : globeRegionHTML(reg);
   el.classList.toggle('is-region', !GLOBE_SEL);
+  const mh = document.getElementById('gl-maphint'); if (mh) mh.hidden = !!GLOBE_SEL;
   el.hidden = false;
   if (lay) lay.classList.add('has-sel');
   renderStatBar(); renderFlowBar(); renderCharts();
@@ -253,11 +255,33 @@ function globeSide() {
     const pill = document.getElementById('stat-world-gen'), w = globeAggregate('all');
     if (pill) { const fresh = pill.cloneNode(false); fresh.removeAttribute('id');      // a fresh node: the count-up keeps writing to the old one
       fresh.textContent = reg.region === 'all' ? reg.n + ' countries' : Math.round(100 * reg.latestTotal / w.latestTotal) + '% of world generation'; pill.replaceWith(fresh); }
-  } else if (typeof renderAtlasCards === 'function') renderAtlasCards();
+  } else if (typeof renderAtlasCards === 'function') { renderAtlasCards(); globeTabs(); }
   el.scrollTop = 0;
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
-  const foot = document.querySelector('#app > footer'); if (foot && matchMedia(GLOBE_WIDE).matches) el.appendChild(foot);   // credits at the end of the panel
+  const foot = document.querySelector('#app > footer'); if (foot && lay && matchMedia(GLOBE_WIDE).matches) lay.appendChild(foot);   // credits under the map
   globeSideFit();
+}
+// A country's panel: Profile, then one tab per clue card, so everything fits without scrolling.
+// The tab you're on stays when you click the next country, to compare one card across countries.
+let GLOBE_TAB = 0;
+const GLOBE_TAB_NAMES = { 'Renewables Potential': 'Sun & wind', 'People & Power': 'People & power', 'Underground Riches': 'Underground', 'Electricity Trade': 'Power trade', 'Fuel Trade': 'Fuel trade' };
+function globeTabs() {
+  const bar = document.getElementById('gl-tabs'), cards = [...document.querySelectorAll('#clue-cards .ic-card')]; if (!bar) return;
+  const names = cards.map(c => { const t = ((c.querySelector('.ic-title') || {}).textContent || 'Clue card').split('·')[0].trim(); return GLOBE_TAB_NAMES[t] || t; });
+  if (GLOBE_TAB > cards.length) GLOBE_TAB = 0;
+  bar.innerHTML = '<button type="button" class="gl-tab" role="tab" data-t="0">Profile</button>'
+    + (cards.length ? '<span class="gl-tabs-sep" aria-hidden="true"></span>' : '') + names.map((n, i) => '<button type="button" class="gl-tab gl-tab--card" role="tab" data-t="' + (i + 1) + '">' + n + '</button>').join('');
+  bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); });
+  globeTab(GLOBE_TAB, true);
+}
+function globeTab(t, first) {
+  const was = GLOBE_TAB; GLOBE_TAB = t;
+  document.querySelectorAll('#gl-tabs .gl-tab').forEach(b => b.setAttribute('aria-selected', String(+b.dataset.t === t)));
+  const prof = document.getElementById('gl-pane-profile'), cc = document.getElementById('clue-cards');
+  if (prof) prof.hidden = t !== 0;
+  if (cc) { cc.hidden = t === 0; cc.querySelectorAll('.ic-card').forEach((c, i) => { c.hidden = i !== t - 1; }); cc.scrollTop = 0; }
+  // the charts were drawn while hidden: draw them again at their real size
+  if (t === 0 && (was !== 0 || first)) requestAnimationFrame(() => { try { if (lineChart) lineChart.resize(); if (barChart) barChart.resize(); } catch (e) {} if (target) renderFlowBar(false); });
 }
 // marks the panel when it has more below than it shows (its scroll bar only appears then, on hover)
 let GLOBE_SIDE_RO = null;
@@ -271,7 +295,8 @@ function globeSideFit() {
 function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
     + '<div class="gl-wrap" id="gl-wrap"><div class="gl-canvas" id="gl-canvas" aria-label="Map of the world. Click a country for its electricity profile; the list view is keyboard-friendly."></div>'
-    + '<p class="gl-loading" id="gl-loading">Loading the map…</p><div class="gl-key" id="gl-key" hidden></div></div>'
+    + '<p class="gl-loading" id="gl-loading">Loading the map…</p><div class="gl-key" id="gl-key" hidden></div>'
+    + '<p class="gl-maphint" id="gl-maphint">Click a country for its full profile and clue cards</p></div>'
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
 }

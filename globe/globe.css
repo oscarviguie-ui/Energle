@@ -236,3 +236,70 @@ body.at-globe .at-tools { margin-top: 14px; }
   body.at-globe .gl-side #charts-section { grid-template-columns: minmax(0, 1.6fr) minmax(250px, 1fr); }
   body.at-globe .gl-side #bar-wrapper { min-height: 0; }
 }
+
+/* ---------- Explore, laptops: everything fits the window; nothing scrolls ----------
+   The panel is sized to the space under the tools: the charts take what is left after the totals and the legend.
+   A country's clue cards sit behind tabs (one card at a time) instead of below the profile. */
+.gl-tabs { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
+.gl-tabs::-webkit-scrollbar { display: none; }
+.gl-tab { flex-shrink: 0; min-height: 30px; padding: 0 12px; border: 1px solid #e3e1db; border-radius: 999px; background: #fff; color: #555; font: inherit; font-size: .8rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.gl-tab:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.gl-tab[aria-selected="true"] { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+.gl-tab--card[aria-selected="true"] { background: #f5a623; border-color: #e09410; color: #1a1a1a; }
+.gl-tabs-sep { flex-shrink: 0; width: 1px; height: 20px; margin: 0 4px; background: #dedcd5; }
+.gl-tabs-hint { margin-left: 10px; font-size: .8rem; color: #8a8984; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gl-pane[hidden] { display: none !important; }
+#gl-pane-profile { display: flex; flex-direction: column; gap: 12px; }
+.gl-side #clue-cards .ic-sechead { display: none; }
+.gl-side #clue-cards { margin-top: 0; }
+.gl-side #clue-cards .ic-card[hidden] { display: none; }
+
+@media (min-width: 1100px) {
+  body.at-globe { padding-top: 14px; }
+  body.at-globe .at-tools { margin-top: 10px; }
+  body.at-globe .gl-layout { margin-top: 10px; grid-template-rows: minmax(0, 1fr) auto; row-gap: 8px; }
+  body.at-globe .gl-wrap { grid-column: 1; grid-row: 1; }
+  body.at-globe .gl-side { grid-column: 2; grid-row: 1 / 3; overflow: hidden; gap: 12px; padding: 0 2px 2px; }
+  body.at-globe .gl-layout > footer { grid-column: 1; grid-row: 2; margin: 0; padding: 0; font-size: .7rem; line-height: 1.4; }
+  #gl-pane-profile { flex: 1 1 0; min-height: 0; }
+  /* the charts fill the height left over */
+  body.at-globe .gl-side #charts-section { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  body.at-globe .gl-side #chart-left, body.at-globe .gl-side #chart-right { display: flex; flex-direction: column; min-height: 0; padding: .8rem .9rem .7rem; }
+  body.at-globe .gl-side #line-wrapper { flex: 1 1 0; height: auto; min-height: 0; }
+  body.at-globe .gl-side #bar-wrapper { flex: 1 1 0; min-height: 0; }
+  /* tighter totals and legend */
+  body.at-globe .gl-side .bc-stats { padding: 12px 12px; gap: 10px; }
+  body.at-globe .gl-side #balance-card .stat-value { font-size: 1.45rem; }
+  body.at-globe .gl-side #legend-shared { flex-shrink: 0; padding: .55rem .85rem .6rem; }
+  body.at-globe .gl-side .lg-head { margin-bottom: .35rem; }
+  body.at-globe .gl-side #legend-shared .legend-item { padding: 2px 8px 2px 6px; font-size: .76rem; }
+  body.at-globe .gl-side #balance-card { flex-shrink: 0; }
+  /* one clue card at a time fills the panel; a very tall one can still be wheeled through, with no bar showing */
+  body.at-globe .gl-side #clue-cards { flex: 1 1 0; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+  body.at-globe .gl-side #clue-cards::-webkit-scrollbar { display: none; }
+}
+
+/* the tabs share the header row with the country's name */
+.gl-p-head > div { flex: 0 1 auto; min-width: 0; }
+.gl-p-head .gl-tabs { flex: 1 1 auto; min-width: 0; margin-left: 8px; }
+.gl-p-head .gl-tabs > :first-child { margin-left: auto; }   /* right-aligned, yet every tab stays reachable when they overflow */
+.gl-p-head .gl-tab { min-height: 28px; padding: 0 10px; font-size: .76rem; }
+.gl-p-head h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* a hint on the map until a country is picked */
+.gl-maphint { position: absolute; left: 50%; transform: translateX(-50%); bottom: 46px; z-index: 2; white-space: nowrap; margin: 0; padding: 6px 11px; border-radius: 999px; background: rgba(26,26,26,.82); color: #fff; font-size: .76rem; font-weight: 600; pointer-events: none; }
+.gl-maphint[hidden] { display: none; }
+@media (max-width: 600px) { .gl-maphint { bottom: 40px; font-size: .7rem; } .gl-p-head { flex-wrap: wrap; } .gl-p-head .gl-tabs { order: 3; flex-basis: 100%; margin-left: 0; justify-content: flex-start; } }
+@media (min-width: 1100px) {
+  /* the legend on one line: the toggle, the sources (they slide sideways if they don't fit), the (i) */
+  body.at-globe .gl-side #legend-shared { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: .45rem .7rem; }
+  body.at-globe .gl-side .lg-head { display: contents; }
+  body.at-globe .gl-side #legend-shared .view-toggle { grid-column: 1; grid-row: 1; }
+  body.at-globe .gl-side #legend-shared .lg-items { grid-column: 2; grid-row: 1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  body.at-globe .gl-side #legend-shared .lg-items::-webkit-scrollbar { display: none; }
+  body.at-globe .gl-side #legend-shared .legend-item { flex-shrink: 0; }
+  body.at-globe .gl-side #legend-shared .glossary-btn { grid-column: 3; grid-row: 1; }
+  body.at-globe .gl-side #legend-shared .gb-long, body.at-globe .gl-side #legend-shared .gb-short { display: none; }
+  body.at-globe .gl-side #legend-shared .og-src { display: none; }
+  body.at-globe .gl-side #legend-shared .legend-members { display: none; }
+}
+.gl-p-head .gl-practice { margin-left: auto; }
