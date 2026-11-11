@@ -261,7 +261,31 @@ function globeSide() {
   const foot = document.querySelector('#app > footer'); if (foot && lay && matchMedia(GLOBE_WIDE).matches) lay.appendChild(foot);   // credits under the map
   globeSideFit();
   gphAfterSide();
+  globeHeadSlot();
+  globeLayoutFit();
 }
+// laptops: the panel's title row sits on the tools row, over the panel
+function globeHeadSlot() {
+  const tools = document.querySelector('.at-tools'), side = document.getElementById('gl-side'); if (!tools || !side) return;
+  let slot = document.getElementById('gl-head-slot');
+  if (!slot) { slot = document.createElement('div'); slot.id = 'gl-head-slot'; tools.appendChild(slot); }
+  const head = side.querySelector(':scope > .gl-p-head');
+  if (matchMedia(GLOBE_WIDE).matches) { if (head) slot.replaceChildren(head); }
+  else if (slot.firstChild) { side.insertBefore(slot.firstChild, side.querySelector('.gl-grab') ? side.querySelector('.gl-grab').nextSibling : side.firstChild); }
+}
+// laptops: the map and the panel fill at least the window's height (CSS min-height from --gl-top); when the panel needs
+// more (the charts never shrink below their 300px), the page grows by exactly that much and scrolls as a whole
+let GLOBE_WRAP_RO = null;
+function globeLayoutFit() {
+  const lay = document.getElementById('gl-layout'); if (!lay) return;
+  document.body.style.setProperty('--gl-top', Math.round(lay.getBoundingClientRect().top + window.scrollY) + 'px');
+  const wrap = document.getElementById('gl-wrap');
+  if (wrap && typeof ResizeObserver !== 'undefined') {
+    if (!GLOBE_WRAP_RO) GLOBE_WRAP_RO = new ResizeObserver(() => { if (GLOBE) try { GLOBE.resize(); } catch (e) {} });
+    GLOBE_WRAP_RO.disconnect(); GLOBE_WRAP_RO.observe(wrap);
+  }
+}
+window.addEventListener('resize', () => { requestAnimationFrame(() => { globeHeadSlot(); globeLayoutFit(); }); });
 // A country's panel: Profile, then one tab per clue card, so everything fits without scrolling.
 // The tab you're on stays when you click the next country, to compare one card across countries.
 let GLOBE_TAB = 0;
@@ -283,6 +307,7 @@ function globeTab(t, first) {
   if (cc) { cc.hidden = t === 0; cc.querySelectorAll('.ic-card').forEach((c, i) => { c.hidden = i !== t - 1; }); cc.scrollTop = 0; }
   // the charts were drawn while hidden: draw them again at their real size
   if (t === 0 && (was !== 0 || first)) requestAnimationFrame(() => { try { if (lineChart) lineChart.resize(); if (barChart) barChart.resize(); } catch (e) {} if (target) renderFlowBar(false); });
+  if (!first) requestAnimationFrame(globeLayoutFit);
 }
 // marks the panel when it has more below than it shows (its scroll bar only appears then, on hover)
 let GLOBE_SIDE_RO = null;
@@ -405,9 +430,8 @@ function globeChipsHTML() {
         + '<span class="gl-menu-h">Trend &amp; trade</span>' + traits.filter(g => g.trait === 'trend').map(item).join('')) : '')
     + '</div>';
 }
-// The tools row: the search box takes the free width, the group chips sit on the right. When the chips
-// would leave the search box less than SEARCH_MIN, the last ones fold into a "More" menu.
-const SEARCH_MIN = 280;
+// The tools row: the search box takes the free width; the groups sit in folders beside it (laptops and phones)
+// or in a sliding row of chips (tablets).
 function globeFitChips() {
   const row = document.querySelector('.gl-chips'), search = document.getElementById('browse-search'); if (!row || !search) return;
   const more = row.querySelector('.gl-overflow'), menu = more.querySelector('.gl-more-menu'), sep = row.querySelector('.gl-chip-sep');
@@ -418,22 +442,17 @@ function globeFitChips() {
   more.hidden = true; if (traits) traits.hidden = false; if (tsep) tsep.hidden = false;
   const inRow = () => [...row.querySelectorAll(':scope > .at-chip')];
   const head = t => Object.assign(document.createElement('span'), { className: 'gl-menu-h gl-menu-ph', textContent: t });
-  if (matchMedia(GLOBE_PHONE).matches) {
-    // phones: one "group" button next to the search box holds every group, so the map gets the chips' row
+  const phone = matchMedia(GLOBE_PHONE).matches, wide = matchMedia(GLOBE_WIDE).matches;
+  more.querySelector('.gl-more-btn').dataset.label = phone || wide ? 'Regions' : 'More';
+  if (phone || wide) {
+    // phones: one button beside the search box holds every group, so the map gets the chips' row;
+    // laptops: regions and blocs in one button, traits in the other, so the panel's title fits on the tools row
     more.hidden = false;
     menu.appendChild(head('Regions'));
     inRow().forEach(c => { if (groupOf(c.dataset.r).bloc) return; menu.appendChild(c); });
     menu.appendChild(head('Blocs'));
     inRow().forEach(c => menu.appendChild(c));
-    if (tmenu) [...tmenu.children].forEach(c => menu.appendChild(c));
-    if (traits) traits.hidden = true; if (tsep) tsep.hidden = true;
-  } else if (matchMedia(GLOBE_WIDE).matches) {
-    const fold = c => { more.hidden = false; menu.insertBefore(c, menu.firstChild); };
-    // the blocs fold together first, then continents one by one from the end
-    if (search.getBoundingClientRect().width < SEARCH_MIN) inRow().filter(c => groupOf(c.dataset.r).bloc).reverse().forEach(fold);
-    while (search.getBoundingClientRect().width < SEARCH_MIN && inRow().length > 2) fold(inRow().pop());
-    const firstCont = menu.querySelector('.at-chip:not([data-r="eu"]):not([data-r="g7"]):not([data-r="opec"]):not([data-r="brics"])');
-    if (firstCont && menu.querySelector('[data-r="eu"]')) menu.insertBefore(Object.assign(document.createElement('span'), { className: 'gl-menu-sep' }), menu.querySelector('[data-r="eu"]'));
+    if (phone) { if (tmenu) [...tmenu.children].forEach(c => menu.appendChild(c)); if (traits) traits.hidden = true; if (tsep) tsep.hidden = true; }
   }
   sep.hidden = !row.querySelector(':scope > .at-chip[data-r="eu"], :scope > .at-chip[data-r="g7"], :scope > .at-chip[data-r="opec"], :scope > .at-chip[data-r="brics"]')
     || !row.querySelector(':scope > .at-chip:not(.gl-more-btn)');

@@ -76,11 +76,6 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   body.gl-page .gw-info { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   body.gl-page .gw-map { display: none; }
   body.gl-page #legend-shared { grid-column: 1 / -1; }
-  /* the chart row's height is set by the line chart alone (no fixed minimums), and the mix fills the same height;
-     it takes the height the window has, so the guess bar stays on screen */
-  body.gl-page #line-wrapper, body.gl-page #bar-wrapper { min-height: 0; }
-  body.gl-page #line-wrapper { flex: none; height: clamp(160px, calc(100vh - 660px), 440px); }
-  body.gl-page #bar-wrapper { flex: 1 1 0; }
 }
 
 /* Explore panel: the clue cards in one column, under the profile */
@@ -232,9 +227,7 @@ body.at-globe .subtitle-row { display: none; }
 body.at-globe .at-tools { margin-top: 14px; }
 @media (min-width: 1100px) {
   /* the charts card ends where the panel does on most laptops (the legend is one scroll away) */
-  body.at-globe .gl-side #line-wrapper { height: clamp(260px, calc(100vh - 585px), 440px); }
   body.at-globe .gl-side #charts-section { grid-template-columns: minmax(0, 1.6fr) minmax(250px, 1fr); }
-  body.at-globe .gl-side #bar-wrapper { min-height: 0; }
 }
 
 /* ---------- Explore, laptops: everything fits the window; nothing scrolls ----------
@@ -263,10 +256,11 @@ body.at-globe .at-tools { margin-top: 14px; }
   body.at-globe .gl-layout > footer { grid-column: 1; grid-row: 2; margin: 0; padding: 0; font-size: .7rem; line-height: 1.4; }
   #gl-pane-profile { flex: 1 1 0; min-height: 0; }
   /* the charts fill the height left over */
-  body.at-globe .gl-side #charts-section { flex: 1 1 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+  body.at-globe .gl-side #charts-section { flex: 1 1 auto; grid-template-rows: minmax(0, 1fr); }
   body.at-globe .gl-side #chart-left, body.at-globe .gl-side #chart-right { display: flex; flex-direction: column; min-height: 0; padding: .8rem .9rem .7rem; }
-  body.at-globe .gl-side #line-wrapper { flex: 1 1 0; height: auto; min-height: 0; }
-  body.at-globe .gl-side #bar-wrapper { flex: 1 1 0; min-height: 0; }
+  /* the charts never go under the daily's 300px: if the window is too short, the page grows and scrolls instead */
+  body.at-globe .gl-side #line-wrapper { flex: 1 0 300px; height: auto; min-height: 300px; }
+  body.at-globe .gl-side #bar-wrapper { flex: 1 0 300px; min-height: 300px; }
   /* tighter totals and legend */
   body.at-globe .gl-side .bc-stats { padding: 12px 12px; gap: 10px; }
   body.at-globe .gl-side #balance-card .stat-value { font-size: 1.45rem; }
@@ -378,3 +372,32 @@ body.at-globe .at-tools { margin-top: 14px; }
   body.at-globe .gl-side { gap: 8px; }
 }
 @media (max-width: 700px) { body.at-globe .gl-sub-x { display: none; } }
+
+/* ---------- Explore on laptops: the groups fold into two buttons by the search box, and the panel's title row moves up
+   into the tools row, over the panel; the page is as tall as the window, or taller when the panel needs it ---------- */
+#gl-head-slot { display: none; }
+@media (min-width: 1100px) {
+  body.at-globe { height: auto; overflow: visible; }
+  body.at-globe #app { height: auto; }
+  body.at-globe .gl-layout { flex: none; }
+  body.at-globe .at-tools { display: grid; grid-template-columns: auto minmax(0, 1fr) auto clamp(560px, 53%, 860px); column-gap: 8px; align-items: center; }
+  body.at-globe .at-tools .gl-chips { grid-column: 3; margin: 0; }
+  body.at-globe #gl-head-slot { display: block; grid-column: 4; grid-row: 1; margin-left: 12px; min-width: 0; }
+  body.at-globe #gl-head-slot:empty { display: none; }
+  body.at-globe #gl-head-slot .gl-p-head { min-height: 44px; }
+  body.at-globe #gl-head-slot .gl-p-head h3 { font-size: 1.12rem; line-height: 1.2; }
+  body.at-globe #gl-head-slot .gl-p-head > div > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.at-globe .gl-chips .gl-more-btn { min-height: 38px; padding: 0 14px; border: 1px solid #e3e1db; border-radius: 999px; background: #fff; white-space: nowrap; }
+  body.at-globe .gl-chips .gl-more-btn[aria-pressed="true"] { background: #1a1a1a; border-color: #1a1a1a; color: #fff; }
+  body.at-globe .gl-chips { border: 0; background: none; padding: 0; gap: 6px; }
+  body.at-globe .gl-chips .gl-sep-traits { display: none; }
+}
+@media (min-width: 1100px) {
+  body.at-globe .gl-layout { height: auto; min-height: calc(100vh - var(--gl-top, 170px) - 22px); }
+  body.at-globe .gl-side { overflow: visible; height: auto; }
+  body.at-globe .gl-wrap, body.at-globe .gl-layout.has-sel .gl-wrap { height: auto; min-height: 420px; align-self: stretch; }
+}
+@media (min-width: 1100px) {
+  body.at-globe #gl-pane-profile { flex: 1 1 auto; min-height: auto; }
+  body.at-globe .gl-side #clue-cards { flex: 1 1 auto; min-height: auto; overflow: visible; }
+}
