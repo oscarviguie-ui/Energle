@@ -1312,3 +1312,47 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
   window.addEventListener('orientationchange', () => setTimeout(fit, 300));
 })();
+
+// ============================================================
+//  PULL TO REFRESH on the phone's Explore page: the map fills the screen and catches every drag, so Safari's own
+//  pull-down only worked on the thin header. Pulling down on the header or the tools row above the map reloads the page,
+//  with a small arrow that turns as you pull.
+// ============================================================
+(function () {
+  const ZONE = 'header, .hd-grid, .subtitle-row, .at-tools', NOT = '.gl-more-menu, .gl-sugg';
+  const on = () => document.body.classList.contains('at-globe') && matchMedia('(max-width: 700px)').matches;
+  const NEED = 80;
+  let x0 = null, y0 = null, dy = 0, pulling = false, ind = null;
+  const show = d => {
+    if (!ind) { ind = document.createElement('div'); ind.className = 'ptr'; ind.setAttribute('aria-hidden', 'true');
+      ind.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg>';
+      document.body.appendChild(ind); }
+    const k = Math.min(1, d / NEED);
+    ind.style.transform = 'translate(-50%, ' + Math.round(Math.min(d, NEED * 1.4) * 0.6) + 'px) rotate(' + Math.round(k * 300) + 'deg)';
+    ind.style.opacity = String(Math.min(1, d / 30));
+    ind.classList.toggle('is-ready', k >= 1);
+  };
+  const hide = () => { if (ind) { ind.remove(); ind = null; } };
+  document.addEventListener('touchstart', e => {
+    x0 = y0 = null; pulling = false; dy = 0;
+    if (!on() || e.touches.length !== 1 || window.scrollY > 0 || document.documentElement.classList.contains('mdl-open')) return;
+    const t = e.target; if (!t.closest || !t.closest(ZONE) || t.closest(NOT)) return;
+    x0 = e.touches[0].clientX; y0 = e.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener('touchmove', e => {
+    if (y0 == null) return;
+    const dx = e.touches[0].clientX - x0; dy = e.touches[0].clientY - y0;
+    if (!pulling) {
+      if (dy < -6 || Math.abs(dx) > 14) { y0 = null; return; }   // a swipe sideways or up is someone else's
+      if (dy < 10 || Math.abs(dx) > dy) return;
+      pulling = true;
+    }
+    e.preventDefault(); show(dy);
+  }, { passive: false });
+  const end = () => {
+    if (pulling && dy >= NEED) { if (ind) ind.classList.add('is-going'); location.reload(); }
+    else hide();
+    x0 = y0 = null; pulling = false; dy = 0;
+  };
+  document.addEventListener('touchend', end); document.addEventListener('touchcancel', () => { hide(); x0 = y0 = null; pulling = false; });
+})();

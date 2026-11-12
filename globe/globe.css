@@ -701,3 +701,10 @@ body.at-globe .subtitle-row { display: none !important; }
 
 /* while a window is open the page behind stays put (Safari would otherwise move its bars under the window) */
 html.mdl-open, html.mdl-open body { overflow: hidden; overscroll-behavior: none; }
+
+/* pull to refresh (phone Explore): an arrow that drops from the top and turns as you pull; dark once letting go reloads */
+.ptr { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 6px); left: 50%; z-index: 2000; width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: #fff; color: #8a8984; box-shadow: 0 2px 10px rgba(0,0,0,.18); pointer-events: none; }
+.ptr.is-ready { background: #1a1a1a; color: #fff; }
+.ptr.is-going svg { animation: ptrSpin .8s linear infinite; }
+@keyframes ptrSpin { to { transform: rotate(360deg); } }
