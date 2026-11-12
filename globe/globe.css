@@ -605,3 +605,12 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.gl-page .hd-grid .lb-split { height: var(--hd-box, 32px); box-sizing: border-box; display: inline-flex; align-items: stretch; }
   body.gl-page .hd-grid .lb-split .mode-btn { min-height: 0; height: auto; align-items: center; }
 }
+/* Explore on wide windows: the mode switch is wider, centred in the free space, and its bottom edge sits on the
+   "Energle" wordmark's baseline (globe.js hdAlignNav sets the exact offset) */
+@media (min-width: 1240px) {
+  body.at-globe .hd-grid { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes lb podium"; }
+  body.at-globe .hd-grid #mode-nav { justify-self: center; align-self: start; position: relative; padding: 3px; }
+  body.at-globe .hd-grid #mode-nav .mode-btn { min-height: 36px; padding: 0 22px; font-size: .92rem; gap: 7px; }
+  body.at-globe .hd-grid #mode-nav .mode-btn .hd-ico { width: 16px; height: 16px; }
+}
+@media (min-width: 1240px) { body.at-globe .hd-grid .lb-split { position: relative; align-self: start; } }

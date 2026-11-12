@@ -1113,3 +1113,19 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 // phones: the gold medal and name are sized to the header's boxes (the mode switch's height)
 function hdBoxFit() { const n = document.getElementById('mode-nav'); if (n) document.body.style.setProperty('--hd-box', Math.round(n.getBoundingClientRect().height) + 'px'); }
 if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(hdBoxFit)).observe(app, { childList: true }); }); window.addEventListener('resize', hdBoxFit); }
+// Explore, wide windows: the mode switch and Stats & Leaderboard sit with their bottom edge on the wordmark's baseline,
+// and the mode switch is centred on the page (as far as the logo and the right-hand buttons allow)
+function hdAlignNav() {
+  const nav = document.getElementById('mode-nav'), word = document.querySelector('.hd-brand .logo-word'), lb = document.querySelector('.hd-grid .lb-split');
+  if (!nav || !word) return;
+  [nav, lb].forEach(e => { if (e) { e.style.top = ''; e.style.left = ''; } });
+  if (!(document.body.classList.contains('at-globe') && matchMedia('(min-width: 1240px)').matches)) return;
+  const probe = document.createElement('span'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+  word.appendChild(probe);
+  const base = probe.getBoundingClientRect().top; probe.remove();
+  [nav, lb].forEach(e => { if (e) e.style.top = Math.round(base - e.getBoundingClientRect().bottom) + 'px'; });
+  const g = document.querySelector('.hd-grid').getBoundingClientRect(), n = nav.getBoundingClientRect(), br = document.querySelector('.hd-brand').getBoundingClientRect();
+  const lo = br.right + 24 - n.left, hi = (lb ? lb.getBoundingClientRect().left : g.right) - 24 - n.right;
+  nav.style.left = Math.round(Math.max(lo, Math.min(hi, (g.left + g.right) / 2 - (n.left + n.right) / 2))) + 'px';
+}
+if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(hdAlignNav)).observe(app, { childList: true }); }); window.addEventListener('resize', hdAlignNav); }
