@@ -879,13 +879,19 @@ function globeSuggestBind() {
 const GLOBE_PHONE = '(max-width: 700px)';
 let GPH_STATE = 'peek';
 const gphOn = () => document.body.classList.contains('at-globe') && matchMedia(GLOBE_PHONE).matches;
-function gphMount() { gphAfterSide(); }
+function gphMount() {
+  const nb = document.getElementById('mode-nav');   // the header's Daily / Archive / Explore pill
+  if (nb) document.body.style.setProperty('--gph-hb', Math.round(nb.getBoundingClientRect().height) + 'px');
+  gphAfterSide();
+}
 // the sheet's three heights
 function gphHeights() {
   const side = document.getElementById('gl-side'), head = side && side.querySelector('.gl-p-head'), lay = document.getElementById('gl-layout');
   const H = lay ? lay.clientHeight : window.innerHeight * 0.6;
   const peek = head ? Math.round(head.offsetTop + head.offsetHeight + 12) : 90;
-  return { peek, half: Math.round(Math.max(peek + 40, H * 0.5)), full: Math.round(H), nav: 0, top: 0 };
+  // the tools float on the map, so the sheet can rise further: half is 60% of the map, full stops under the tools
+  const tools = document.querySelector('.at-tools'), under = tools ? Math.max(0, tools.getBoundingClientRect().bottom - (lay ? lay.getBoundingClientRect().top : 0)) + 6 : 0;
+  return { peek, half: Math.round(Math.max(peek + 40, H * 0.6)), full: Math.round(H - under), nav: 0, top: 0 };
 }
 function gphSheet(state, h) {
   const side = document.getElementById('gl-side'); if (!side || !gphOn()) return;

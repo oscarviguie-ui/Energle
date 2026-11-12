@@ -401,3 +401,16 @@ body.at-globe .at-tools { margin-top: 14px; }
   body.at-globe #gl-pane-profile { flex: 1 1 auto; min-height: auto; }
   body.at-globe .gl-side #clue-cards { flex: 1 1 auto; min-height: auto; overflow: visible; }
 }
+
+/* phones: the tools float on the map's top edge, sized like the header's buttons, so the map and the sheet get their row */
+@media (max-width: 700px) {
+  body.at-globe .at-tools { position: relative; z-index: 20; margin: 0 8px calc(-1 * (var(--gph-hb, 32px) + 18px)); padding-top: 8px; gap: 6px; }
+  body.at-globe .gl-layout { margin-top: 0; }
+  body.at-globe .at-view { padding: 2px; box-shadow: 0 1px 5px rgba(0,0,0,.16); border: 0; }
+  body.at-globe .at-view .at-vbtn { min-height: calc(var(--gph-hb, 32px) - 4px); height: calc(var(--gph-hb, 32px) - 4px); padding: 0 10px; font-size: .74rem; }
+  body.at-globe #browse-search { height: var(--gph-hb, 32px) !important; min-height: 0; padding: 0 12px; border: 0; border-radius: 999px; font-size: .82rem; box-shadow: 0 1px 5px rgba(0,0,0,.16); }
+  body.at-globe .gl-chips .gl-more-btn { min-height: 0; height: var(--gph-hb, 32px); max-width: 120px; padding: 0 12px; font-size: .78rem; box-shadow: 0 1px 5px rgba(0,0,0,.2); }
+  body.at-globe .gl-sugg { top: calc(var(--gph-hb, 32px) + 6px); }
+  /* the group key sits under the floating tools */
+  body.at-globe .gl-key, body.at-globe .gl-key--low { top: calc(var(--gph-hb, 32px) + 16px); bottom: auto; }
+}
