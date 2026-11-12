@@ -414,3 +414,27 @@ body.at-globe .at-tools { margin-top: 14px; }
   /* the group key sits under the floating tools */
   body.at-globe .gl-key, body.at-globe .gl-key--low { top: calc(var(--gph-hb, 32px) + 16px); bottom: auto; }
 }
+/* no key on the map (the group button and the panel's title already say what's highlighted); a group's definition
+   sits in the panel, right under its title */
+.gl-key { display: none !important; }
+.gl-def { margin: -4px 0 0; font-size: .78rem; line-height: 1.45; color: #666; }
+.gl-def .gl-key-tag { font-size: .62rem; }
+@media (max-width: 700px) { .gl-def { margin: -2px 0 2px; font-size: .76rem; } }
+
+/* ---------- laptops: the tools float on the map's top edge, sized like the header's buttons, as on phones; the map and
+   the panel start right under the header, and the panel's title sits at the top of the panel, aligned with its cards ---------- */
+@media (min-width: 1100px) {
+  body.at-globe .at-tools { display: flex; align-items: center; gap: 6px; position: relative; z-index: 20;
+    width: calc(100% - clamp(560px, 53%, 860px) - 20px); margin: 14px 0 0; padding: 10px 10px 0; margin-bottom: calc(-1 * (var(--gph-hb, 32px) + 10px) - 12px); }
+  body.at-globe .gl-layout { margin-top: 0; }   /* the tools sit 10px inside the map's top edge */
+  body.at-globe #gl-head-slot { display: none !important; }
+  body.at-globe .at-view { flex: none; padding: 2px; border: 0; box-shadow: 0 1px 5px rgba(0,0,0,.16); }
+  body.at-globe .at-view .at-vbtn { min-height: 0; height: calc(var(--gph-hb, 32px) - 4px); padding: 0 12px; font-size: .78rem; }
+  body.at-globe #browse-search { flex: 1 1 0; min-width: 0; height: var(--gph-hb, 32px); min-height: 0; padding: 0 14px; border: 0; border-radius: 999px; font-size: .84rem; box-shadow: 0 1px 5px rgba(0,0,0,.16); }
+  body.at-globe .gl-chips { flex: none; }
+  body.at-globe .gl-chips .gl-more-btn { min-height: 0; height: var(--gph-hb, 32px); padding: 0 13px; font-size: .8rem; box-shadow: 0 1px 5px rgba(0,0,0,.16); border: 0; }
+  body.at-globe .gl-sugg { top: calc(100% + 6px); left: auto; }
+  /* the title row lines up with the cards under it */
+  body.at-globe .gl-side > .gl-p-head { padding: 0; margin: 0; min-height: var(--gph-hb, 32px); }
+}
+

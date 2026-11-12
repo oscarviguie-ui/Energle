@@ -237,6 +237,8 @@ function globeRegionHTML(r) {
       ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>'
       : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice<span class="gl-pr-n"> these ' + r.n + '</span> →</button>')
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
+    // the group's definition sits in the panel, under its title (the map shows no key)
+    + (GLOBE_DEFS[r.region] ? '<p class="gl-def">' + (groupOf(r.region).trait ? '<span class="gl-key-tag">Energle’s definition</span> ' : '') + GLOBE_DEFS[r.region] + '</p>' : '')
     + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div>';
 }
 let GLOBE_REGION = 'all';
@@ -247,7 +249,7 @@ function globeSide() {
   GLOBE_PREV_TARGET = target; target = GLOBE_SEL || reg;
   el.innerHTML = GLOBE_SEL ? globeCountryHTML(GLOBE_SEL) : globeRegionHTML(reg);
   el.classList.toggle('is-region', !GLOBE_SEL);
-  const mh = document.getElementById('gl-maphint'); if (mh) mh.hidden = !!GLOBE_SEL;
+  const mh = document.getElementById('gl-maphint'); if (mh) mh.hidden = !!GLOBE_SEL || GLOBE_REGION !== 'all';
   el.hidden = false;
   if (lay) lay.classList.add('has-sel');
   renderStatBar(); renderFlowBar(); renderCharts();
@@ -264,21 +266,23 @@ function globeSide() {
   globeHeadSlot();
   globeLayoutFit();
 }
-// laptops: the panel's title row sits on the tools row, over the panel
+// the panel's title stays at the top of the panel (an older layout moved it up to the tools row)
 function globeHeadSlot() {
-  const tools = document.querySelector('.at-tools'), side = document.getElementById('gl-side'); if (!tools || !side) return;
-  let slot = document.getElementById('gl-head-slot');
-  if (!slot) { slot = document.createElement('div'); slot.id = 'gl-head-slot'; tools.appendChild(slot); }
-  const head = side.querySelector(':scope > .gl-p-head');
-  if (matchMedia(GLOBE_WIDE).matches) { if (head) slot.replaceChildren(head); }
-  else if (slot.firstChild) { side.insertBefore(slot.firstChild, side.querySelector('.gl-grab') ? side.querySelector('.gl-grab').nextSibling : side.firstChild); }
+  const slot = document.getElementById('gl-head-slot'), side = document.getElementById('gl-side');
+  if (slot && slot.firstChild && side) side.insertBefore(slot.firstChild, side.querySelector('.gl-grab') ? side.querySelector('.gl-grab').nextSibling : side.firstChild);
 }
 // laptops: the map and the panel fill at least the window's height (CSS min-height from --gl-top); when the panel needs
 // more (the charts never shrink below their 300px), the page grows by exactly that much and scrolls as a whole
-let GLOBE_WRAP_RO = null;
+let GLOBE_WRAP_RO = null, GLOBE_CHART_RO = null;
 function globeLayoutFit() {
   const lay = document.getElementById('gl-layout'); if (!lay) return;
   document.body.style.setProperty('--gl-top', Math.round(lay.getBoundingClientRect().top + window.scrollY) + 'px');
+  // the charts follow their boxes at once (Chart.js's own resize can lag a beat, leaving the mix over the CO2 strip)
+  if (typeof ResizeObserver !== 'undefined') {
+    if (!GLOBE_CHART_RO) GLOBE_CHART_RO = new ResizeObserver(() => { try { if (lineChart) lineChart.resize(); if (barChart) barChart.resize(); } catch (e) {} });
+    GLOBE_CHART_RO.disconnect();
+    ['line-wrapper', 'bar-wrapper'].forEach(id => { const e = document.getElementById(id); if (e) GLOBE_CHART_RO.observe(e); });
+  }
   const wrap = document.getElementById('gl-wrap');
   if (wrap && typeof ResizeObserver !== 'undefined') {
     if (!GLOBE_WRAP_RO) GLOBE_WRAP_RO = new ResizeObserver(() => { if (GLOBE) try { GLOBE.resize(); } catch (e) {} });
