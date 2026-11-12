@@ -707,6 +707,9 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     globeFitChips();
     gphMount();
     globeSuggestBind();
+    // list view: the practice picker sits at the end of the tools row (the page has no title row there)
+    const tl = document.querySelector('.at-tools');
+    if (tl && !tl.querySelector('.gl-tools-practice')) tl.insertAdjacentHTML('beforeend', '<button type="button" class="gl-tools-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>');
   };
   if (typeof ISO3_CONTINENT !== 'undefined' && !ISO3_CONTINENT.TUR) ISO3_CONTINENT.TUR = 'Europe';
   // Explore also adds up the practice profiles and trends (big producers, green leaders, importers...)
