@@ -1145,6 +1145,8 @@ function globeRegionCards(r) {
   host.innerHTML = '<div class="ic-sechead"><span class="section-title">Clue cards</span><span class="ic-secsub">Added up over ' + e._n + ' of ' + e._of + ' countries</span></div><div class="ic-slot">' + html + '</div>';
   // say what the numbers are for a group: shares of the world and how many members hold some, not world ranks
   const hs = host.querySelectorAll('.fs-h'); if (hs[2]) hs[2].textContent = 'Share of world'; if (hs[3]) hs[3].textContent = 'Held by';
+  // a reserve wraps between its number and its unit, never inside the unit ("1,725 / bn barrels", not "1,725 bn / barrels")
+  host.querySelectorAll('.fs-table .ug-val').forEach(v => { if (v.children.length) return; v.textContent = v.textContent.trim().replace(/^(\S+)\s+(.+)$/, (m, a, b) => a + ' ' + b.replace(/ /g, '\u00a0')); });
   const mn = host.querySelector('.mn-tiles'), note = mn && mn.parentElement.querySelector('.v3-note'); if (note) note.textContent = 'lit = a member in the world top 10 · summed reserves';
   host.querySelectorAll('.ic-card').forEach(card => card.insertAdjacentHTML('beforeend', '<p class="gl-agg-note">Added up over the ' + e._n + ' members with data: totals are summed; shares and averages are weighted by population or GDP.</p>'));
 }

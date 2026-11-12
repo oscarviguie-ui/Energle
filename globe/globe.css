@@ -708,3 +708,20 @@ html.mdl-open, html.mdl-open body { overflow: hidden; overscroll-behavior: none;
 .ptr.is-ready { background: #1a1a1a; color: #fff; }
 .ptr.is-going svg { animation: ptrSpin .8s linear infinite; }
 @keyframes ptrSpin { to { transform: rotate(360deg); } }
+
+/* the reserves table in the Explore panel: column heads may wrap, so the chips size to their numbers and the fuel names
+   keep their room (on phones "Oil" ran under "1,725 bn barrels") */
+.gl-side .fs-table { grid-template-columns: minmax(min-content, 1fr) auto auto auto; }
+.gl-side .fs-h { white-space: normal; line-height: 1.2; }
+.gl-side .fs-table .ug-val { white-space: nowrap; }
+@media (max-width: 600px) {
+  .gl-side .fs-table { gap: 7px 8px; }
+  .gl-side .fs-table .ug-chip { padding: 1px 6px; }
+}
+@media (max-width: 380px) {   /* small phones: the unit drops under the number, everything a touch tighter */
+  .gl-side .fs-table { gap: 6px 6px; }
+  .gl-side .fs-table .ug-val { white-space: normal; line-height: 1.15; font-size: 12px; }
+  .gl-side .fs-table .ug-name { font-size: 12px; gap: 5px; }
+  .gl-side .fs-table .ug-chip { padding: 1px 5px; font-size: 10.5px; }
+  .gl-side .fs-h { font-size: 10px; }
+}
