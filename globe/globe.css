@@ -664,3 +664,10 @@ body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glN
   background: #fff; color: #1a1a1a; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
 .gm-reopen:hover { background: #f4f3ef; }
 .gm-reopen:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+
+/* phones: the short date stays on the puzzle line whether or not there's news; only the red dot comes and goes */
+@media (max-width: 600px) {
+  body.gl-page .sub-date--btn { display: inline-flex; flex-shrink: 0; margin-right: 0; }   /* flush with the line's right edge */
+  body.gl-page .sub-date--btn .sd-txt { display: none; }
+  body.gl-page .sub-date--btn .sd-short { display: inline; font-size: 12px; }
+}
