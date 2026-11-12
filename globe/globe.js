@@ -413,10 +413,13 @@ function globePad(map) {
   if (tools) { const t = tools.getBoundingClientRect(); if (t.height && t.top >= r.top - 4 && t.bottom > r.top && t.bottom < r.bottom) top = Math.round(t.bottom - r.top) + 4; }
   if (typeof gphOn === 'function' && gphOn()) {
     const side = document.getElementById('gl-side');
-    if (side) { const s = side.getBoundingClientRect(); bottom = Math.max(0, Math.round(r.bottom - s.top)); try { bottom = Math.min(bottom, gphHeights().half); } catch (e) {} }
+    // the sheet's target height, not its current one: it slides (CSS transition), so mid-slide it is still at the old height
+    if (side) { const h = parseFloat(side.style.height) || side.getBoundingClientRect().height; bottom = Math.max(0, Math.round(h)); try { bottom = Math.min(bottom, gphHeights().half); } catch (e) {} }
   }
   const p = { top, bottom, left: 0, right: 0 };
   try { map.setPadding(p); } catch (e) {}
+  // a move under way (a fly to a country) carries its own padding to its end: set ours again once it lands
+  if (map.isMoving && map.isMoving() && !map._padWait) { map._padWait = true; map.once('moveend', () => { map._padWait = false; globePad(map); }); }
   return p;
 }
 // the zoom at which the whole globe, `share` of the free room across, fits (MapLibre: radius = worldSize / 2π / cos(lat))
