@@ -500,3 +500,47 @@ body.gl-page:not(.at-globe) .at-tools .at-sort select { min-width: 0 !important;
   .pc-back-map { height: 30px; padding: 0 12px; font-size: .78rem; }
 }
 @media (max-width: 700px) { body.at-globe .gl-p-head .gl-tabs > :first-child { margin-left: 0; } }
+
+/* the source map's key: one slim line on the map */
+.gl-shade { position: absolute; z-index: 3; left: 12px; bottom: 12px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; max-width: calc(100% - 70px);
+  padding: 6px 8px 6px 12px; border-radius: 999px; background: rgba(255,255,255,.96); box-shadow: 0 1px 6px rgba(0,0,0,.16); font-size: .76rem; color: #555; }
+.gl-shade[hidden] { display: none; }
+.gl-shade-name { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: #1a1a1a; }
+.gl-shade-sw { width: 10px; height: 10px; border-radius: 2px; }
+.gl-shade-scale { display: inline-flex; align-items: center; gap: 5px; }
+.gl-shade-scale small { font-size: .68rem; color: #8a8984; }
+.gl-shade-bar { width: 70px; height: 8px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.gl-shade-x { width: 22px; height: 22px; border: 0; border-radius: 50%; background: #f1efea; color: #555; font-size: 14px; line-height: 1; cursor: pointer; }
+.gl-shade-x:hover { background: #1a1a1a; color: #fff; }
+.gl-shade:not([hidden]) ~ .gl-maphint, .gl-shade:not([hidden]) + .gl-maphint { display: none; }
+@media (max-width: 700px) {
+  body.at-globe .gl-shade { bottom: calc(var(--gph-sheet, 90px) + 10px); left: 8px; max-width: calc(100% - 16px); border-radius: 12px; }
+  body.at-globe .gl-shade-txt { display: none; }
+}
+/* the legend's sources say they can colour the map */
+body.at-globe #legend-shared .legend-item { cursor: pointer; }
+
+/* ---------- phones (test page): the header on ONE line — logo · modes (icons; the current one named) · gold · Stats & Leaderboard ---------- */
+@media (max-width: 600px) {
+  body.gl-page .hd-grid, body.gl-page .hd-grid.hd-stack { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes podium lb"; column-gap: 6px; row-gap: 0; align-items: center; }
+  body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1.32rem; }
+  body.gl-page .hd-grid #mode-nav { width: auto; justify-self: center; display: inline-flex; padding: 2px; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { flex: none; min-height: 28px; padding: 0 8px; }
+  body.gl-page .hd-grid #mode-nav .mode-btn:not(.active) { font-size: 0; gap: 0; }
+  body.gl-page .hd-grid #mode-nav .mode-btn:not(.active) .hd-lockemo { font-size: .62rem; margin-left: 1px; }
+  body.gl-page .hd-grid #mode-nav .mode-btn.active { font-size: .72rem; }
+  body.gl-page .hd-grid #mode-nav .mode-btn svg, body.gl-page .hd-grid #mode-nav .mode-btn .hd-ico { width: 15px; height: 15px; }
+  body.gl-page .podium-slot:first-child .podium-name { display: none; }
+  body.gl-page .hd-grid .podium { padding: 0 2px; }
+  body.gl-page .lb-split .mode-btn { min-height: 28px; padding: 0 7px; }
+  body.gl-page .lb-split .mode-btn svg, body.gl-page .lb-split .mode-btn .hd-ico { width: 15px; height: 15px; }
+}
+@media (max-width: 360px) { body.gl-page .hd-grid #mode-nav .mode-btn.active { font-size: 0; } }
+@media (max-width: 600px) {
+  /* everything on the header line centred on the same axis */
+  body.gl-page .hd-grid > * { align-self: center !important; margin-top: 0 !important; margin-bottom: 0 !important; top: 0 !important; }
+  body.gl-page .hd-brand h1 { line-height: 1; margin: 0; }
+  body.gl-page .hd-grid .podium { display: flex; align-items: center; min-height: 0; }
+  body.gl-page .podium-slot:first-child { align-items: center; }
+  body.gl-page .podium-medal { font-size: 1.2rem; line-height: 1; }
+}

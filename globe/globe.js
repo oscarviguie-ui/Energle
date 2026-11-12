@@ -250,7 +250,7 @@ function globeSide() {
   GLOBE_PREV_TARGET = target; target = GLOBE_SEL || reg;
   el.innerHTML = GLOBE_SEL ? globeCountryHTML(GLOBE_SEL) : globeRegionHTML(reg);
   el.classList.toggle('is-region', !GLOBE_SEL);
-  const mh = document.getElementById('gl-maphint'); if (mh) mh.hidden = !!GLOBE_SEL || GLOBE_REGION !== 'all';
+  const mh = document.getElementById('gl-maphint'); if (mh) mh.hidden = !!GLOBE_SEL || GLOBE_REGION !== 'all' || !!GLOBE_SHADE;
   el.hidden = false;
   if (lay) lay.classList.add('has-sel');
   renderStatBar(); renderFlowBar(); renderCharts();
@@ -263,6 +263,7 @@ function globeSide() {
   el.scrollTop = 0;
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
   const foot = document.querySelector('#app > footer'); if (foot && lay && matchMedia(GLOBE_WIDE).matches) lay.appendChild(foot);   // credits under the map
+  globeShadeRelock();
   globeSideFit();
   gphAfterSide();
   globeHeadSlot();
@@ -329,7 +330,8 @@ function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
     + '<div class="gl-wrap" id="gl-wrap"><div class="gl-canvas" id="gl-canvas" aria-label="Map of the world. Click a country for its electricity profile; the list view is keyboard-friendly."></div>'
     + '<p class="gl-loading" id="gl-loading">Loading the map…</p><div class="gl-key" id="gl-key" hidden></div>'
-    + '<p class="gl-maphint" id="gl-maphint">Click a country for its full profile and clue cards</p></div>'
+    + '<p class="gl-maphint" id="gl-maphint">Click a country for its full profile and clue cards</p>'
+    + '<div class="gl-shade" id="gl-shade" hidden></div></div>'
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
 }
@@ -512,19 +514,21 @@ async function globeMount() {
   try {
     map = await globeMakeMap(el, { zoom: matchMedia('(max-width: 600px)').matches ? 1.05 : 1.5 }, (m, labelFont) => {
       m.addLayer({ id: 'energle-reg-fill', type: 'fill', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.38 } });
+      m.addLayer({ id: 'energle-shade', type: 'fill', source: 'energle', layout: { visibility: 'none' }, paint: { 'fill-color': '#f2efe9', 'fill-opacity': 0 } });
       m.addLayer({ id: 'energle-reg-line', type: 'line', source: 'energle', filter: ['in', ['get', 'iso3'], ['literal', []]], paint: { 'line-color': '#c97d0a', 'line-width': 1.1 } });
       m.addLayer({ id: 'energle-sel-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.22 } });
       m.addLayer({ id: 'energle-sel-line', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2 } });
       globeAddNames(m, labelFont);
       const l = document.getElementById('gl-loading'); if (l) l.remove();
       globeHighlight();
+      if (GLOBE_SHADE) requestAnimationFrame(() => globeShade(GLOBE_SHADE));
       if (ATLAS.last) { const iso = ATLAS.last; ATLAS.last = null; globeFlyTo(iso); }
       else if (GLOBE_REGION !== 'all') globeRegion(GLOBE_REGION);   // back on the map with a group picked: frame it again
     });
   } catch (e) { const l = document.getElementById('gl-loading'); if (l) l.textContent = 'The map could not load here. The list view still works.'; return; }
   if (!map) return;
   GLOBE = map; GLOBE_PROJ = 'globe';
-  if (matchMedia(GLOBE_PHONE).matches) map.once('idle', () => map.fire('drag'));   // phones: fold the map credits behind their (i)
+  map.once('idle', () => map.fire('drag'));   // fold the map credits behind their (i): they'd sit under the map's own key
   map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) globeFlyTo(iso); });
   map.on('click', e => { if (!map.queryRenderedFeatures(e.point, { layers: ['energle-hit'] }).length && GLOBE_SEL) globeSelect(null, false); });
   const mq = matchMedia(GLOBE_WIDE), onMq = () => { if (GLOBE_SEL) globeSelect(GLOBE_SEL, false); else globeSide(); }; mq.addEventListener('change', onMq);
@@ -918,6 +922,7 @@ function gphSheet(state, h) {
   const hs = gphHeights(); GPH_STATE = state || GPH_STATE;
   const px = h != null ? h : hs[GPH_STATE];
   side.style.height = px + 'px'; side.dataset.sheet = GPH_STATE;
+  if (GPH_STATE === 'peek' && h == null) side.scrollTop = 0;
   document.body.style.setProperty('--gph-sheet', px + 'px');
   if (GLOBE && h == null) try { GLOBE.setPadding({ top: 0, bottom: Math.min(px, hs.half), left: 0, right: 0 }); } catch (e) {}
 }
@@ -1043,3 +1048,64 @@ function globeSuggestCategory() {
   if (h) h.textContent = 'Suggest a category';
   if (t) { t.placeholder = 'Which group of countries would you like to practice or explore? (e.g. Nordic countries, island nations, nuclear users)'; t.value = 'Category idea: '; t.focus(); }
 }
+
+
+// ============================================================
+//  SOURCE MAP: click a source in the legend (Coal, Hydro, Nuclear…, or Fossil / Nuclear / Renewables "by category")
+//  and the map colours every country by that source's share of its generation, darker for more. Click it again, or
+//  the ×, to go back. It lives in the legend the panel already has, so it takes no room of its own.
+// ============================================================
+let GLOBE_SHADE = null;
+function globeShares(src) {
+  const cat = typeof CATEGORIES !== 'undefined' ? CATEGORIES.find(c => c.key === src) : null;
+  const keys = cat ? cat.members : [src];
+  return COUNTRIES.map(c => {
+    const d = (ALL_DATA[c.name].years || {})[c.latestYear] || {};
+    const v = keys.reduce((a, k) => a + (d[k] || 0), 0);
+    return [c.iso3, d.Total > 0 ? Math.max(0, Math.min(1, v / d.Total)) : 0];
+  });
+}
+function globeShade(src) {
+  GLOBE_SHADE = src || null;
+  const key = document.getElementById('gl-shade'), mh = document.getElementById('gl-maphint');
+  if (mh) mh.hidden = !!src || !!GLOBE_SEL || GLOBE_REGION !== 'all';
+  if (!GLOBE || !GLOBE.getLayer('energle-shade')) { if (key) key.hidden = !src; return; }
+  if (!src) {
+    GLOBE.setLayoutProperty('energle-shade', 'visibility', 'none');
+    GLOBE.setPaintProperty('energle-reg-fill', 'fill-opacity', 0.38); GLOBE.setPaintProperty('energle-sel-fill', 'fill-opacity', 0.22);
+    if (key) key.hidden = true;
+    return;
+  }
+  const sh = globeShares(src), max = Math.max(0.1, Math.ceil(Math.max(...sh.map(x => x[1])) * 10) / 10);
+  const col = colorOf(src), val = ['match', ['get', 'iso3'], ...sh.flat(), 0];
+  GLOBE.setPaintProperty('energle-shade', 'fill-color', ['interpolate', ['linear'], val, 0, '#f6efe0', max, col]);
+  GLOBE.setPaintProperty('energle-shade', 'fill-opacity', ['case', ['>', val, 0.005], 0.9, 0]);
+  GLOBE.setLayoutProperty('energle-shade', 'visibility', 'visible');
+  GLOBE.setPaintProperty('energle-reg-fill', 'fill-opacity', 0); GLOBE.setPaintProperty('energle-sel-fill', 'fill-opacity', 0);   // group and country keep their outlines only
+  const n = sh.filter(x => x[1] > 0.005).length;
+  if (key) {
+    key.innerHTML = '<span class="gl-shade-name"><span class="gl-shade-sw" style="background:' + col + '"></span>' + escHtml(src) + '</span>'
+      + '<span class="gl-shade-txt">share of each country’s generation · ' + n + ' countries</span>'
+      + '<span class="gl-shade-scale"><small>0%</small><span class="gl-shade-bar" style="background:linear-gradient(90deg,#f6efe0,' + col + ')"></span><small>' + Math.round(max * 100) + '%</small></span>'
+      + '<button type="button" class="gl-shade-x" aria-label="Stop colouring the map">×</button>';
+    key.querySelector('.gl-shade-x').addEventListener('click', () => { lockedSource = null; focusSource(null); });
+    key.hidden = false;
+  }
+}
+// after the panel (and its legend) is redrawn: keep the source that colours the map selected
+function globeShadeRelock() {
+  if (!GLOBE_SHADE) return;
+  const chip = document.querySelector('#legend-shared .legend-item[data-src="' + GLOBE_SHADE + '"]');
+  if (!chip) { globeShade(null); return; }
+  lockedSource = GLOBE_SHADE; FOCUS_SRC = GLOBE_SHADE; _globeFocus(GLOBE_SHADE);
+}
+let _globeFocus = null;
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  _globeFocus = focusSource;
+  // a click in the legend (it locks a source) colours the map; hovering only highlights the charts, as before
+  window.focusSource = function (src) {
+    _globeFocus(src);
+    if (!document.getElementById('gl-wrap') || !document.body.classList.contains('at-globe')) return;
+    if ((lockedSource || null) !== GLOBE_SHADE) globeShade(lockedSource || null);
+  };
+});
