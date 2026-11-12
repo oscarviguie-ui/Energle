@@ -671,3 +671,17 @@ body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glN
   body.gl-page .sub-date--btn .sd-txt { display: none; }
   body.gl-page .sub-date--btn .sd-short { display: inline; font-size: 12px; }
 }
+
+/* the map's hint folds into a ? bubble beside the map credits' (i), and opens again from it */
+.gl-maphint { pointer-events: auto; cursor: pointer; border: 0; font: inherit; text-align: left; line-height: 1.35; }
+.gl-maphint .gl-mh-q { display: none; }
+.gl-maphint.is-mini { left: auto !important; right: 40px; bottom: 10px !important; width: 24px; height: 24px; padding: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; background: #fff; box-shadow: none; }   /* the same white disc as the credits' (i) */
+.gl-maphint.is-mini[hidden] { display: none; }
+.gl-maphint.is-mini .gl-mh-txt { display: none; }
+.gl-maphint.is-mini .gl-mh-q { display: flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: #1a1a1a; color: #fff; font-size: 12px; font-weight: 800; line-height: 1; }
+.gl-maphint:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+@media (max-width: 700px) { body.at-globe .gl-maphint.is-mini { left: auto !important; bottom: calc(var(--gph-sheet, 90px) + 10px) !important; } }
+
+/* Explore's map view has no title line on any screen: the tools and the panel say it all (the phone header rules re-showed it) */
+body.at-globe .subtitle-row { display: none !important; }

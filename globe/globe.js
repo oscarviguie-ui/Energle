@@ -330,7 +330,7 @@ function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
     + '<div class="gl-wrap" id="gl-wrap"><div class="gl-canvas" id="gl-canvas" aria-label="Map of the world. Click a country for its electricity profile; the list view is keyboard-friendly."></div>'
     + '<p class="gl-loading" id="gl-loading">Loading the map…</p><div class="gl-key" id="gl-key" hidden></div>'
-    + '<p class="gl-maphint" id="gl-maphint"><b>Click a country</b> for its profile · <b>click a source</b> under the charts to colour the map</p>'
+    + globeHintHTML()
     + '<div class="gl-shade" id="gl-shade" hidden></div></div>'
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
@@ -1152,6 +1152,22 @@ function globeShares(src) {
     return [c.iso3, d.Total > 0 ? Math.max(0, Math.min(1, v / d.Total)) : 0];
   });
 }
+// The map's hint: one click folds it into a ? bubble in the bottom-right corner, one click on the ? opens it again (remembered)
+function globeHintMini() { try { return localStorage.getItem('energle_maphint_mini') === '1'; } catch (e) { return false; } }
+function globeHintHTML() {
+  const mini = globeHintMini();
+  return '<button type="button" class="gl-maphint' + (mini ? ' is-mini' : '') + '" id="gl-maphint" aria-expanded="' + !mini + '" title="' + (mini ? 'How the map works' : 'Hide this tip') + '">'
+    + '<span class="gl-mh-txt"><b>Click a country</b> for its profile · <b>click a source</b> under the charts to colour the map</span>'
+    + '<span class="gl-mh-q" aria-hidden="true">?</span><span class="cr-sr gl-mh-sr">' + (mini ? 'Show how the map works' : '') + '</span></button>';
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('#gl-maphint'); if (!b) return;
+  const mini = !b.classList.contains('is-mini');
+  b.classList.toggle('is-mini', mini); b.setAttribute('aria-expanded', String(!mini));
+  b.title = mini ? 'How the map works' : 'Hide this tip';
+  const sr = b.querySelector('.gl-mh-sr'); if (sr) sr.textContent = mini ? 'Show how the map works' : '';
+  try { localStorage.setItem('energle_maphint_mini', mini ? '1' : '0'); } catch (err) {}
+});
 function globeShade(src) {
   GLOBE_SHADE = src || null;
   const key = document.getElementById('gl-shade'), mh = document.getElementById('gl-maphint');
