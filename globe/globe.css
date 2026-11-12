@@ -690,11 +690,14 @@ body.at-globe .subtitle-row { display: none !important; }
    both ends (the × and Got it) were cut off. The window now fits the visible screen (dvh) and its top row, with the ×,
    stays pinned while the rest scrolls. */
 #notice-modal, #feedback-modal, #shop-intro { height: 100vh; height: 100dvh; }
-#notice-modal .nt-box--log, #shop-intro .nt-box { max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+#notice-modal .nt-box--log, #shop-intro .nt-box, #feedback-modal .nt-box { max-height: calc(100vh - 32px); max-height: calc(var(--vvh, 100dvh) - 32px); overflow-y: auto; overscroll-behavior: contain; }
 .nt-wide .nx-top { position: sticky; top: -22px; z-index: 3; margin: -22px -26px 0; padding: 22px 26px 8px; background: #fff; }   /* sticky counts from inside the box's padding: -22px pins it to the edge */
 @media (max-width: 600px) {
   #notice-modal { padding: 12px; }
-  #notice-modal .nt-box--log { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); }
+  #notice-modal .nt-box--log { max-height: calc(100vh - 24px); max-height: calc(var(--vvh, 100dvh) - 24px); }
   .nt-wide .nx-top { top: -16px; margin: -16px -16px 0; padding: 14px 16px 8px; border-bottom: 1px solid #f0efeb; }
   .nt-wide .nx-top .nt-title { font-size: 1.15rem; }
 }
+
+/* while a window is open the page behind stays put (Safari would otherwise move its bars under the window) */
+html.mdl-open, html.mdl-open body { overflow: hidden; overscroll-behavior: none; }

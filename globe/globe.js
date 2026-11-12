@@ -1267,3 +1267,30 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   // first visits: the legend's sources shimmer once, so people find out they colour the map
   try { if (!localStorage.getItem('energle_srcmap_seen')) document.body.classList.add('gl-srcnudge'); } catch (e) {}
 });
+
+// ============================================================
+//  WINDOWS ON PHONES (What's new, the shop intro, feedback): iPhone Safari moves its bars as the page scrolls, and a
+//  fixed full-screen layer can then sit partly under them, cutting off the window's top (its ×) or bottom (Got it).
+//  While one is open, the layer is pinned to exactly the visible part of the screen (visualViewport), kept in step
+//  as the bars move, and the page behind doesn't scroll.
+// ============================================================
+(function () {
+  const IDS = ['notice-modal', 'shop-intro', 'feedback-modal'];
+  const vv = window.visualViewport;
+  const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
+  function fit() {
+    const els = open();
+    document.documentElement.classList.toggle('mdl-open', els.length > 0);
+    if (!vv) return;
+    els.forEach(el => {
+      el.style.top = Math.round(vv.offsetTop) + 'px'; el.style.left = Math.round(vv.offsetLeft) + 'px';
+      el.style.width = Math.round(vv.width) + 'px'; el.style.height = Math.round(vv.height) + 'px';
+      el.style.bottom = 'auto'; el.style.right = 'auto';
+      el.style.setProperty('--vvh', Math.round(vv.height) + 'px');
+    });
+  }
+  const watch = () => new MutationObserver(fit).observe(document.body, { childList: true });
+  if (document.body) watch(); else document.addEventListener('DOMContentLoaded', watch);
+  if (vv) { vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); }
+  window.addEventListener('orientationchange', () => setTimeout(fit, 300));
+})();
