@@ -544,3 +544,47 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.gl-page .podium-slot:first-child { align-items: center; }
   body.gl-page .podium-medal { font-size: 1.2rem; line-height: 1; }
 }
+@media (max-width: 600px) {
+  /* the leader's name back next to the gold medal, on the same line */
+  body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1.22rem; }
+  body.gl-page .hd-grid { column-gap: 5px; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { padding: 0 7px; }
+  body.gl-page .podium-slot:first-child .podium-name { display: block; font-size: .68rem; font-weight: 600; max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; }
+  body.gl-page .podium-slot:first-child { flex-direction: row; align-items: center; gap: 3px; width: auto; }
+  body.gl-page .podium-medal { font-size: 1.05rem; }
+  body.gl-page .lb-split .mode-btn { padding: 0 6px; }
+  /* the line under the header: one line — "Puzzle #164" and the date, centred on the same axis (the explanation drops on phones) */
+  body.gl-page .subtitle-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 2px 0 6px; flex-wrap: nowrap; }
+  body.gl-page .subtitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-size: 16px; line-height: 1.2; margin: 0; }
+  body.gl-page .subtitle .sub-sep, body.gl-page .subtitle .sub-rest { display: none; }
+  body.gl-page .subtitle-row .sub-date { flex-shrink: 0; font-size: 14px; line-height: 1.2; align-self: center; }
+}
+/* phones (test page), final: the header items keep their natural size and share the line evenly,
+   each centred on the wordmark; the current mode keeps its name while there is room (≥ 380px) */
+@media (max-width: 600px) {
+  body.gl-page .hd-grid, body.gl-page .hd-grid.hd-stack { grid-template-columns: auto auto auto auto; justify-content: space-between; column-gap: 4px; }
+  body.gl-page .hd-grid #mode-nav { justify-self: auto; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { padding: 0 6px; gap: 4px; min-height: 28px; }
+  body.gl-page header .hd-modes .mode-btn .hd-ico, body.gl-page .lb-split .hd-ico { display: block !important; width: 15px !important; height: 15px !important; }
+  body.gl-page .lb-split .mode-btn, body.gl-page .lb-split .mode-btn:first-child, body.gl-page .lb-split .mode-btn:last-child { padding: 0 6px; min-height: 28px; font-size: 0; }
+}
+@media (max-width: 379px) {
+  body.gl-page .hd-grid #mode-nav .mode-btn.active { font-size: 0; gap: 0; }
+  body.gl-page .podium-slot:first-child .podium-name { max-width: 46px; }
+  body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1.1rem; }
+}
+@media (max-width: 419px) {
+  body.gl-page .hd-grid #mode-nav .mode-btn.active { font-size: 0; gap: 0; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { padding: 0 7px; }
+}
+@media (max-width: 340px) {
+  body.gl-page .podium-slot:first-child .podium-name { max-width: 40px; }
+  body.gl-page .lb-split .mode-btn, body.gl-page .lb-split .mode-btn:first-child, body.gl-page .lb-split .mode-btn:last-child { padding: 0 5px; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { padding: 0 6px; }
+}
+@media (max-width: 340px) {
+  body.gl-page .hd-grid #mode-nav .mode-btn { padding: 0 4px; }
+  body.gl-page .lb-split .mode-btn, body.gl-page .lb-split .mode-btn:first-child, body.gl-page .lb-split .mode-btn:last-child { padding: 0 4px; }
+  body.gl-page .hd-grid { column-gap: 3px; }
+}
+@media (max-width: 340px) { body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1rem; } }
