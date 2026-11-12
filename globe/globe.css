@@ -745,3 +745,9 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
   .gl-maphint.is-mini.is-hop, body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { animation: none; }
   body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { box-shadow: 0 0 0 2px rgba(245,166,35,.45); }
 }
+
+/* stats & leaderboard (and the other windows): sized to the visible screen, not 100vh, so the × at the top can't end up
+   under Safari's bars; scrolling a list never drags the page behind */
+#stats-modal .sx-box.hub-box, #lb-modal .st-box.lb-box.hub-box, #lb-modal .st-box.lb-box { height: min(780px, calc(100vh - 24px)); height: min(780px, calc(var(--vvh, 100dvh) - 24px)); }
+#glossary-modal .st-box, #cl-modal .st-box { max-height: calc(100vh - 24px); max-height: calc(var(--vvh, 100dvh) - 24px); }
+.hub-scroll, #lb-modal .lb-body, #shop-modal { overscroll-behavior: contain; }

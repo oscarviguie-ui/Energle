@@ -1308,13 +1308,13 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-//  WINDOWS ON PHONES (What's new, the shop intro, feedback): iPhone Safari moves its bars as the page scrolls, and a
+//  WINDOWS ON PHONES (What's new, stats, leaderboard, the shop, feedback…): iPhone Safari moves its bars as the page scrolls, and a
 //  fixed full-screen layer can then sit partly under them, cutting off the window's top (its ×) or bottom (Got it).
 //  While one is open, the layer is pinned to exactly the visible part of the screen (visualViewport), kept in step
 //  as the bars move, and the page behind doesn't scroll.
 // ============================================================
 (function () {
-  const IDS = ['notice-modal', 'shop-intro', 'feedback-modal'];
+  const IDS = ['notice-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
   const vv = window.visualViewport;
   const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
   function fit() {
