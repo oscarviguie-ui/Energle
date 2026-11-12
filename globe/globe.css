@@ -614,3 +614,14 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.at-globe .hd-grid #mode-nav .mode-btn .hd-ico { width: 16px; height: 16px; }
 }
 @media (min-width: 1240px) { body.at-globe .hd-grid .lb-split { position: relative; align-self: start; } }
+/* Explore, wide windows: every header control is as tall as the mode switch and rests on the wordmark's baseline —
+   Stats & Leaderboard, and the three medals with their names under them (ribbons trimmed to fit) */
+@media (min-width: 1240px) {
+  body.at-globe .hd-grid .lb-split { height: var(--hd-box, 42px); box-sizing: border-box; display: inline-flex; align-items: stretch; }
+  body.at-globe .hd-grid .lb-split .mode-btn { min-height: 0; height: auto; align-items: center; padding: 0 10px; font-size: .92rem; }
+  body.at-globe .hd-grid .lb-split .mode-btn:first-child { padding-left: 16px; } body.at-globe .hd-grid .lb-split .mode-btn:last-child { padding-right: 16px; }
+  body.at-globe .hd-grid .podium { position: relative; align-self: start; display: flex; align-items: stretch; gap: 14px; height: var(--hd-box, 42px); padding: 0; }
+  body.at-globe .hd-grid .podium-slot { height: var(--hd-box, 42px); width: auto; min-width: 46px; justify-content: space-between; gap: 0; }
+  body.at-globe .hd-grid .podium-medal { height: calc(var(--hd-box, 42px) - 14px); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; font-size: calc(var(--hd-box, 42px) - 12px); line-height: 1; }
+  body.at-globe .hd-grid .podium-name { font-size: 11px; line-height: 13px; height: 13px; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

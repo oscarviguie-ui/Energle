@@ -1116,14 +1116,15 @@ if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app
 // Explore, wide windows: the mode switch and Stats & Leaderboard sit with their bottom edge on the wordmark's baseline,
 // and the mode switch is centred on the page (as far as the logo and the right-hand buttons allow)
 function hdAlignNav() {
-  const nav = document.getElementById('mode-nav'), word = document.querySelector('.hd-brand .logo-word'), lb = document.querySelector('.hd-grid .lb-split');
+  const nav = document.getElementById('mode-nav'), word = document.querySelector('.hd-brand .logo-word'), lb = document.querySelector('.hd-grid .lb-split'), pod = document.querySelector('.hd-grid .podium');
   if (!nav || !word) return;
-  [nav, lb].forEach(e => { if (e) { e.style.top = ''; e.style.left = ''; } });
+  [nav, lb, pod].forEach(e => { if (e) { e.style.top = ''; e.style.left = ''; } });
+  hdBoxFit();
   if (!(document.body.classList.contains('at-globe') && matchMedia('(min-width: 1240px)').matches)) return;
   const probe = document.createElement('span'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
   word.appendChild(probe);
   const base = probe.getBoundingClientRect().top; probe.remove();
-  [nav, lb].forEach(e => { if (e) e.style.top = Math.round(base - e.getBoundingClientRect().bottom) + 'px'; });
+  [nav, lb, pod].forEach(e => { if (e) e.style.top = Math.round(base - e.getBoundingClientRect().bottom) + 'px'; });
   const g = document.querySelector('.hd-grid').getBoundingClientRect(), n = nav.getBoundingClientRect(), br = document.querySelector('.hd-brand').getBoundingClientRect();
   const lo = br.right + 24 - n.left, hi = (lb ? lb.getBoundingClientRect().left : g.right) - 24 - n.right;
   nav.style.left = Math.round(Math.max(lo, Math.min(hi, (g.left + g.right) / 2 - (n.left + n.right) / 2))) + 'px';
