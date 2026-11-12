@@ -573,10 +573,6 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.gl-page .podium-slot:first-child .podium-name { max-width: 46px; }
   body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1.1rem; }
 }
-@media (max-width: 419px) {
-  body.gl-page .hd-grid #mode-nav .mode-btn.active { font-size: 0; gap: 0; }
-  body.gl-page .hd-grid #mode-nav .mode-btn { padding: 0 7px; }
-}
 @media (max-width: 340px) {
   body.gl-page .podium-slot:first-child .podium-name { max-width: 40px; }
   body.gl-page .lb-split .mode-btn, body.gl-page .lb-split .mode-btn:first-child, body.gl-page .lb-split .mode-btn:last-child { padding: 0 5px; }
@@ -588,3 +584,24 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.gl-page .hd-grid { column-gap: 3px; }
 }
 @media (max-width: 340px) { body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1rem; } }
+/* phones (test page): the leader's name under the medal, the pair exactly as tall as the boxes beside it (the medal's ribbon
+   trimmed at the top); the mode switch takes the room that frees, with the current mode named again */
+@media (max-width: 600px) {
+  body.gl-page .hd-grid, body.gl-page .hd-grid.hd-stack { grid-template-columns: auto minmax(0, 1fr) auto auto; justify-content: stretch; column-gap: 8px; }
+  body.gl-page .hd-grid #mode-nav { width: 100%; display: flex; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { flex: 1 1 0; justify-content: center; min-width: 0; }
+  body.gl-page .hd-grid #mode-nav .mode-btn.active { flex-grow: 1.6; font-size: .72rem; gap: 4px; }
+  body.gl-page .podium-slot:first-child { flex-direction: column; justify-content: space-between; gap: 0; height: var(--hd-box, 32px); width: auto; }
+  body.gl-page .podium-slot:first-child .podium-medal { display: block; height: calc(var(--hd-box, 32px) - 11px); overflow: hidden; font-size: calc(var(--hd-box, 32px) - 9px); line-height: 1;
+    display: flex; align-items: flex-end; justify-content: center; }
+  body.gl-page .podium-slot:first-child .podium-name { font-size: 9px; line-height: 10px; height: 10px; max-width: 54px; }
+  body.gl-page .hd-grid .podium { padding: 0; }
+}
+@media (max-width: 379px) {
+  body.gl-page .hd-grid #mode-nav .mode-btn.active { font-size: 0; gap: 0; flex-grow: 1; }
+  body.gl-page .podium-slot:first-child .podium-name { max-width: 44px; }
+}
+@media (max-width: 600px) {
+  body.gl-page .hd-grid .lb-split { height: var(--hd-box, 32px); box-sizing: border-box; display: inline-flex; align-items: stretch; }
+  body.gl-page .hd-grid .lb-split .mode-btn { min-height: 0; height: auto; align-items: center; }
+}

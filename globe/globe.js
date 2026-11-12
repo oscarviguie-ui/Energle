@@ -1109,3 +1109,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     if ((lockedSource || null) !== GLOBE_SHADE) globeShade(lockedSource || null);
   };
 });
+
+// phones: the gold medal and name are sized to the header's boxes (the mode switch's height)
+function hdBoxFit() { const n = document.getElementById('mode-nav'); if (n) document.body.style.setProperty('--hd-box', Math.round(n.getBoundingClientRect().height) + 'px'); }
+if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(hdBoxFit)).observe(app, { childList: true }); }); window.addEventListener('resize', hdBoxFit); }
