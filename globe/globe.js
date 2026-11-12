@@ -251,6 +251,7 @@ function globeSide() {
   el.innerHTML = GLOBE_SEL ? globeCountryHTML(GLOBE_SEL) : globeRegionHTML(reg);
   el.classList.toggle('is-region', !GLOBE_SEL);
   const mh = document.getElementById('gl-maphint'); if (mh) mh.hidden = !!GLOBE_SEL || GLOBE_REGION !== 'all' || !!GLOBE_SHADE;
+  globeHintSync();
   el.hidden = false;
   if (lay) lay.classList.add('has-sel');
   renderStatBar(); renderFlowBar(); renderCharts();
@@ -1193,12 +1194,26 @@ document.addEventListener('click', e => {
   b.classList.toggle('is-mini', mini); b.setAttribute('aria-expanded', String(!mini));
   b.title = mini ? 'How the map works' : 'Hide this tip';
   const sr = b.querySelector('.gl-mh-sr'); if (sr) sr.textContent = mini ? 'Show how the map works' : '';
-  try { localStorage.setItem('energle_maphint_mini', mini ? '1' : '0'); } catch (err) {}
+  try { localStorage.setItem('energle_maphint_mini', mini ? '1' : '0'); if (!mini) localStorage.setItem('energle_maphint_seen', '1'); } catch (err) {}
+  if (!mini) b.classList.remove('is-hop');
+  globeHintSync();
 });
+// While the tip is open on the map, the sources under the charts glow in turn (they're what "click a source" points at).
+// Folded, the ? hops now and then until it has been opened once.
+function globeHintSync() {
+  const mh = document.getElementById('gl-maphint');
+  const open = !!mh && !mh.hidden && !mh.classList.contains('is-mini') && document.body.classList.contains('at-globe');
+  document.body.classList.toggle('gl-hint-open', open);
+  if (mh && mh.classList.contains('is-mini')) {
+    let seen = false; try { seen = localStorage.getItem('energle_maphint_seen') === '1'; } catch (e) {}
+    mh.classList.toggle('is-hop', !seen);
+  }
+}
 function globeShade(src) {
   GLOBE_SHADE = src || null;
   const key = document.getElementById('gl-shade'), mh = document.getElementById('gl-maphint');
   if (mh) mh.hidden = !!src || !!GLOBE_SEL || GLOBE_REGION !== 'all';
+  globeHintSync();
   if (!GLOBE || !GLOBE.getLayer('energle-shade')) { if (key) key.hidden = !src; return; }
   if (!src) {
     GLOBE.setLayoutProperty('energle-shade', 'visibility', 'none');

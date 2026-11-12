@@ -725,3 +725,23 @@ html.mdl-open, html.mdl-open body { overflow: hidden; overscroll-behavior: none;
   .gl-side .fs-table .ug-chip { padding: 1px 5px; font-size: 10.5px; }
   .gl-side .fs-h { font-size: 10px; }
 }
+
+/* the folded ? hops every few seconds until it's been opened once (translate, since the tip's transform is pinned) */
+.gl-maphint.is-mini.is-hop { animation: glHop 5s ease-in-out 1.5s infinite; }
+@keyframes glHop { 0%, 78%, 100% { translate: 0 0; } 83% { translate: 0 -8px; } 88% { translate: 0 0; } 92% { translate: 0 -3px; } 96% { translate: 0 0; } }
+/* while the tip is open, the sources under the charts glow one after another */
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { animation: glGlow 3.2s ease-in-out infinite; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(2) { animation-delay: .25s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(3) { animation-delay: .5s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(4) { animation-delay: .75s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(5) { animation-delay: 1s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(6) { animation-delay: 1.25s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(7) { animation-delay: 1.5s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(8) { animation-delay: 1.75s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(9) { animation-delay: 2s; }
+body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10) { animation-delay: 2.25s; }
+@keyframes glGlow { 0%, 60%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); } 25% { box-shadow: 0 0 0 2px rgba(245,166,35,.55), 0 0 12px 1px rgba(245,166,35,.45); } }
+@media (prefers-reduced-motion: reduce) {
+  .gl-maphint.is-mini.is-hop, body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { animation: none; }
+  body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { box-shadow: 0 0 0 2px rgba(245,166,35,.45); }
+}
