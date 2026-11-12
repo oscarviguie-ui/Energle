@@ -788,35 +788,59 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  with a small demo that plays through what Explore does, using the real numbers.
 // ============================================================
 const EXPLORE_UPDATE = ['10 Nov', 'Explore: the world on a map',
-  'Practice is now Explore. Spin the globe and click any country for its full profile, clue cards included, or add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders. Every group is also a practice round.'];
+  'Practice is now Explore. Click any country for its full profile and clue cards. Add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders, clue cards included. Click a source under the charts to colour the map by it. And practise on any group.'];
 let NX_SVG = null;
 function nxMapSVG() {
   if (!NX_SVG) NX_SVG = fetch(GLOBE_DIR + 'explore-demo.svg').then(r => r.ok ? r.text() : '').catch(() => '');
   return NX_SVG;
 }
 const nxGen = v => v >= 1000 ? (v / 1000).toFixed(2) + ' PWh' : fmtTwh(v);
-// the demo's steps: the world, a continent, a bloc, a trait, then one country
+// the demo's steps, one per thing Explore does: groups (continent, bloc, trait), the source map, the group clue cards,
+// a country, and practice
 function nxSteps() {
-  const grp = (id, cap) => {
+  const grp = (id, cap, extra) => {
     const g = groupOf(id), r = globeAggregate(id), list = COUNTRIES.filter(g.test);
-    return { cap, iso: new Set(list.map(c => c.iso3)), all: id === 'all',
+    return Object.assign({ cap, iso: new Set(list.map(c => c.iso3)), all: id === 'all',
       head: '<b>' + g.name + '</b><span>' + (id === 'all' ? r.n + ' countries' : r.n + ' countries added together') + ' · ' + r.latestYear + '</span>',
-      big: nxGen(r.latestTotal), def: g.trait ? '<span class="gl-key-tag">Energle’s definition</span> ' + g.rule : '', mix: groupShares(list) };
+      big: nxGen(r.latestTotal), def: g.trait ? '<span class="gl-key-tag">Energle’s definition</span> ' + g.rule : '', mix: groupShares(list) }, extra || {});
   };
+  const steps = [grp('all', 'Every country, on the map'), grp('europe', 'Add up a continent'), grp('eu', '…a bloc like the EU or OPEC'), grp('green', '…or a trait, with its definition')];
+  // the source map: Nuclear, darker for a bigger share
+  try {
+    const sh = globeShares('Nuclear'), max = Math.max(...sh.map(x => x[1])), id = globeSourceGroup('Nuclear'), r = globeAggregate(id);
+    const top = sh.slice().sort((a, b) => b[1] - a[1])[0], topC = COUNTRIES.find(c => c.iso3 === top[0]);
+    steps.push({ cap: 'Click a source under the charts: the map takes its colour', shade: new Map(sh), shadeMax: max, shadeCol: colorOf('Nuclear'),
+      head: '<b>Nuclear producers</b><span>' + r.n + ' countries · darker = more</span>', big: nxGen(r.latestTotal),
+      def: 'Up to ' + Math.round(max * 100) + '% of generation (' + (topC ? topC.name : '') + ') · their totals and clue cards add up too', mix: groupShares(COUNTRIES.filter(groupOf(id).test)) });
+  } catch (e) {}
+  // a group's clue cards, added up: OPEC's reserves
+  try {
+    const e = globeAggCards('opec');
+    if (e && e.fossil) {
+      const pct = v => v >= 0.01 ? Math.round(v * 100) + '%' : '<1%';
+      steps.push(grp('opec', 'Clue cards add up for groups', {
+        head: '<b>OPEC · Underground riches</b><span>' + e._n + ' members, reserves summed</span>',
+        row: '<div class="nx-ug">' + [['oil', 'Oil', v => Math.round(v).toLocaleString('en-US') + ' bn barrels'], ['gas', 'Gas', v => Math.round(v) + ' tn m³'], ['coal', 'Coal', v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' bn t']]
+          .map(([k, n, f]) => '<span class="nx-ug-row"><b>' + n + '</b><span>' + f(e.fossil[k][0]) + '</span><em>' + pct(e._share[k]) + ' of the world</em></span>').join('') + '</div>',
+        def: '' }));
+    }
+  } catch (e) {}
   const fr = COUNTRIES.find(c => c.iso3 === 'FRA');
-  return [
-    grp('all', 'Every country, on the map'),
-    grp('europe', 'Add up a continent'),
-    grp('eu', '…or a bloc'),
-    grp('green', '…or a trait'),
-    fr && { cap: 'Click a country for its full profile', iso: new Set(['FRA']), one: true,
-      head: flagImg('FRA', 'nx-flag') + '<b>France</b><span>' + fr.latestYear + ' · clue cards included</span>', big: nxGen(fr.latestTotal), def: '', mix: sharesOf(fr) },
-  ].filter(Boolean);
+  if (fr) steps.push({ cap: 'Click a country for its profile and clue cards', iso: new Set(['FRA']), one: true,
+    head: flagImg('FRA', 'nx-flag') + '<b>France</b><span>' + fr.latestYear + ' · 5 clue cards</span>', big: nxGen(fr.latestTotal), def: 'Sun & wind · People & power · Underground · Power trade · Fuel trade', mix: sharesOf(fr) });
+  steps.push(grp('brics', 'Practise on any group', { row: '<div class="nx-row"><div class="nx-card-h"><b>BRICS</b><span>' + COUNTRIES.filter(groupOf('brics').test).length + ' countries</span></div>'
+    + '<span class="nx-pill">Practice these ' + COUNTRIES.filter(groupOf('brics').test).length + ' →</span></div>', def: 'A round of guesses on just those countries: no score, no streak' }));
+  return steps;
 }
 function nxDemoHTML() {
   return '<div class="nx-demo" id="nx-demo"><div class="nx-mapbox" id="nx-mapbox"></div>'
     + '<div class="nx-card" id="nx-card" aria-live="polite"></div><div class="nx-cap" id="nx-cap"></div>'
     + '<div class="nx-dots" id="nx-dots" role="tablist" aria-label="Demo steps"></div></div>';
+}
+// a colour between the map's paper and the source's colour
+function nxMix(col, t) {
+  const h = x => parseInt(x, 16), c = col.replace('#', ''), a = [246, 239, 224], b = [h(c.slice(0, 2)), h(c.slice(2, 4)), h(c.slice(4, 6))];
+  return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
 }
 function nxDemoStart(root) {
   const steps = nxSteps(); let i = 0, timer = null, paths = [];
@@ -824,13 +848,18 @@ function nxDemoStart(root) {
   dots.innerHTML = steps.map((s, k) => '<button type="button" class="nx-dot" role="tab" aria-label="' + s.cap + '" data-k="' + k + '"></button>').join('');
   const show = k => {
     i = k; const s = steps[k];
-    paths.forEach(p => { const on = s.all ? true : s.iso.has(p.dataset.i); p.classList.toggle('on', on && !s.all); p.classList.toggle('lit', on && s.all); p.classList.toggle('pick', !!s.one && on); });
-    card.innerHTML = '<div class="nx-row"><div class="nx-card-h">' + s.head + '</div><div class="nx-big">' + s.big + '<small>generated</small></div>' + mixBarHTML(s.mix, 'nx-mix') + '</div>'
-      + '<p class="nx-def">' + (s.def || '&nbsp;') + '</p>';
+    paths.forEach(p => {
+      if (s.shade) { const v = s.shade.get(p.dataset.i) || 0; p.classList.remove('on', 'lit', 'pick'); p.style.fill = v > 0.005 ? nxMix(s.shadeCol, Math.min(1, v / s.shadeMax)) : ''; return; }
+      p.style.fill = '';
+      const on = s.all ? true : s.iso.has(p.dataset.i); p.classList.toggle('on', on && !s.all); p.classList.toggle('lit', on && s.all); p.classList.toggle('pick', !!s.one && on);
+    });
+    card.innerHTML = (s.row || '<div class="nx-row"><div class="nx-card-h">' + s.head + '</div><div class="nx-big">' + s.big + '<small>generated</small></div>' + mixBarHTML(s.mix, 'nx-mix') + '</div>')
+      .replace('<div class="nx-ug">', '<div class="nx-row"><div class="nx-card-h">' + s.head + '</div></div><div class="nx-ug">')
+      + (s.row && s.row.includes('nx-ug') ? '' : '<p class="nx-def">' + (s.def || '&nbsp;') + '</p>');
     cap.textContent = s.cap;
     dots.querySelectorAll('.nx-dot').forEach((d, j) => d.setAttribute('aria-selected', String(j === k)));
   };
-  const play = () => { clearInterval(timer); if (!REDUCED_MOTION) timer = setInterval(() => { if (!document.body.contains(root)) return clearInterval(timer); show((i + 1) % steps.length); }, 3000); };
+  const play = () => { clearInterval(timer); if (!REDUCED_MOTION) timer = setInterval(() => { if (!document.body.contains(root)) return clearInterval(timer); show((i + 1) % steps.length); }, 3400); };
   dots.addEventListener('click', e => { const d = e.target.closest('.nx-dot'); if (d) { show(+d.dataset.k); play(); } });
   root.addEventListener('mouseenter', () => clearInterval(timer)); root.addEventListener('mouseleave', play);
   nxMapSVG().then(svg => { box.innerHTML = svg; paths = [...box.querySelectorAll('path[data-i]')]; show(i); });
