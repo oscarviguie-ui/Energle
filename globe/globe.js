@@ -601,6 +601,7 @@ const GMAP_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" s
   + '<path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13M15 6.5v13"/></svg>';
 function gmapButtonHTML() { return '<button type="button" id="gm-btn" class="gm-btn" aria-pressed="false" title="Show the map">' + GMAP_ICON + '<span class="gm-lbl">Map</span></button>'; }
 function gmapUpdate() {
+  gmapReopenSync();
   const m = GMAP; if (!m || !m.getLayer('gm-fill') || !target) return;
   const done = guesses.filter(g => g.iso3 !== target.iso3);
   const fills = done.flatMap(g => [['==', ['get', 'iso3'], g.iso3], 'rgb(' + closeRGB(kmBand(guessInfo(g).km).prox).join(',') + ')']);
@@ -683,7 +684,9 @@ function gmapShow(on, scroll) {
 }
 function gmapReopenSync() {
   let b = document.getElementById('gm-reopen');
-  const need = !GMAP_ON && typeof gameOver !== 'undefined' && gameOver && document.getElementById('gw-cols');
+  // only when the guess bar (and its Map button) is gone: a finished game, not a new one that reuses the screen
+  const ia = document.getElementById('input-area');
+  const need = !GMAP_ON && typeof gameOver !== 'undefined' && gameOver && document.getElementById('gw-cols') && !(ia && ia.offsetParent);
   if (!need) { if (b) b.remove(); return; }
   if (!b) {
     b = document.createElement('button'); b.type = 'button'; b.id = 'gm-reopen'; b.className = 'gm-reopen';
@@ -851,13 +854,14 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const sub = document.getElementById('submit-btn');
     if (sub && !document.getElementById('gm-btn')) { sub.insertAdjacentHTML('beforebegin', gmapButtonHTML()); document.getElementById('gm-btn').addEventListener('click', () => gmapShow(!GMAP_ON, true)); }
     GMAP_PICK = null; gmapShow(GMAP_ON);
+    requestAnimationFrame(gmapReopenSync);   // once the game has set itself up (new or finished)
   };
   const _row = addGuessRow;
   window.addGuessRow = function (country, isCorrect, animate) { _row(country, isCorrect, animate); if (!isCorrect) bandRow(country); GMAP_PICK = null; gmapUpdate(); if (animate !== false && country) gmapTurn(country.iso3); };
   const _end = endGame;
   window.endGame = function () { _end(); gmapUpdate(); if (target) gmapTurn(target.iso3, 1200); gmapReopenSync(); };
   const _new = newGame;
-  window.newGame = function () { _new(); GMAP_PICK = null; gmapUpdate(); };
+  window.newGame = function () { _new(); GMAP_PICK = null; gmapUpdate(); gmapReopenSync(); };
 });
 
 // ============================================================
