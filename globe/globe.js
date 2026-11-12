@@ -417,9 +417,12 @@ function globePad(map) {
     if (side) { const h = parseFloat(side.style.height) || side.getBoundingClientRect().height; bottom = Math.max(0, Math.round(h)); try { bottom = Math.min(bottom, gphHeights().half); } catch (e) {} }
   }
   const p = { top, bottom, left: 0, right: 0 };
+  // setting the padding mid-move would stop the move (a fly to a country, a turn to a group): set it once it lands
+  if (map.isMoving && map.isMoving()) {
+    if (!map._padWait) { map._padWait = true; map.once('moveend', () => { map._padWait = false; globePad(map); }); }
+    return p;
+  }
   try { map.setPadding(p); } catch (e) {}
-  // a move under way (a fly to a country) carries its own padding to its end: set ours again once it lands
-  if (map.isMoving && map.isMoving() && !map._padWait) { map._padWait = true; map.once('moveend', () => { map._padWait = false; globePad(map); }); }
   return p;
 }
 // the zoom at which the whole globe, `share` of the free room across, fits (MapLibre: radius = worldSize / 2π / cos(lat))
@@ -433,6 +436,21 @@ function globeViewZoom(km) {
   // the group's diameter takes ~85% of the map's shorter side
   return Math.max(1, Math.min(5, Math.log2(0.85 * room * 40075 / (512 * 2 * km))));
 }
+// the middle of a spread-out group: members' positions on the sphere, weighted by what they generate (of that source, for a
+// source's group); with nothing to weigh, Europe and Africa
+function globeGroupMiddle(g) {
+  let x = 0, y = 0, z = 0;
+  // a source's group leans toward where that source is made (France and the US for nuclear), not just big grids
+  const share = /^src_/.test(g.id) ? new Map(globeShares(g.id.slice(4))) : null;
+  COUNTRIES.filter(g.test).forEach(c => {
+    if (c.lat == null || c.lng == null) return;
+    const w = (c.latestTotal || 1) * (share ? share.get(c.iso3) || 0 : 1), la = c.lat * Math.PI / 180, lo = c.lng * Math.PI / 180;
+    x += w * Math.cos(la) * Math.cos(lo); y += w * Math.cos(la) * Math.sin(lo); z += w * Math.sin(la);
+  });
+  const h = Math.hypot(x, y); if (!h && !z) return [10, 25];
+  const lat = Math.atan2(z, h) * 180 / Math.PI, lng = Math.atan2(y, x) * 180 / Math.PI;
+  return [lng, Math.max(-30, Math.min(35, lat))];   // kept near the equator so both hemispheres show
+}
 function globeRegion(r) {
   GLOBE_REGION = GLOBE_REGIONS[r] ? r : 'all';
   if (ATLAS.region !== GLOBE_REGION) ATLAS.region = GLOBE_REGION;
@@ -440,14 +458,14 @@ function globeRegion(r) {
   GLOBE_SEL = null; globeSide(); globeHighlight();
   if (!GLOBE) return;
   const v = GLOBE_VIEWS[GLOBE_REGION];
-  const flat = !!groupOf(GLOBE_REGION).trait;
-  globeProj(flat ? 'mercator' : 'globe');
-  if (flat) {                            // a trait is spread over the world: lay the whole world flat so every member shows
-    const cv = GLOBE.getContainer();
-    GLOBE.jumpTo({ center: [12, 22], zoom: Math.max(-1, Math.log2(cv.clientWidth / 512) - 0.05) }); return;
+  globeProj('globe');                    // always the globe, groups made of a trait or a source included
+  if (groupOf(GLOBE_REGION).trait) {     // spread over the world: the whole globe, turned toward where most of the members' power is made
+    const c = globeGroupMiddle(groupOf(GLOBE_REGION));
+    const pad = globePad(); GLOBE.easeTo({ center: c, zoom: globeFitZoom(GLOBE, 0.9, c[1], pad), padding: pad, duration: 1100 }); return;
   }
-  if (!v) { GLOBE.easeTo({ center: [10, 25], zoom: globeFitZoom(GLOBE, 0.9, 25, globePad()), duration: 1100 }); return; }
-  GLOBE.easeTo({ center: [v[0], v[1]], zoom: globeViewZoom(v[2]), duration: 1100 });
+  const pad = globePad();
+  if (!v) { GLOBE.easeTo({ center: [10, 25], zoom: globeFitZoom(GLOBE, 0.9, 25, pad), padding: pad, duration: 1100 }); return; }
+  GLOBE.easeTo({ center: [v[0], v[1]], zoom: globeViewZoom(v[2]), padding: pad, duration: 1100 });
 }
 // The chips (continents, then blocs) and the list view's filter for them
 function globeChipsHTML() {
