@@ -301,10 +301,10 @@ body.at-globe .at-tools { margin-top: 14px; }
 /* Explore on wide windows: the header on one line (logo · modes … Stats & Leaderboard · podium), giving the page
    ~50px back. Every item is centred on the "Energle" wordmark's line. (The daily keeps its two rows: its column is too narrow.) */
 @media (min-width: 1240px) {
-  body.at-globe .hd-grid { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes . lb podium"; column-gap: 22px; row-gap: 0; align-items: center; }
-  body.at-globe .hd-brand { flex-wrap: nowrap; align-self: center; }
-  body.at-globe .hd-grid #mode-nav, body.at-globe .hd-grid .lb-split, body.at-globe .hd-grid .podium { width: auto; align-self: center; margin: 0; }
-  body.at-globe .hd-grid .podium { top: 0; }          /* centred like the rest (the two-row header nudges it down) */
+  body.ex-hdr .hd-grid { grid-template-columns: auto auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes . lb podium"; column-gap: 22px; row-gap: 0; align-items: center; }
+  body.ex-hdr .hd-brand { flex-wrap: nowrap; align-self: center; }
+  body.ex-hdr .hd-grid #mode-nav, body.ex-hdr .hd-grid .lb-split, body.ex-hdr .hd-grid .podium { width: auto; align-self: center; margin: 0; }
+  body.ex-hdr .hd-grid .podium { top: 0; }          /* centred like the rest (the two-row header nudges it down) */
 }
 /* the map's hint only while no group key is on the map */
 .gl-key:not([hidden]) ~ .gl-maphint { display: none; }
@@ -590,7 +590,7 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.gl-page .hd-grid, body.gl-page .hd-grid.hd-stack { grid-template-columns: auto minmax(0, 1fr) auto auto; justify-content: stretch; column-gap: 8px; }
   body.gl-page .hd-grid #mode-nav { width: 100%; display: flex; }
   body.gl-page .hd-grid #mode-nav .mode-btn { flex: 1 1 0; justify-content: center; min-width: 0; }
-  body.gl-page .hd-grid #mode-nav .mode-btn.active { flex-grow: 1.6; font-size: .72rem; gap: 4px; }
+  body.gl-page .hd-grid #mode-nav .mode-btn.active { flex-grow: 2; font-size: .72rem; gap: 4px; padding: 0 9px; }
   body.gl-page .podium-slot:first-child { flex-direction: column; justify-content: space-between; gap: 0; height: var(--hd-box, 32px); width: auto; }
   body.gl-page .podium-slot:first-child .podium-medal { display: block; height: calc(var(--hd-box, 32px) - 11px); overflow: hidden; font-size: calc(var(--hd-box, 32px) - 9px); line-height: 1;
     display: flex; align-items: flex-end; justify-content: center; }
@@ -608,22 +608,22 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
 /* Explore on wide windows: the mode switch is wider, centred in the free space, and its bottom edge sits on the
    "Energle" wordmark's baseline (globe.js hdAlignNav sets the exact offset) */
 @media (min-width: 1240px) {
-  body.at-globe .hd-grid { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes lb podium"; }
-  body.at-globe .hd-grid #mode-nav { justify-self: center; align-self: start; position: relative; padding: 3px; }
-  body.at-globe .hd-grid #mode-nav .mode-btn { min-height: 36px; padding: 0 22px; font-size: .92rem; gap: 7px; }
-  body.at-globe .hd-grid #mode-nav .mode-btn .hd-ico { width: 16px; height: 16px; }
+  body.ex-hdr .hd-grid { grid-template-columns: auto minmax(0, 1fr) auto auto; grid-template-areas: "title modes lb podium"; }
+  body.ex-hdr .hd-grid #mode-nav { justify-self: center; align-self: start; position: relative; padding: 3px; }
+  body.ex-hdr .hd-grid #mode-nav .mode-btn { min-height: 36px; padding: 0 22px; font-size: .92rem; gap: 7px; }
+  body.ex-hdr .hd-grid #mode-nav .mode-btn .hd-ico { width: 16px; height: 16px; }
 }
-@media (min-width: 1240px) { body.at-globe .hd-grid .lb-split { position: relative; align-self: start; } }
+@media (min-width: 1240px) { body.ex-hdr .hd-grid .lb-split { position: relative; align-self: start; } }
 /* Explore, wide windows: every header control is as tall as the mode switch and rests on the wordmark's baseline —
    Stats & Leaderboard, and the three medals with their names under them (ribbons trimmed to fit) */
 @media (min-width: 1240px) {
-  body.at-globe .hd-grid .lb-split { height: var(--hd-box, 42px); box-sizing: border-box; display: inline-flex; align-items: stretch; }
-  body.at-globe .hd-grid .lb-split .mode-btn { min-height: 0; height: auto; align-items: center; padding: 0 10px; font-size: .92rem; }
-  body.at-globe .hd-grid .lb-split .mode-btn:first-child { padding-left: 16px; } body.at-globe .hd-grid .lb-split .mode-btn:last-child { padding-right: 16px; }
-  body.at-globe .hd-grid .podium { position: relative; align-self: start; display: flex; align-items: stretch; gap: 14px; height: var(--hd-box, 42px); padding: 0; }
-  body.at-globe .hd-grid .podium-slot { height: var(--hd-box, 42px); width: auto; min-width: 46px; justify-content: space-between; gap: 0; }
-  body.at-globe .hd-grid .podium-medal { height: calc(var(--hd-box, 42px) - 14px); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; font-size: calc(var(--hd-box, 42px) - 12px); line-height: 1; }
-  body.at-globe .hd-grid .podium-name { font-size: 11px; line-height: 13px; height: 13px; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.ex-hdr .hd-grid .lb-split { height: var(--hd-box, 42px); box-sizing: border-box; display: inline-flex; align-items: stretch; }
+  body.ex-hdr .hd-grid .lb-split .mode-btn { min-height: 0; height: auto; align-items: center; padding: 0 10px; font-size: .92rem; }
+  body.ex-hdr .hd-grid .lb-split .mode-btn:first-child { padding-left: 16px; } body.ex-hdr .hd-grid .lb-split .mode-btn:last-child { padding-right: 16px; }
+  body.ex-hdr .hd-grid .podium { position: relative; align-self: start; display: flex; align-items: stretch; gap: 14px; height: var(--hd-box, 42px); padding: 0; }
+  body.ex-hdr .hd-grid .podium-slot { height: var(--hd-box, 42px); width: auto; min-width: 46px; justify-content: space-between; gap: 0; }
+  body.ex-hdr .hd-grid .podium-medal { height: calc(var(--hd-box, 42px) - 14px); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; font-size: calc(var(--hd-box, 42px) - 12px); line-height: 1; }
+  body.ex-hdr .hd-grid .podium-name { font-size: 11px; line-height: 13px; height: 13px; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 /* the map's hint: small, in the bottom-left corner, out of the way */
@@ -649,3 +649,12 @@ body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glN
 /* every demo step keeps the same height, so the window never jumps */
 .nx-card { height: 80px; box-sizing: border-box; overflow: hidden; }
 @media (max-width: 600px) { .nx-card { height: 104px; } }
+
+/* Practice picker, part of the Explore tab: same header and width as the map, one row per section when it fits */
+.pc-onmap { display: flex; align-items: center; gap: 6px; }
+.pc-onmap svg { width: 13px; height: 13px; flex-shrink: 0; }
+.pc-onmap span { margin-left: auto; }
+@media (min-width: 1100px) {
+  body.ex-picker #app { max-width: min(1320px, calc(100vw - 64px)); }
+  body.ex-picker .pc-grid { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); }
+}

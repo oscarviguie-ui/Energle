@@ -692,7 +692,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   };
   const _browse = renderBrowseScreen;
   window.renderBrowseScreen = function () {
-    document.body.classList.remove('gm-on');
+    document.body.classList.remove('gm-on', 'ex-picker'); document.body.classList.add('ex-hdr');
     _browse();
     const t = document.querySelector('.sub-lead'), r = document.querySelector('.sub-rest');
     if (t) t.textContent = 'Explore'; if (r) r.textContent = 'every country’s electricity on the map';
@@ -739,7 +739,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   Object.assign(CAT_EMOJIS, { asiaonly: '🌏', oceania: '🌏', namerica: '🌎', samerica: '🌎', eu: '🇪🇺', g7: '🏛️', opec: '🛢️', brics: '🌐' });
   const _picker = renderPracticePickerScreen;
   window.renderPracticePickerScreen = function () {
-    document.body.classList.remove('gm-on');
+    document.body.classList.remove('gm-on'); document.body.classList.add('ex-hdr', 'ex-picker');
     // the picker draws region, profile and trend; the blocs ride in the region grid, then move to their own section
     const blocs = PRACTICE_CATEGORIES.filter(c => c.group === 'bloc'); blocs.forEach(c => c.group = 'region');
     try { _picker(); } finally { blocs.forEach(c => c.group = 'bloc'); }
@@ -757,6 +757,15 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       const tag = sr.querySelector('.sub-date'); if (tag) tag.remove();
       sr.insertAdjacentHTML('beforeend', '<button type="button" class="pc-back-map" onclick="switchMode(\'practice\')"><span aria-hidden="true">←</span>' + GLOBE_ICON + 'Explore map</button>');
     }
+    // "By region" gets its line like the others; every card opens its group on the Explore map instead of a list
+    const rs = reg && reg.querySelector('.pc-sub'); if (rs) rs.textContent = 'Continents as drawn on the map';
+    document.querySelectorAll('.pc-grid').forEach(g => { if (g.children.length <= 7) g.style.setProperty('--n', g.children.length); });
+    document.querySelectorAll('.pc-list').forEach(b => {
+      const id = (b.getAttribute('onclick') || '').match(/showCountryList\('([^']+)'\)/); if (!id) return;
+      b.removeAttribute('onclick'); b.classList.add('pc-onmap');
+      b.innerHTML = GLOBE_ICON + 'On the map <span aria-hidden="true">→</span>';
+      b.addEventListener('click', () => { ATLAS.region = id[1]; switchMode('practice'); });
+    });
     const at = document.querySelector('.pc-atlas');
     if (at) at.outerHTML = '<button type="button" class="pc-atlas pc-suggest" onclick="globeSuggestCategory()">'
       + '<span class="pc-atlas-txt"><span class="pc-atlas-title">Missing a group?</span>'
@@ -764,10 +773,11 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       + '<span class="pc-atlas-cta">Suggest a category →</span></button>';
   };
   const _archive = renderArchiveScreen;
-  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on'); return _archive(d); };
+  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-hdr', 'ex-picker'); return _archive(d); };
   // the game screen: one information block, the guess bar under it, a Map button in the guess bar
   const _game = renderGameScreen;
   window.renderGameScreen = function () {
+    document.body.classList.remove('ex-hdr', 'ex-picker');
     const old = document.getElementById('gm-card'); if (old) old.remove();
     _game();
     gwLayout();
@@ -1159,7 +1169,7 @@ function hdAlignNav() {
   if (!nav || !word) return;
   [nav, lb, pod].forEach(e => { if (e) { e.style.top = ''; e.style.left = ''; } });
   hdBoxFit();
-  if (!(document.body.classList.contains('at-globe') && matchMedia('(min-width: 1240px)').matches)) return;
+  if (!(document.body.classList.contains('ex-hdr') && matchMedia('(min-width: 1240px)').matches)) return;
   const probe = document.createElement('span'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
   word.appendChild(probe);
   const base = probe.getBoundingClientRect().top; probe.remove();
