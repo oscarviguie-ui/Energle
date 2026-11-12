@@ -232,7 +232,7 @@ function globeCountryHTML(c) {
 }
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
-    + (groupOf(r.region).trait ? '<span class="gl-sub-x">' + groupOf(r.region).rule + ' · </span>' : '') + r.n + ' countries<span class="gl-sub-x"> added together</span> · ' + r.latestYear + '</span></div>'
+    + (groupOf(r.region).trait && groupOf(r.region).trait !== 'source' ? '<span class="gl-sub-x">' + groupOf(r.region).rule + ' · </span>' : '') + r.n + ' countries<span class="gl-sub-x"> added together</span> · ' + r.latestYear + '</span></div>'
     + (r.region === 'all'      // the world: every practice group; a group: a round on just its countries
       ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>'
       : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice<span class="gl-pr-n"> these ' + r.n + '</span> →</button>')
@@ -330,7 +330,7 @@ function globeHTML() {
   return '<div class="gl-layout" id="gl-layout">'
     + '<div class="gl-wrap" id="gl-wrap"><div class="gl-canvas" id="gl-canvas" aria-label="Map of the world. Click a country for its electricity profile; the list view is keyboard-friendly."></div>'
     + '<p class="gl-loading" id="gl-loading">Loading the map…</p><div class="gl-key" id="gl-key" hidden></div>'
-    + '<p class="gl-maphint" id="gl-maphint">Click a country for its full profile and clue cards</p>'
+    + '<p class="gl-maphint" id="gl-maphint"><b>Click a country</b> for its profile · <b>click a source</b> under the charts to colour the map</p>'
     + '<div class="gl-shade" id="gl-shade" hidden></div></div>'
     + '<aside class="gl-side" id="gl-side" aria-live="polite"></aside>'
     + '</div>';
@@ -377,7 +377,9 @@ function globeHighlight() {
   const f = ['==', ['get', 'iso3'], GLOBE_SEL ? GLOBE_SEL.iso3 : ''];
   GLOBE.setFilter('energle-sel-fill', f); GLOBE.setFilter('energle-sel-line', f);
   const reg = !GLOBE_SEL && GLOBE_REGION !== 'all' ? globeAggregate(GLOBE_REGION).members : [];
-  GLOBE.setFilter('energle-reg-fill', ['in', ['get', 'iso3'], ['literal', reg]]); GLOBE.setFilter('energle-reg-line', ['in', ['get', 'iso3'], ['literal', reg]]);
+  GLOBE.setFilter('energle-reg-fill', ['in', ['get', 'iso3'], ['literal', reg]]);
+  // a source's producers are already shown by the map's colour: no outlines around a hundred countries
+  GLOBE.setFilter('energle-reg-line', ['in', ['get', 'iso3'], ['literal', String(GLOBE_REGION).startsWith('src_') ? [] : reg]]);
   globeKey();
 }
 function globeSelect(c, fly = true) {
@@ -1106,7 +1108,15 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   window.focusSource = function (src) {
     _globeFocus(src);
     if (!document.getElementById('gl-wrap') || !document.body.classList.contains('at-globe')) return;
-    if ((lockedSource || null) !== GLOBE_SHADE) globeShade(lockedSource || null);
+    const want = lockedSource || null;
+    if (want === GLOBE_SHADE) return;
+    globeShade(want);
+    try { localStorage.setItem('energle_srcmap_seen', '1'); } catch (e) {}
+    document.body.classList.remove('gl-srcnudge');
+    if (want && !GLOBE_SEL) {                     // the producers of that source become the group: totals and clue cards added up
+      if (!String(GLOBE_REGION).startsWith('src_')) GLOBE_SRC_PREV = GLOBE_REGION;
+      globeRegion(globeSourceGroup(want));
+    } else if (!want && String(GLOBE_REGION).startsWith('src_')) globeRegion(GLOBE_SRC_PREV || 'all');
   };
 });
 
@@ -1130,3 +1140,26 @@ function hdAlignNav() {
   nav.style.left = Math.round(Math.max(lo, Math.min(hi, (g.left + g.right) / 2 - (n.left + n.right) / 2))) + 'px';
 }
 if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(hdAlignNav)).observe(app, { childList: true }); }); window.addEventListener('resize', hdAlignNav); }
+
+// ---- a source as a group: every country where it made at least 0.5% of generation in its latest year
+let GLOBE_SRC_PREV = 'all';
+function globeSourceGroup(src) {
+  const id = 'src_' + src.replace(/\W+/g, '_');
+  if (!GLOBE_REGIONS[id]) {
+    const share = new Map(globeShares(src)), name = src + ' producers';
+    const test = c => (share.get(c.iso3) || 0) >= 0.005;
+    GLOBE_GROUPS.push({ id, chip: name, name, trait: 'source', rule: src + ' is 0.5% or more of generation', test });
+    REGION_NAMES[id] = name; GLOBE_REGIONS[id] = true;
+    GLOBE_DEFS[id] = 'Every country where ' + src.toLowerCase() + ' made 0.5% or more of its electricity in its latest year of data. The map’s colour shows how much.';
+    if (typeof PRACTICE_CATEGORIES !== 'undefined' && !PRACTICE_CATEGORIES.some(c => c.id === id))
+      PRACTICE_CATEGORIES.push({ id, group: 'source', label: name, rule: src + ' is 0.5% or more of generation', filter: test });
+  }
+  return id;
+}
+// podium names arrive after the header is drawn (and replace it): line them up again
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (typeof loadPodium === 'function') { const _lp = loadPodium; window.loadPodium = async function () { const r = await _lp.apply(this, arguments); requestAnimationFrame(() => { hdBoxFit(); hdAlignNav(); }); return r; }; }
+  window.addEventListener('load', () => requestAnimationFrame(hdAlignNav));
+  // first visits: the legend's sources shimmer once, so people find out they colour the map
+  try { if (!localStorage.getItem('energle_srcmap_seen')) document.body.classList.add('gl-srcnudge'); } catch (e) {}
+});

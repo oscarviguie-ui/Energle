@@ -625,3 +625,17 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.at-globe .hd-grid .podium-medal { height: calc(var(--hd-box, 42px) - 14px); overflow: hidden; display: flex; align-items: flex-end; justify-content: center; font-size: calc(var(--hd-box, 42px) - 12px); line-height: 1; }
   body.at-globe .hd-grid .podium-name { font-size: 11px; line-height: 13px; height: 13px; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* the map's hint: small, in the bottom-left corner, out of the way */
+.gl-maphint { left: 12px !important; right: auto; bottom: 12px !important; transform: none !important; max-width: calc(100% - 64px); white-space: normal;
+  padding: 5px 10px; border-radius: 8px; background: rgba(255,255,255,.92); color: #555; font-size: .74rem; font-weight: 400; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.gl-maphint b { color: #1a1a1a; font-weight: 600; }
+@media (max-width: 700px) { body.at-globe .gl-maphint { bottom: calc(var(--gph-sheet, 90px) + 8px) !important; left: 8px !important; font-size: .7rem; } }
+/* the legend's sources say they colour the map: a small globe on hover, and one shimmer on a first visit */
+body.at-globe #legend-shared .legend-item { position: relative; }
+body.at-globe #legend-shared .legend-item::after { content: ""; width: 11px; height: 11px; margin-left: 4px; opacity: 0; transition: opacity .15s;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18'/%3E%3C/svg%3E"); }
+body.at-globe #legend-shared .legend-item:hover::after, body.at-globe #legend-shared .legend-item.is-on::after { opacity: 1; }
+body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glNudge 2.4s ease-in-out 1.2s 2; }
+@keyframes glNudge { 0%, 100% { box-shadow: none; } 40% { box-shadow: 0 0 0 3px rgba(245,166,35,.45); } }
+@media (prefers-reduced-motion: reduce) { body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: none; } }
