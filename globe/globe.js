@@ -403,8 +403,30 @@ function globeProj(type) {
   GLOBE_PROJ = type; GLOBE.setProjection({ type });
   GLOBE.setMinZoom(type === 'mercator' ? -1 : null);
 }
+// The part of the map nothing covers: the tools floating on top, the phone's sheet below. MapLibre centres
+// every view (start, groups, countries) in that part, so the globe never sits half under the sheet.
+function globePad(map) {
+  map = map || GLOBE; if (!map) return { top: 0, bottom: 0, left: 0, right: 0 };
+  const cv = map.getContainer(), r = cv.getBoundingClientRect();
+  let top = 0, bottom = 0;
+  const tools = document.querySelector('body.at-globe .at-tools');
+  if (tools) { const t = tools.getBoundingClientRect(); if (t.height && t.top >= r.top - 4 && t.bottom > r.top && t.bottom < r.bottom) top = Math.round(t.bottom - r.top) + 4; }
+  if (typeof gphOn === 'function' && gphOn()) {
+    const side = document.getElementById('gl-side');
+    if (side) { const s = side.getBoundingClientRect(); bottom = Math.max(0, Math.round(r.bottom - s.top)); try { bottom = Math.min(bottom, gphHeights().half); } catch (e) {} }
+  }
+  const p = { top, bottom, left: 0, right: 0 };
+  try { map.setPadding(p); } catch (e) {}
+  return p;
+}
+// the zoom at which the whole globe, `share` of the free room across, fits (MapLibre: radius = worldSize / 2π / cos(lat))
+function globeFitZoom(map, share, lat, pad) {
+  const cv = map.getContainer(), p = pad || { top: 0, bottom: 0 };
+  const room = Math.min(cv.clientWidth, cv.clientHeight - p.top - p.bottom) * (share || 0.9);
+  return Math.log2(Math.max(60, room) * Math.cos((lat || 0) * Math.PI / 180) / (1024 / (2 * Math.PI)));
+}
 function globeViewZoom(km) {
-  const cv = GLOBE.getContainer(), room = Math.min(cv.clientWidth, cv.clientHeight);
+  const cv = GLOBE.getContainer(), p = globePad(), room = Math.min(cv.clientWidth, cv.clientHeight - p.top - p.bottom);
   // the group's diameter takes ~85% of the map's shorter side
   return Math.max(1, Math.min(5, Math.log2(0.85 * room * 40075 / (512 * 2 * km))));
 }
@@ -421,7 +443,7 @@ function globeRegion(r) {
     const cv = GLOBE.getContainer();
     GLOBE.jumpTo({ center: [12, 22], zoom: Math.max(-1, Math.log2(cv.clientWidth / 512) - 0.05) }); return;
   }
-  if (!v) { GLOBE.easeTo({ center: [10, 25], zoom: 1.5, duration: 1100 }); return; }
+  if (!v) { GLOBE.easeTo({ center: [10, 25], zoom: globeFitZoom(GLOBE, 0.9, 25, globePad()), duration: 1100 }); return; }
   GLOBE.easeTo({ center: [v[0], v[1]], zoom: globeViewZoom(v[2]), duration: 1100 });
 }
 // The chips (continents, then blocs) and the list view's filter for them
@@ -530,6 +552,8 @@ async function globeMount() {
   } catch (e) { const l = document.getElementById('gl-loading'); if (l) l.textContent = 'The map could not load here. The list view still works.'; return; }
   if (!map) return;
   GLOBE = map; GLOBE_PROJ = 'globe';
+  { const p = globePad(map); if (GLOBE_REGION === 'all' && !ATLAS.last) map.jumpTo({ zoom: globeFitZoom(map, 0.9, 25, p) }); }
+  if (!window._glPadRz) { window._glPadRz = true; window.addEventListener('resize', () => { if (GLOBE) globePad(); }); }
   map.once('idle', () => map.fire('drag'));   // fold the map credits behind their (i): they'd sit under the map's own key
   map.on('click', 'energle-hit', e => { const iso = e.features[0] && e.features[0].properties.iso3; if (iso) globeFlyTo(iso); });
   map.on('click', e => { if (!map.queryRenderedFeatures(e.point, { layers: ['energle-hit'] }).length && GLOBE_SEL) globeSelect(null, false); });
@@ -584,15 +608,23 @@ function gmapPlace() {
   const head = document.getElementById('guess-head') || document.getElementById('input-area');
   if (head && card.nextSibling !== head) head.before(card);
 }
-function gmapFitZoom(cv) {
-  // the world's width fits the strip (Antarctica and the far Arctic may crop at the top and bottom)
-  return Math.log2((cv.clientWidth || 800) / 512) - 0.02;
+// the whole globe fits the strip's height; it turns to show each guess, and the answer at the end
+function gmapFitZoom(m, lat) { return globeFitZoom(m, 0.94, lat); }
+function gmapTurn(iso3, dur) {
+  const m = GMAP, c = iso3 && COUNTRIES.find(x => x.iso3 === iso3); if (!m || !c) return;
+  m.easeTo({ center: [c.lng, Math.max(-50, Math.min(55, c.lat))], zoom: Math.max(m.getZoom(), gmapFitZoom(m, Math.max(-50, Math.min(55, c.lat)))), duration: dur == null ? 900 : dur });
+}
+function gmapStart() {
+  // where the map opens: on the answer once the game is over, else on the last guess, else Europe and Africa
+  const last = guesses.length ? guesses[guesses.length - 1].iso3 : null;
+  return gameOver && target ? target.iso3 : last;
 }
 function gmapShow(on, scroll) {
   GMAP_ON = on; try { localStorage.setItem('energle_gmap', on ? 'on' : 'off'); } catch (e) {}
   document.body.classList.toggle('gm-on', on);
   const b = document.getElementById('gm-btn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Hide the map' : 'Show the map'; }
   let card = document.getElementById('gm-card');
+  gmapReopenSync();
   if (!on) { if (card) card.hidden = true; gmapRedrawFlow(); return; }
   if (!card) {
     card = document.createElement('section'); card.id = 'gm-card'; card.className = 'gm-card'; card.setAttribute('aria-label', 'Map');
@@ -603,7 +635,7 @@ function gmapShow(on, scroll) {
     // a wide, short strip: the whole world laid flat fills it, every country one tap away
     const cv = document.getElementById('gm-canvas');
     GMAP = null;
-    globeMakeMap(cv, { flat: true, minZoom: -1, zoom: gmapFitZoom(cv), center: [10, 16] }, (m, labelFont) => {
+    globeMakeMap(cv, { center: [10, 25], zoom: 0.5 }, (m, labelFont) => {
       m.addLayer({ id: 'gm-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': 'rgba(0,0,0,0)', 'fill-opacity': 0.55 } });
       m.addLayer({ id: 'gm-pick-fill', type: 'fill', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'fill-color': GLOBE_ACCENT, 'fill-opacity': 0.25 } });
       m.addLayer({ id: 'gm-pick', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': GLOBE_ACCENT, 'line-width': 2.5 } });
@@ -611,7 +643,9 @@ function gmapShow(on, scroll) {
       m.addLayer({ id: 'gm-answer-line', type: 'line', source: 'energle', filter: ['==', ['get', 'iso3'], ''], paint: { 'line-color': '#15803d', 'line-width': 2 } });
       globeAddNames(m, labelFont);
       const l = document.getElementById('gm-loading'); if (l) l.remove();
-      GMAP = m; gmapUpdate();
+      GMAP = m; m.jumpTo({ zoom: gmapFitZoom(m, 25) }); m.setMinZoom(Math.max(-2, gmapFitZoom(m, 0) - 0.6));
+      const st = gmapStart(); if (st) gmapTurn(st, 0);
+      gmapUpdate();
       // credits folded behind their (i) so they don't cover the short strip
       m.once('idle', () => m.fire('drag'));   // MapLibre folds compact credits on the first drag
     }).then(map => {
@@ -621,10 +655,22 @@ function gmapShow(on, scroll) {
     }).catch(() => { const l = document.getElementById('gm-loading'); if (l) l.textContent = 'The map could not load here.'; });
   }
   card.hidden = false; gmapPlace();
-  if (GMAP) { GMAP.resize(); gmapUpdate(); }
+  if (GMAP) { GMAP.resize(); gmapUpdate(); const st = gmapStart(); if (st) gmapTurn(st, 0); }
   // opened from the button: bring the map and the guess bar into view together
   if (scroll) requestAnimationFrame(() => { const ia = document.getElementById('input-area'); if (ia) ia.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
   gmapRedrawFlow();
+}
+function gmapReopenSync() {
+  let b = document.getElementById('gm-reopen');
+  const need = !GMAP_ON && typeof gameOver !== 'undefined' && gameOver && document.getElementById('gw-cols');
+  if (!need) { if (b) b.remove(); return; }
+  if (!b) {
+    b = document.createElement('button'); b.type = 'button'; b.id = 'gm-reopen'; b.className = 'gm-reopen';
+    b.innerHTML = GMAP_ICON + '<span>Show the map</span>';
+    b.addEventListener('click', () => gmapShow(true, false));
+  }
+  const head = document.getElementById('guess-head') || document.getElementById('guesses');
+  if (head && b.nextSibling !== head) head.before(b);
 }
 // the trade flow is drawn to the width it had: redraw it when the map opens or closes and the column changes width
 function gmapRedrawFlow() { if (document.getElementById('flow-chart') && target) requestAnimationFrame(() => renderFlowBar(false)); }
@@ -786,9 +832,9 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     GMAP_PICK = null; gmapShow(GMAP_ON);
   };
   const _row = addGuessRow;
-  window.addGuessRow = function (country, isCorrect, animate) { _row(country, isCorrect, animate); if (!isCorrect) bandRow(country); GMAP_PICK = null; gmapUpdate(); };
+  window.addGuessRow = function (country, isCorrect, animate) { _row(country, isCorrect, animate); if (!isCorrect) bandRow(country); GMAP_PICK = null; gmapUpdate(); if (animate !== false && country) gmapTurn(country.iso3); };
   const _end = endGame;
-  window.endGame = function () { _end(); gmapUpdate(); };
+  window.endGame = function () { _end(); gmapUpdate(); if (target) gmapTurn(target.iso3, 1200); gmapReopenSync(); };
   const _new = newGame;
   window.newGame = function () { _new(); GMAP_PICK = null; gmapUpdate(); };
 });
@@ -965,11 +1011,11 @@ function gphSheet(state, h) {
   side.style.height = px + 'px'; side.dataset.sheet = GPH_STATE;
   if (GPH_STATE === 'peek' && h == null) side.scrollTop = 0;
   document.body.style.setProperty('--gph-sheet', px + 'px');
-  if (GLOBE && h == null) try { GLOBE.setPadding({ top: 0, bottom: Math.min(px, hs.half), left: 0, right: 0 }); } catch (e) {}
+  if (GLOBE && h == null) requestAnimationFrame(() => globePad());
 }
 function gphAfterSide() {
   const side = document.getElementById('gl-side'); if (!side) return;
-  if (!gphOn()) { side.style.height = ''; delete side.dataset.sheet; if (GLOBE) try { GLOBE.setPadding({ top: 0, bottom: 0, left: 0, right: 0 }); } catch (e) {} return; }
+  if (!gphOn()) { side.style.height = ''; delete side.dataset.sheet; if (GLOBE) globePad(); return; }
   if (!side.querySelector('.gl-grab')) side.insertAdjacentHTML('afterbegin', '<div class="gl-grab" aria-hidden="true"></div>');
   if (!side.dataset.gphBound) { side.dataset.gphBound = '1'; gphDrag(side); }
   gphSheet(GLOBE_SEL ? (GPH_STATE === 'full' ? 'full' : 'half') : 'peek');

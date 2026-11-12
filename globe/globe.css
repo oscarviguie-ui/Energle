@@ -64,7 +64,7 @@ body.at-globe #at-list, body.at-globe .at-head, body.at-globe .at-sort, body.at-
   .gm-btn { height: 40px; padding: 0 9px; }
   #input-area > .gm-btn { height: 40px; }
   .gm-lbl { display: none; }
-  .gm-wrap { height: clamp(200px, 58vw, 300px); }   /* the flat world fits the phone's width with little empty ocean */
+  .gm-wrap { height: clamp(260px, 84vw, 360px); }   /* the globe nearly fills the phone's width, big enough to tap a country */
 }
 
 /* ---------- layout (globe.js gwLayout): one information block, the guess bar always below it ---------- */
@@ -658,3 +658,9 @@ body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glN
   body.ex-picker #app { max-width: min(1320px, calc(100vw - 64px)); }
   body.ex-picker .pc-grid { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); }
 }
+
+/* the daily map, once the game is over: the Map button (in the guess bar) is gone, so this brings the map back */
+.gm-reopen { align-self: flex-start; display: inline-flex; align-items: center; gap: 7px; height: 40px; margin: 4px 0 2px; padding: 0 14px; border: 1.5px solid #1a1a1a; border-radius: 6px;
+  background: #fff; color: #1a1a1a; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.gm-reopen:hover { background: #f4f3ef; }
+.gm-reopen:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
