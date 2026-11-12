@@ -236,10 +236,11 @@ function globeRegionHTML(r) {
     + (r.region === 'all'      // the world: every practice group; a group: a round on just its countries
       ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>'
       : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice<span class="gl-pr-n"> these ' + r.n + '</span> →</button>')
+    + '<div class="gl-tabs" id="gl-tabs" role="tablist" aria-label="Profile and clue cards"></div>'
     + (r.region !== 'all' ? '<button type="button" class="gl-x" id="gl-x" aria-label="Back to the world">×</button>' : '') + '</div>'
     // the group's definition sits in the panel, under its title (the map shows no key)
     + (GLOBE_DEFS[r.region] ? '<p class="gl-def">' + (groupOf(r.region).trait ? '<span class="gl-key-tag">Energle’s definition</span> ' : '') + GLOBE_DEFS[r.region] + '</p>' : '')
-    + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div>';
+    + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div><section id="clue-cards" class="gl-cards gl-pane"></section>';
 }
 let GLOBE_REGION = 'all';
 function globeSide() {
@@ -257,6 +258,7 @@ function globeSide() {
     const pill = document.getElementById('stat-world-gen'), w = globeAggregate('all');
     if (pill) { const fresh = pill.cloneNode(false); fresh.removeAttribute('id');      // a fresh node: the count-up keeps writing to the old one
       fresh.textContent = reg.region === 'all' ? reg.n + ' countries' : Math.round(100 * reg.latestTotal / w.latestTotal) + '% of world generation'; pill.replaceWith(fresh); }
+    globeRegionCards(reg); globeTabs();
   } else if (typeof renderAtlasCards === 'function') { renderAtlasCards(); globeTabs(); }
   el.scrollTop = 0;
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
@@ -292,12 +294,12 @@ function globeLayoutFit() {
 window.addEventListener('resize', () => { requestAnimationFrame(() => { globeHeadSlot(); globeLayoutFit(); }); });
 // A country's panel: Profile, then one tab per clue card, so everything fits without scrolling.
 // The tab you're on stays when you click the next country, to compare one card across countries.
-let GLOBE_TAB = 0;
+let GLOBE_TAB = 0, GLOBE_TAB_NAME = 'Profile';
 const GLOBE_TAB_NAMES = { 'Renewables Potential': 'Sun & wind', 'People & Power': 'People & power', 'Underground Riches': 'Underground', 'Electricity Trade': 'Power trade', 'Fuel Trade': 'Fuel trade' };
 function globeTabs() {
   const bar = document.getElementById('gl-tabs'), cards = [...document.querySelectorAll('#clue-cards .ic-card')]; if (!bar) return;
   const names = cards.map(c => { const t = ((c.querySelector('.ic-title') || {}).textContent || 'Clue card').split('·')[0].trim(); return GLOBE_TAB_NAMES[t] || t; });
-  if (GLOBE_TAB > cards.length) GLOBE_TAB = 0;
+  GLOBE_TAB = GLOBE_TAB_NAME === 'Profile' ? 0 : names.indexOf(GLOBE_TAB_NAME) + 1;     // a card the panel lacks: back to Profile
   bar.innerHTML = '<button type="button" class="gl-tab" role="tab" data-t="0">Profile</button>'
     + (cards.length ? '<span class="gl-tabs-sep" aria-hidden="true"></span>' : '') + names.map((n, i) => '<button type="button" class="gl-tab gl-tab--card" role="tab" data-t="' + (i + 1) + '">' + n + '</button>').join('');
   bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); });
@@ -305,6 +307,7 @@ function globeTabs() {
 }
 function globeTab(t, first) {
   const was = GLOBE_TAB; GLOBE_TAB = t;
+  const tb = document.querySelector('#gl-tabs .gl-tab[data-t="' + t + '"]'); if (!first && tb) GLOBE_TAB_NAME = tb.textContent;
   document.querySelectorAll('#gl-tabs .gl-tab').forEach(b => b.setAttribute('aria-selected', String(+b.dataset.t === t)));
   const prof = document.getElementById('gl-pane-profile'), cc = document.getElementById('clue-cards');
   if (prof) prof.hidden = t !== 0;
@@ -485,7 +488,7 @@ function globeMoreOpen(open, more) {
 let GLOBE_FIT_RAF = 0;
 window.addEventListener('resize', () => { cancelAnimationFrame(GLOBE_FIT_RAF); GLOBE_FIT_RAF = requestAnimationFrame(globeFitChips); });
 document.addEventListener('click', e => { if (!e.target.closest('.gl-more')) globeMoreOpen(false); });
-document.addEventListener('scroll', () => globeMoreOpen(false), true);
+document.addEventListener('scroll', e => { if (e.target && e.target.closest && e.target.closest('.gl-more-menu')) return; globeMoreOpen(false); }, true);
 window.addEventListener('resize', () => globeMoreOpen(false));
 function globeApplyGroup() {
   const g = groupOf(ATLAS.region), byIso = Object.fromEntries(COUNTRIES.map(c => [c.iso3, c]));
@@ -741,8 +744,18 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       const grid = reg.nextElementSibling.querySelector('.pc-grid');
       blocs.forEach(c => { const b = reg.querySelector('.pc-main[onclick="startPractice(\'' + c.id + '\')"]'); if (b) grid.appendChild(b.closest('.pc-card')); });
     }
-    const t = document.querySelector('.pc-atlas-title'), s = document.querySelector('.pc-atlas-sub'), c = document.querySelector('.pc-atlas-cta');
-    if (t) t.textContent = 'Explore the map'; if (s) s.textContent = 'Every country on a terrain globe, with its profile a click away'; if (c) c.textContent = 'Back to the map →';
+    // the way back to the map sits at the top, plain and obvious; the bottom asks for new categories
+    const sr = document.querySelector('.subtitle-row');
+    if (sr) {
+      const rest = sr.querySelector('.sub-rest'); if (rest) rest.textContent = 'pick a group of countries to train on · no score, no streak';
+      const tag = sr.querySelector('.sub-date'); if (tag) tag.remove();
+      sr.insertAdjacentHTML('beforeend', '<button type="button" class="pc-back-map" onclick="switchMode(\'practice\')"><span aria-hidden="true">←</span>' + GLOBE_ICON + 'Explore map</button>');
+    }
+    const at = document.querySelector('.pc-atlas');
+    if (at) at.outerHTML = '<button type="button" class="pc-atlas pc-suggest" onclick="globeSuggestCategory()">'
+      + '<span class="pc-atlas-txt"><span class="pc-atlas-title">Missing a group?</span>'
+      + '<span class="pc-atlas-sub">Suggest a category to practice and explore: a region, a bloc or a trait</span></span>'
+      + '<span class="pc-atlas-cta">Suggest a category →</span></button>';
   };
   const _archive = renderArchiveScreen;
   window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on'); return _archive(d); };
@@ -937,3 +950,96 @@ function gphDrag(side) {
   side.addEventListener('pointerup', end); side.addEventListener('pointercancel', end);
 }
 window.addEventListener('resize', () => { if (document.getElementById('gl-side')) gphAfterSide(); });
+
+// ============================================================
+//  GROUP CLUE CARDS: the cards that add up are added up over a group's members, from cards.json:
+//  Underground Riches (reserves summed, share of the world, rents weighted by GDP) and People & Power
+//  (population- or GDP-weighted averages). Sun & wind and the two trade cards don't add up simply.
+// ============================================================
+const AGG_CARDS = {};
+function globeAggCards(rid) {
+  if (AGG_CARDS[rid]) return AGG_CARDS[rid];
+  const CD = CARDS_DATA && CARDS_DATA.countries; if (!CD) return null;
+  const all = Object.keys(CD).filter(k => !k.startsWith('R_'));
+  const mem = globeAggregate(rid).members.map(iso => ({ iso, e: CD[iso], c: COUNTRIES.find(x => x.iso3 === iso) })).filter(m => m.e && m.c);
+  const pop = c => { const d = (ALL_DATA[c.name].years || {})[c.latestYear] || {}; return c.latestDpc > 0 && d.Demand > 0 ? d.Demand / c.latestDpc : 0; };
+  mem.forEach(m => { m.pop = pop(m.c); m.gdpTot = (m.e.gdp || 0) * m.pop; });
+  // a weighted average over the members that have the value
+  const wavg = (get, w) => { let a = 0, b = 0; mem.forEach(m => { const v = get(m), k = w(m); if (typeof v === 'number' && isFinite(v) && k > 0) { a += v * k; b += k; } }); return b ? a / b : null; };
+  const has = k => mem.filter(m => (m.e.cards || []).includes(k));
+  const out = { cards: [], _n: mem.length, _of: globeAggregate(rid).n };
+  // ---- Underground Riches
+  const U = has('under');
+  if (U.length) {
+    out.cards.push('under');
+    out.fossil = {}; out._share = {}; out._held = {};
+    ['oil', 'gas', 'coal'].forEach(k => {
+      const v = U.reduce((a, m) => a + (((m.e.fossil || {})[k] || [])[0] || 0), 0);
+      const w = all.reduce((a, iso) => a + (((CD[iso].fossil || {})[k] || [])[0] || 0), 0);
+      out.fossil[k] = [v, null, null]; out._share[k] = w ? v / w : 0;
+      out._held[k] = U.filter(m => (((m.e.fossil || {})[k] || [])[0] || 0) > 0).length;
+    });
+    out.minerals = {};
+    const syms = new Set(); U.forEach(m => Object.keys(m.e.minerals || {}).forEach(s => syms.add(s)));
+    syms.forEach(sym => {
+      const rows = U.map(m => (m.e.minerals || {})[sym]).filter(Boolean);
+      const units = {}; rows.forEach(r => { units[r[1]] = (units[r[1]] || 0) + 1; });
+      const u = Object.keys(units).sort((a, b) => units[b] - units[a])[0];
+      const best = i => { const v = rows.map(r => r[i]).filter(x => x); return v.length ? Math.min(...v) : null; };
+      out.minerals[sym] = [rows.filter(r => r[1] === u).reduce((a, r) => a + (r[0] || 0), 0), u, best(2), best(3)];
+    });
+    out.rents = {};
+    ['oil', 'gas', 'coal', 'min'].forEach(k => { out.rents[k] = wavg(m => (m.e.rents || {})[k], m => m.gdpTot) || 0; });
+    out.coalYears = null;
+  }
+  // ---- People & Power
+  const P = has('people');
+  if (P.length) {
+    out.cards.push('people');
+    const urb = m => m.pop * (m.e.urban || 0) / 100, rur = m => m.pop * (100 - (m.e.urban || 0)) / 100;
+    const r0 = v => v == null ? 0 : Math.round(v);
+    out.access = [r0(wavg(m => (m.e.access || [])[0], urb)), r0(wavg(m => (m.e.access || [])[1], rur))];
+    out.cook = r0(wavg(m => m.e.cook, m => m.pop));
+    out.cuts = null;
+    out.hdd = r0(wavg(m => m.e.hdd, m => m.pop)); out.cdd = r0(wavg(m => m.e.cdd, m => m.pop));
+    out.cold = r0(wavg(m => m.e.cold, m => m.pop)); out.hot = r0(wavg(m => m.e.hot, m => m.pop));
+    out.coldM = 'Coldest month'; out.hotM = 'Hottest month';
+    out.urban = r0(wavg(m => m.e.urban, m => m.pop));
+    const gp = mem.reduce((a, m) => a + (m.e.gdp > 0 ? m.pop : 0), 0);
+    out.gdp = gp ? Math.round(mem.reduce((a, m) => a + (m.e.gdp > 0 ? m.gdpTot : 0), 0) / gp) : 0;
+    out.industry = r0(wavg(m => m.e.industry, m => m.gdpTot));
+  }
+  return (AGG_CARDS[rid] = out);
+}
+function globeRegionCards(r) {
+  const host = document.getElementById('clue-cards'); if (!host) return;
+  host.innerHTML = '';
+  if (typeof cardScope !== 'function' || !CARDS_DATA) return;
+  const e = globeAggCards(r.region); if (!e || !e.cards.length) return;
+  CARDS_DATA.countries[target.iso3] = e;                 // the group's own entry, so the cards' own renderers can read it
+  let scope;
+  try { scope = cardScope(); } catch (err) { console.error('group cards', err); return; }
+  CARD_SCOPE_ISO = null;                                  // never reused by the daily
+  const pct = v => v >= 0.1 ? Math.round(v * 100) + '%' : v > 0 ? (v * 100 < 1 ? '<1%' : (v * 100).toFixed(1) + '%') : '—';
+  if (scope.fossil) scope.fossil = scope.fossil.map((f, i) => { const k = ['oil', 'gas', 'coal'][i];
+    return Object.assign({}, f, { r: pct(e._share[k]), rCls: 'ug-chip' + (e._share[k] ? ' is-share' : ' is-none'),
+      p: e._held[k] ? e._held[k] + ' of ' + e._n : '—', pCls: 'ug-chip' + (e._held[k] ? ' is-held' : ' is-none') }); });
+  const html = e.cards.map(k => {
+    const c = SHOP_CARDS.find(x => x.k === k);
+    const o = { cls: 'ic-card v3-card' + (c && c.full ? ' is-full' : ' is-half'), tagCls: 'ic-cost ic-cost--none', tag: '', tagTitle: '', cells: [] };
+    try { return tplRender(k, Object.assign(Object.create(scope), { o })); } catch (err) { console.error('group card ' + k, err); return ''; }
+  }).join('');
+  host.innerHTML = '<div class="ic-sechead"><span class="section-title">Clue cards</span><span class="ic-secsub">Added up over ' + e._n + ' of ' + e._of + ' countries</span></div><div class="ic-slot">' + html + '</div>';
+  // say what the numbers are for a group: shares of the world and how many members hold some, not world ranks
+  const hs = host.querySelectorAll('.fs-h'); if (hs[2]) hs[2].textContent = 'Share of world'; if (hs[3]) hs[3].textContent = 'Held by';
+  const mn = host.querySelector('.mn-tiles'), note = mn && mn.parentElement.querySelector('.v3-note'); if (note) note.textContent = 'lit = a member in the world top 10 · summed reserves';
+  host.querySelectorAll('.ic-card').forEach(card => card.insertAdjacentHTML('beforeend', '<p class="gl-agg-note">Added up over the ' + e._n + ' members with data: totals are summed; shares and averages are weighted by population or GDP.</p>'));
+}
+
+// the practice picker's last card: the feedback box, opened on a category idea
+function globeSuggestCategory() {
+  showFeedback();
+  const t = document.getElementById('fb-text'), h = document.getElementById('fb-title');
+  if (h) h.textContent = 'Suggest a category';
+  if (t) { t.placeholder = 'Which group of countries would you like to practice or explore? (e.g. Nordic countries, island nations, nuclear users)'; t.value = 'Category idea: '; t.focus(); }
+}

@@ -466,3 +466,37 @@ body.gl-page:not(.at-globe) .gl-tools-practice:hover { background: #1a1a1a; colo
 body.gl-page:not(.at-globe) .at-tools .at-sort > span { display: none; }
 body.gl-page:not(.at-globe) .at-tools .at-sort select { width: auto; }
 body.gl-page:not(.at-globe) .at-tools .at-sort select { min-width: 0 !important; width: 118px !important; }
+/* group clue cards */
+.ug-chip.is-share, .ug-chip.is-held { background: #fdf0d5; color: #8a5208; }
+.gl-agg-note { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #e6e3dc; font-size: .72rem; line-height: 1.4; color: #8a8984; }
+/* group clue cards */
+.ug-chip.is-share, .ug-chip.is-held { background: #fdf0d5; color: #8a5208; }
+.gl-agg-note { margin: 10px 0 0; padding-top: 8px; border-top: 1px dashed #e6e3dc; font-size: .72rem; line-height: 1.4; color: #8a8984; }
+
+/* the group menu scrolls on its own, without moving the page or the map */
+.gl-more-menu { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+
+/* practice picker: back to the map, at the top */
+.pc-back-map { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; height: 32px; padding: 0 14px; border: 0; border-radius: 999px;
+  background: #1a1a1a; color: #fff; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.pc-back-map:hover { background: #333; }
+.pc-back-map .hd-ico, .pc-back-map svg { width: 15px; height: 15px; }
+
+/* ---------- phones (test page): a compact header — logo, the leader, Stats & Leaderboard as icons; the modes underneath ---------- */
+@media (max-width: 600px) {
+  body.gl-page .hd-grid, body.gl-page .hd-grid.hd-stack { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "title podium lb" "modes modes modes"; column-gap: 10px; row-gap: 8px; align-items: center; }
+  body.gl-page .hd-by { display: none; }
+  body.gl-page .hd-brand .logo-word, body.gl-page .hd-brand h1 { font-size: 1.7rem; }
+  body.gl-page .hd-grid .podium { justify-self: end; padding: 2px 4px; }
+  body.gl-page .podium-slot:not(:first-child) { display: none; }
+  body.gl-page .podium-slot:first-child { flex-direction: row; width: auto; gap: 4px; }
+  body.gl-page .podium-slot:first-child .podium-name { font-size: .78rem; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body.gl-page .hd-grid .lb-split { justify-self: end; }
+  body.gl-page .lb-split .mode-btn { font-size: 0; padding: 0 9px; min-height: 30px; }
+  body.gl-page .lb-split .mode-btn svg, body.gl-page .lb-split .mode-btn .hd-ico { width: 17px; height: 17px; margin: 0; }
+  body.gl-page .lb-split .lb-amp { display: none; }
+  body.gl-page .hd-grid #mode-nav { width: 100%; display: flex; }
+  body.gl-page .hd-grid #mode-nav .mode-btn { flex: 1; justify-content: center; }
+  .pc-back-map { height: 30px; padding: 0 12px; font-size: .78rem; }
+}
+@media (max-width: 700px) { body.at-globe .gl-p-head .gl-tabs > :first-child { margin-left: 0; } }
