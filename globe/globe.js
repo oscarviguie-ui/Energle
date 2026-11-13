@@ -971,8 +971,18 @@ function nxDemoStart(root, opts) {
     if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3) (opts.onSwipe || go)(dx < 0 ? 1 : -1);
   }, { passive: true });
   if (auto) { root.addEventListener('mouseenter', () => clearInterval(timer)); root.addEventListener('mouseleave', play); }
+  // the card under the map is as tall as its tallest step, so nothing is cut off (OPEC's reserves run to two lines)
+  // and the window doesn't jump from one step to the next
+  const fit = () => {
+    if (!card.offsetParent) return;
+    const keep = i, quiet = opts.onShow; opts.onShow = null; card.style.minHeight = '';
+    let h = 0; steps.forEach((s, k) => { show(k); h = Math.max(h, card.offsetHeight); });
+    opts.onShow = quiet; show(keep); card.style.minHeight = h + 'px';
+  };
   nxMapSVG().then(svg => { box.innerHTML = svg; paths = [...box.querySelectorAll('path[data-i]')]; show(i); });
-  show(0); play();
+  show(0); requestAnimationFrame(fit); play();
+  let rz = null; const onRz = () => { if (!document.body.contains(root)) return window.removeEventListener('resize', onRz); clearTimeout(rz); rz = setTimeout(fit, 150); };
+  window.addEventListener('resize', onRz);
   return { steps, show: k => { show(k); play(); }, go, at: () => i };
 }
 function showNoticeWide() {

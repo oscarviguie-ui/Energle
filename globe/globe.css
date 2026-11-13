@@ -646,8 +646,7 @@ body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glN
 .nx-pill { flex-shrink: 0; padding: 4px 12px; border: 1.5px solid #1a1a1a; border-radius: 999px; font-size: .78rem; font-weight: 700; color: #1a1a1a; }
 .nx-map path { transition: fill .45s ease, stroke .45s ease; }
 /* every demo step keeps the same height, so the window never jumps */
-.nx-card { height: 80px; box-sizing: border-box; overflow: hidden; }
-@media (max-width: 600px) { .nx-card { height: 104px; } }
+.nx-card { box-sizing: border-box; }   /* its height is set by the demo to fit its tallest step (nxDemoStart) */
 
 /* Practice picker, part of the Explore tab: same header and width as the map, one row per section when it fits */
 .pc-onmap { display: flex; align-items: center; gap: 6px; }
@@ -810,3 +809,5 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
   .nx-arr { width: 28px; height: 28px; }
 }
 @media (max-height: 620px) and (max-width: 600px) { .tr-box .nx-mapbox { aspect-ratio: 640 / 230; } .tr-say { min-height: 0; } }
+/* in the tour the card is the demo's last line (no caption bar under it): a little more room at the bottom */
+.tr-box .nx-card { padding-bottom: 12px; display: flex; flex-direction: column; justify-content: flex-start; }
