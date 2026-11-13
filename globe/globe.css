@@ -284,12 +284,11 @@ body.at-globe .at-tools { margin-top: 14px; }
 .gl-maphint[hidden] { display: none; }
 @media (max-width: 600px) { .gl-maphint { bottom: 40px; font-size: .7rem; } .gl-p-head { flex-wrap: wrap; } .gl-p-head .gl-tabs { order: 3; flex-basis: 100%; margin-left: 0; justify-content: flex-start; } }
 @media (min-width: 1100px) {
-  /* the legend on one line: the toggle, the sources (they slide sideways if they don't fit), the (i) */
-  body.at-globe .gl-side #legend-shared { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: .45rem .7rem; }
+  /* the legend: the toggle, the sources (wrapping onto a second line when they don't fit, so every one stays clickable), the (i) */
+  body.at-globe .gl-side #legend-shared { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; column-gap: 12px; padding: .45rem .7rem; }
   body.at-globe .gl-side .lg-head { display: contents; }
   body.at-globe .gl-side #legend-shared .view-toggle { grid-column: 1; grid-row: 1; }
-  body.at-globe .gl-side #legend-shared .lg-items { grid-column: 2; grid-row: 1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  body.at-globe .gl-side #legend-shared .lg-items::-webkit-scrollbar { display: none; }
+  body.at-globe .gl-side #legend-shared .lg-items { grid-column: 2; grid-row: 1; flex-wrap: wrap; gap: 5px 6px; align-self: center; }
   body.at-globe .gl-side #legend-shared .legend-item { flex-shrink: 0; }
   body.at-globe .gl-side #legend-shared .glossary-btn { grid-column: 3; grid-row: 1; }
   body.at-globe .gl-side #legend-shared .gb-long, body.at-globe .gl-side #legend-shared .gb-short { display: none; }
@@ -754,8 +753,60 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
 #stats-modal .sx-box.hub-box, #lb-modal .st-box.lb-box.hub-box, #lb-modal .st-box.lb-box { height: min(780px, calc(100vh - 24px)); height: min(780px, calc(var(--vvh, 100dvh) - 24px)); }
 #glossary-modal .st-box, #cl-modal .st-box { max-height: calc(100vh - 24px); max-height: calc(var(--vvh, 100dvh) - 24px); }
 .hub-scroll, #lb-modal .lb-body, #shop-modal { overscroll-behavior: contain; }
-/* the laptop's legend row scrolls sideways, which would clip the halo: give it room */
-body.at-globe.gl-hint-open .gl-side #legend-shared .lg-items { padding: 7px 8px; margin: -7px -8px; }
 
 /* the whole Explore tab (map, list and picker) is one width, so its one-line header sits in the same place on every view */
 @media (min-width: 1100px) { body.ex-hdr #app { max-width: min(1520px, calc(100vw - 64px)); } body.ex-hdr { padding-top: 14px; } }
+
+/* ---------- the demo's arrows: round buttons on the map's edges ---------- */
+.nx-stage { position: relative; }
+.nx-arr { position: absolute; top: 50%; translate: 0 -50%; z-index: 2; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.92); color: #1a1a1a; cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18); transition: background .15s, transform .15s; }
+.nx-arr svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.nx-arr:hover { background: #fff; transform: scale(1.08); }
+.nx-arr:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+.nx-arr:disabled { opacity: .35; cursor: default; transform: none; }
+.nx-prev { left: 8px; } .nx-next { right: 8px; }
+.nx-ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.nx-tour { min-height: 40px; padding: 0; border: 0; background: none; font: inherit; font-size: .88rem; font-weight: 600; color: #1a1a1a; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.nx-tour:hover { color: #8a5208; }
+
+/* ---------- the Explore tour: one feature per step ---------- */
+#tour-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; height: 100vh; height: 100dvh; }
+#tour-modal .st-backdrop { position: absolute; inset: 0; }
+.tr-box { width: min(560px, 100%); max-width: none; max-height: calc(100vh - 32px); max-height: calc(var(--vvh, 100dvh) - 32px); overflow-y: auto; overscroll-behavior: contain; gap: 12px; }
+.tr-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tr-n { color: #b0a58a; letter-spacing: .04em; }
+.tr-main { display: flex; flex-direction: column; gap: 14px; }
+.tr-box .nx-cap, .tr-box .nx-dots { display: none; }       /* the step's title says it, bigger; the dots sit by Next */
+.tr-text { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.tr-title { margin: 0; font-size: 1.2rem; line-height: 1.25; text-wrap: balance; }
+.tr-say { margin: 0; font-size: .92rem !important; line-height: 1.5; color: #444 !important; min-height: 4.5em; }
+.tr-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 4px; }
+.tr-back, .tr-next { min-height: 42px; padding: 0 16px; border-radius: 6px; font: inherit; font-size: .92rem; font-weight: 600; cursor: pointer; }
+.tr-back { border: 1.5px solid #dcdad3; background: #fff; color: #1a1a1a; }
+.tr-back:disabled { opacity: .4; cursor: default; }
+.tr-next { border: 0; background: #1a1a1a; color: #fff; }
+.tr-next:hover { background: #333; }
+.tr-next.is-last { background: #f5c842; color: #1a1a1a; }
+.tr-back:focus-visible, .tr-next:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+.tr-dots { display: flex; gap: 5px; }
+.tr-dots i { width: 6px; height: 6px; border-radius: 50%; background: #dcd6c6; }
+.tr-dots i.on { width: 16px; border-radius: 3px; background: #1a1a1a; }
+/* wide screens: the demo on the left, the words on the right */
+@media (min-width: 900px) {
+  .tr-box { width: min(900px, 100%); padding: 22px 26px 22px; }
+  .tr-main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: center; }
+  .tr-title { font-size: 1.35rem; }
+  .tr-say { min-height: 6em; }
+}
+/* phones: tighter, buttons share the width */
+@media (max-width: 600px) {
+  #tour-modal { padding: 12px; }
+  .tr-box { padding: 16px 16px 14px; max-height: calc(var(--vvh, 100dvh) - 24px); }
+  .tr-title { font-size: 1.08rem; }
+  .tr-say { font-size: .88rem !important; min-height: 6em; }
+  .tr-back, .tr-next { padding: 0 12px; }
+  .nx-arr { width: 28px; height: 28px; }
+}
+@media (max-height: 620px) and (max-width: 600px) { .tr-box .nx-mapbox { aspect-ratio: 640 / 230; } .tr-say { min-height: 0; } }

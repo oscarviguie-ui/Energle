@@ -886,12 +886,22 @@ function nxSteps() {
       head: '<b>' + g.name + '</b><span>' + (id === 'all' ? r.n + ' countries' : r.n + ' countries added together') + ' · ' + r.latestYear + '</span>',
       big: nxGen(r.latestTotal), def: g.trait ? '<span class="gl-key-tag">Energle’s definition</span> ' + g.rule : '', mix: groupShares(list) }, extra || {});
   };
-  const steps = [grp('all', 'Every country, on the map'), grp('europe', 'Add up a continent'), grp('eu', '…a bloc like the EU or OPEC'), grp('green', '…or a trait, with its definition')];
+  const nOf = id => COUNTRIES.filter(groupOf(id).test).length;
+  const steps = [
+    grp('all', 'Every country, on the map', { title: 'Every country, on a globe',
+      say: 'Spin the globe, zoom in, and see what the world generated: ' + nxGen(globeAggregate('all').latestTotal) + ' from ' + nOf('all') + ' countries, with its mix and how it changed since 2000.' }),
+    grp('europe', 'Add up a continent', { title: 'Add up a continent',
+      say: 'Pick a continent from the menu on the map: its ' + nOf('europe') + ' countries light up and add up into one profile, charts included.' }),
+    grp('eu', '…a bloc like the EU or OPEC', { title: 'Or a bloc',
+      say: 'The EU, OPEC, the G7 and BRICS work the same way: each one is summed as if it were a single country.' }),
+    grp('green', '…or a trait, with its definition', { title: 'Or a trait',
+      say: 'Traits group countries by their profile, like Green leaders or Fossil heavy. Energle’s definition is always shown, so you know who is in and why.' })];
   // the source map: Nuclear, darker for a bigger share
   try {
     const sh = globeShares('Nuclear'), max = Math.max(...sh.map(x => x[1])), id = globeSourceGroup('Nuclear'), r = globeAggregate(id);
     const top = sh.slice().sort((a, b) => b[1] - a[1])[0], topC = COUNTRIES.find(c => c.iso3 === top[0]);
-    steps.push({ cap: 'Click a source under the charts: the map takes its colour', shade: new Map(sh), shadeMax: max, shadeCol: colorOf('Nuclear'),
+    steps.push({ cap: 'Click a source under the charts: the map takes its colour', title: 'Colour the map by a source',
+      say: 'Click a source under the charts, like Nuclear: the darker a country, the bigger its share. The ' + r.n + ' producers add up too, clue cards included.', shade: new Map(sh), shadeMax: max, shadeCol: colorOf('Nuclear'),
       head: '<b>Nuclear producers</b><span>' + r.n + ' countries · darker = more</span>', big: nxGen(r.latestTotal),
       def: 'Up to ' + Math.round(max * 100) + '% of generation (' + (topC ? topC.name : '') + ') · their totals and clue cards add up too', mix: groupShares(COUNTRIES.filter(groupOf(id).test)) });
   } catch (e) {}
@@ -900,7 +910,8 @@ function nxSteps() {
     const e = globeAggCards('opec');
     if (e && e.fossil) {
       const pct = v => v >= 0.01 ? Math.round(v * 100) + '%' : '<1%';
-      steps.push(grp('opec', 'Clue cards add up for groups', {
+      steps.push(grp('opec', 'Clue cards add up for groups', { title: 'Clue cards add up',
+        say: 'A group’s clue cards are summed too. OPEC’s ' + e._n + ' members hold ' + (e._share.oil >= 0.01 ? Math.round(e._share.oil * 100) + '%' : 'under 1%') + ' of the world’s proven oil reserves.',
         head: '<b>OPEC · Underground riches</b><span>' + e._n + ' members, reserves summed</span>',
         row: '<div class="nx-ug">' + [['oil', 'Oil', v => Math.round(v).toLocaleString('en-US') + ' bn barrels'], ['gas', 'Gas', v => Math.round(v) + ' tn m³'], ['coal', 'Coal', v => (v < 10 ? v.toFixed(1) : Math.round(v)) + ' bn t']]
           .map(([k, n, f]) => '<span class="nx-ug-row"><b>' + n + '</b><span>' + f(e.fossil[k][0]) + '</span><em>' + pct(e._share[k]) + ' of the world</em></span>').join('') + '</div>',
@@ -908,14 +919,18 @@ function nxSteps() {
     }
   } catch (e) {}
   const fr = COUNTRIES.find(c => c.iso3 === 'FRA');
-  if (fr) steps.push({ cap: 'Click a country for its profile and clue cards', iso: new Set(['FRA']), one: true,
+  if (fr) steps.push({ cap: 'Click a country for its profile and clue cards', iso: new Set(['FRA']), one: true, title: 'Open any country',
+    say: 'Click a country, or search for it, to see its full profile: generation, mix, CO₂ and all five clue cards.',
     head: flagImg('FRA', 'nx-flag') + '<b>France</b><span>' + fr.latestYear + ' · 5 clue cards</span>', big: nxGen(fr.latestTotal), def: 'Sun & wind · People & power · Underground · Power trade · Fuel trade', mix: sharesOf(fr) });
-  steps.push(grp('brics', 'Practise on any group', { row: '<div class="nx-row"><div class="nx-card-h"><b>BRICS</b><span>' + COUNTRIES.filter(groupOf('brics').test).length + ' countries</span></div>'
+  steps.push(grp('brics', 'Practise on any group', { title: 'Practise on any group',
+    say: 'Every group has a Practice button: a round of guesses on just those countries, with no score and no streak.', row: '<div class="nx-row"><div class="nx-card-h"><b>BRICS</b><span>' + COUNTRIES.filter(groupOf('brics').test).length + ' countries</span></div>'
     + '<span class="nx-pill">Practice these ' + COUNTRIES.filter(groupOf('brics').test).length + ' →</span></div>', def: 'A round of guesses on just those countries: no score, no streak' }));
   return steps;
 }
 function nxDemoHTML() {
-  return '<div class="nx-demo" id="nx-demo"><div class="nx-mapbox" id="nx-mapbox"></div>'
+  return '<div class="nx-demo" id="nx-demo"><div class="nx-stage"><div class="nx-mapbox" id="nx-mapbox"></div>'
+    + '<button type="button" class="nx-arr nx-prev" aria-label="Previous feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'
+    + '<button type="button" class="nx-arr nx-next" aria-label="Next feature"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></div>'
     + '<div class="nx-card" id="nx-card" aria-live="polite"></div><div class="nx-cap" id="nx-cap"></div>'
     + '<div class="nx-dots" id="nx-dots" role="tablist" aria-label="Demo steps"></div></div>';
 }
@@ -924,7 +939,8 @@ function nxMix(col, t) {
   const h = x => parseInt(x, 16), c = col.replace('#', ''), a = [246, 239, 224], b = [h(c.slice(0, 2)), h(c.slice(2, 4)), h(c.slice(4, 6))];
   return 'rgb(' + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(',') + ')';
 }
-function nxDemoStart(root) {
+function nxDemoStart(root, opts) {
+  opts = opts || {}; const auto = opts.auto !== false;
   const steps = nxSteps(); let i = 0, timer = null, paths = [];
   const box = root.querySelector('#nx-mapbox'), card = root.querySelector('#nx-card'), cap = root.querySelector('#nx-cap'), dots = root.querySelector('#nx-dots');
   dots.innerHTML = steps.map((s, k) => '<button type="button" class="nx-dot" role="tab" aria-label="' + s.cap + '" data-k="' + k + '"></button>').join('');
@@ -940,12 +956,24 @@ function nxDemoStart(root) {
       + (s.row && s.row.includes('nx-ug') ? '' : '<p class="nx-def">' + (s.def || '&nbsp;') + '</p>');
     cap.textContent = s.cap;
     dots.querySelectorAll('.nx-dot').forEach((d, j) => d.setAttribute('aria-selected', String(j === k)));
+    if (opts.onShow) opts.onShow(k, s, steps.length);
   };
-  const play = () => { clearInterval(timer); if (!REDUCED_MOTION) timer = setInterval(() => { if (!document.body.contains(root)) return clearInterval(timer); show((i + 1) % steps.length); }, 3400); };
+  const play = () => { clearInterval(timer); if (auto && !REDUCED_MOTION) timer = setInterval(() => { if (!document.body.contains(root)) return clearInterval(timer); show((i + 1) % steps.length); }, 3400); };
+  // flick through: the arrows on the map, a swipe, or the keyboard's arrows (a manual step restarts the 3.4 s clock)
+  const go = d => { show((i + d + steps.length) % steps.length); play(); };
   dots.addEventListener('click', e => { const d = e.target.closest('.nx-dot'); if (d) { show(+d.dataset.k); play(); } });
-  root.addEventListener('mouseenter', () => clearInterval(timer)); root.addEventListener('mouseleave', play);
+  root.querySelector('.nx-prev').addEventListener('click', () => go(-1));
+  root.querySelector('.nx-next').addEventListener('click', () => go(1));
+  let sx = null, sy = null;
+  root.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  root.addEventListener('touchend', e => {
+    if (sx == null) return; const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3) (opts.onSwipe || go)(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  if (auto) { root.addEventListener('mouseenter', () => clearInterval(timer)); root.addEventListener('mouseleave', play); }
   nxMapSVG().then(svg => { box.innerHTML = svg; paths = [...box.querySelectorAll('path[data-i]')]; show(i); });
   show(0); play();
+  return { steps, show: k => { show(k); play(); }, go, at: () => i };
 }
 function showNoticeWide() {
   if (document.getElementById('notice-modal')) return;
@@ -959,8 +987,9 @@ function showNoticeWide() {
     + '<button type="button" class="gl-x nx-close" aria-label="Close">×</button></div>'
     + '<section class="nx-feature">' + nxDemoHTML()
     + '<div class="nx-text"><span class="nx-new">New · ' + d0 + '</span><h3>' + t0 + '</h3><p>' + x0 + '</p>'
-    + (open ? '<button type="button" class="nx-cta" id="nx-cta">Open Explore →</button>'
-            : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
+    + '<div class="nx-ctas">' + (open ? '<button type="button" class="nx-cta" id="nx-cta">Open Explore →</button>' : '')
+    + '<button type="button" class="nx-tour" id="nx-tour">Step by step</button></div>'
+    + (open ? '' : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
     + '<div class="nx-earlier"><span class="nt-eyebrow nx-sub">Earlier updates</span><ol class="nt-log nx-log">'
     + UPDATES.slice(1).map(([d, t, x]) => '<li title="' + escHtml(x.replace(/<[^>]+>/g, '')) + '"><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong><span class="nx-x">' + x + '</span></span></li>').join('') + '</ol></div>'
     + '<div class="nx-foot"><div class="nt-soon"><span class="nt-eyebrow">Coming soon</span><div class="nx-soon-row">'
@@ -969,19 +998,82 @@ function showNoticeWide() {
     + '<button type="button" class="nt-btn" id="nt-ok">Got it</button></div></div>'
     + '</div>';
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
-  const onKey = e => { if (e.key === 'Escape') close(); };
+  let demo = null;
+  const onKey = e => { if (e.key === 'Escape') close(); else if (demo && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) demo.go(e.key === 'ArrowRight' ? 1 : -1); };
   modal.querySelector('.st-backdrop').addEventListener('click', close);
   document.body.appendChild(modal);
   modal.querySelector('.nx-close').addEventListener('click', close);
   document.getElementById('nt-ok').addEventListener('click', close);
   const cta = document.getElementById('nx-cta'); if (cta) cta.addEventListener('click', () => { close(); switchMode('practice'); });
   document.addEventListener('keydown', onKey);
-  nxDemoStart(modal.querySelector('.nx-feature'));
+  demo = nxDemoStart(modal.querySelector('.nx-feature'));
+  const tl = document.getElementById('nx-tour'); if (tl) tl.addEventListener('click', () => { close(); showExploreTour(true); });
   document.getElementById('nt-ok').focus({ preventScroll: true });
+}
+
+// ============================================================
+//  THE EXPLORE TOUR: shown once to returning players on their first visit after the update (in place of the What's new
+//  window), step by step: the same demo, one feature per step, with what it does in a sentence. Back / Next, the arrows
+//  on the map, a swipe or the keyboard; × or Esc skips it. Also from What's new ("Step by step"), and ?tour=1.
+// ============================================================
+const TOUR_KEY = 'energle_explore_tour_v1';
+function showExploreTour(fromNews) {
+  if (document.getElementById('tour-modal')) return;
+  try { localStorage.setItem(TOUR_KEY, '1'); localStorage.setItem(NOTICE_KEY, '1'); localStorage.setItem(NEWS_SEEN_KEY, newsId()); } catch (e) {}
+  const sd = document.getElementById('sub-date'); if (sd) { sd.classList.remove('has-news'); const ic = sd.querySelector('.sd-ico'); if (ic) ic.remove(); }
+  const open = practiceUnlocked();
+  const modal = document.createElement('div'); modal.id = 'tour-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="nt-box tr-box" role="dialog" aria-modal="true" aria-labelledby="tr-title">'
+    + '<div class="tr-top"><span class="nt-eyebrow">New · Explore <span class="tr-n" id="tr-n"></span></span>'
+    + '<button type="button" class="gl-x tr-x" aria-label="Close the tour">×</button></div>'
+    + '<div class="tr-main">' + nxDemoHTML()
+    + '<div class="tr-text"><h2 class="tr-title" id="tr-title"></h2><p class="tr-say" id="tr-say" aria-live="polite"></p>'
+    + '<div class="tr-foot"><button type="button" class="tr-back" id="tr-back">← Back</button>'
+    + '<span class="tr-dots" id="tr-dots" aria-hidden="true"></span>'
+    + '<button type="button" class="tr-next" id="tr-next">Next →</button></div></div></div></div>';
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  let demo = null, n = 0;
+  const back = modal.querySelector('#tr-back'), next = modal.querySelector('#tr-next'), dots = modal.querySelector('#tr-dots');
+  const step = d => { const k = demo.at() + d; if (k < 0) return; if (k >= n) return finish(); demo.show(k); };
+  const finish = () => { close(); if (open) switchMode('practice'); };
+  const onKey = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1); };
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  modal.querySelector('.tr-x').addEventListener('click', close);
+  back.addEventListener('click', () => step(-1)); next.addEventListener('click', () => step(1));
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(modal);
+  demo = nxDemoStart(modal.querySelector('.tr-main'), { auto: false, onSwipe: d => step(d), onShow: (k, s, len) => {
+    n = len;
+    modal.querySelector('#tr-n').textContent = '· ' + (k + 1) + ' of ' + len;
+    modal.querySelector('#tr-title').textContent = s.title || s.cap;
+    modal.querySelector('#tr-say').textContent = (s.say || '') + (k === len - 1 && !open ? ' Explore opens once you’ve finished today’s puzzle.' : '');
+    back.disabled = k === 0;
+    const last = k === len - 1;
+    next.textContent = last ? (open ? 'Open Explore →' : 'Got it') : 'Next →';
+    next.classList.toggle('is-last', last);
+    dots.innerHTML = Array.from({ length: len }, (_, j) => '<i' + (j === k ? ' class="on"' : '') + '></i>').join('');
+  } });
+  // the map's own arrows stop at the ends, like Back and Next
+  modal.querySelector('.nx-prev').replaceWith(modal.querySelector('.nx-prev').cloneNode(true));
+  modal.querySelector('.nx-next').replaceWith(modal.querySelector('.nx-next').cloneNode(true));
+  modal.querySelector('.nx-prev').addEventListener('click', () => step(-1));
+  modal.querySelector('.nx-next').addEventListener('click', () => step(1));
+  next.focus({ preventScroll: true });
 }
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (typeof UPDATES !== 'undefined' && UPDATES[0][1] !== EXPLORE_UPDATE[1]) UPDATES.unshift(EXPLORE_UPDATE);
   window.showNotice = showNoticeWide;
+  const _maybe = maybeShowNotice;
+  window.maybeShowNotice = function () {
+    let returning = false, toured = true;
+    try { returning = !!(localStorage.getItem(LS_KEY) || localStorage.getItem(LS_STATS_KEY)); toured = !!localStorage.getItem(TOUR_KEY); } catch (e) { return _maybe(); }
+    const force = /[?&]tour=1\b/.test(location.search);
+    if (!force && (!returning || toured)) return _maybe();
+    let tries = 0;   // after the name prompt or any other window
+    const go = () => { if (document.querySelector('#username-modal, #notice-modal, #shop-intro, #stats-modal')) { if (++tries < 120) setTimeout(go, 500); return; } showExploreTour(); };
+    setTimeout(go, REDUCED_MOTION ? 0 : 700);
+  };
 });
 
 
@@ -1314,7 +1406,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  as the bars move, and the page behind doesn't scroll.
 // ============================================================
 (function () {
-  const IDS = ['notice-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
+  const IDS = ['notice-modal', 'tour-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
   const vv = window.visualViewport;
   const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
   function fit() {
