@@ -730,7 +730,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && GLOBE_SEL 
 //     Nothing is stored between puzzles: the map is redrawn from the current game every time.
 // ============================================================
 let GMAP = null, GMAP_PICK = null;
-let GMAP_ON = (() => { try { return localStorage.getItem('energle_gmap') === 'on'; } catch (e) { return false; } })();
+let GMAP_ON = false;   // the puzzle always opens without its map (it loads faster): the Map button brings it in, for the rest of the visit
 const GMAP_ICON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">'
   + '<path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5V4l-6 2.5z"/><path d="M9 4v13M15 6.5v13"/></svg>';
 function gmapButtonHTML() { return '<button type="button" id="gm-btn" class="gm-btn" aria-pressed="false" title="Show the map">' + GMAP_ICON + '<span class="gm-lbl">Map</span></button>'; }
@@ -776,7 +776,7 @@ function gmapStart() {
   return gameOver && target ? target.iso3 : last;
 }
 function gmapShow(on, scroll) {
-  GMAP_ON = on; try { localStorage.setItem('energle_gmap', on ? 'on' : 'off'); } catch (e) {}
+  GMAP_ON = on;
   document.body.classList.toggle('gm-on', on);
   const b = document.getElementById('gm-btn'); if (b) { b.setAttribute('aria-pressed', String(on)); b.title = on ? 'Hide the map' : 'Show the map'; }
   let card = document.getElementById('gm-card');
