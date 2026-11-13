@@ -740,10 +740,13 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(7) { 
 body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(8) { animation-delay: 1.75s; }
 body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(9) { animation-delay: 2s; }
 body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10) { animation-delay: 2.25s; }
-@keyframes glGlow { 0%, 60%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); } 25% { box-shadow: 0 0 0 2px rgba(245,166,35,.55), 0 0 12px 1px rgba(245,166,35,.45); } }
+@keyframes glGlow {   /* a clear amber ring, a warm fill and a halo at its peak */
+  0%, 70%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0); background-color: transparent; }
+  25%, 40% { box-shadow: 0 0 0 2.5px #f5a623, 0 0 18px 4px rgba(245,166,35,.65); background-color: #fff1d6; }
+}
 @media (prefers-reduced-motion: reduce) {
   .gl-maphint.is-mini.is-hop, body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { animation: none; }
-  body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { box-shadow: 0 0 0 2px rgba(245,166,35,.45); }
+  body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item { box-shadow: 0 0 0 2.5px #f5a623; background-color: #fff1d6; }
 }
 
 /* stats & leaderboard (and the other windows): sized to the visible screen, not 100vh, so the × at the top can't end up
@@ -751,3 +754,5 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
 #stats-modal .sx-box.hub-box, #lb-modal .st-box.lb-box.hub-box, #lb-modal .st-box.lb-box { height: min(780px, calc(100vh - 24px)); height: min(780px, calc(var(--vvh, 100dvh) - 24px)); }
 #glossary-modal .st-box, #cl-modal .st-box { max-height: calc(100vh - 24px); max-height: calc(var(--vvh, 100dvh) - 24px); }
 .hub-scroll, #lb-modal .lb-body, #shop-modal { overscroll-behavior: contain; }
+/* the laptop's legend row scrolls sideways, which would clip the halo: give it room */
+body.at-globe.gl-hint-open .gl-side #legend-shared .lg-items { padding: 7px 8px; margin: -7px -8px; }
