@@ -1025,11 +1025,12 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       + '<span class="pc-atlas-cta">Suggest a category →</span></button>';
   };
   const _archive = renderArchiveScreen;
-  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-picker'); globeFrame(true); document.body.classList.add('ex-hdr'); return _archive(d); };
+  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-picker', 'at-globe'); globeFrame(true); document.body.classList.add('ex-hdr'); return _archive(d); };
   // the game screen: one information block, the guess bar under it, a Map button in the guess bar
   const _game = renderGameScreen;
   window.renderGameScreen = function () {
-    document.body.classList.remove('ex-picker'); globeFrame(true); document.body.classList.add('ex-hdr');   // the same header on every tab; the puzzle in its own column
+    document.body.classList.remove('ex-picker', 'at-globe'); globeFrame(true); document.body.classList.add('ex-hdr');   // (Explore's class goes now, not when its map is torn down a moment later: the puzzle must be laid out as the puzzle)
+      // the same header on every tab; the puzzle in its own column
     const old = document.getElementById('gm-card'); if (old) old.remove();
     _game();
     gwLayout();
@@ -1548,12 +1549,14 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 
 // phones: the gold medal and name are sized to the header's boxes (the mode switch's height)
 function hdBoxFit() { const n = document.getElementById('mode-nav'); if (n) document.body.style.setProperty('--hd-box', Math.round(n.getBoundingClientRect().height) + 'px'); }
-if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(hdBoxFit)).observe(app, { childList: true }); }); window.addEventListener('resize', hdBoxFit); }
+let HD_RAF = 0;
+function hdSoon() { if (HD_RAF) return; HD_RAF = requestAnimationFrame(() => { HD_RAF = 0; try { hdAlignNav(); } catch (e) {} }); }   // one fit per frame, however many asked
 // Explore, wide windows: the mode switch and Stats & Leaderboard sit with their bottom edge on the wordmark's baseline,
 // and the mode switch is centred on the page (as far as the logo and the right-hand buttons allow)
 function hdAlignNav() {
   const nav = document.getElementById('mode-nav'), word = document.querySelector('.hd-brand .logo-word'), lb = document.querySelector('.hd-grid .lb-split'), pod = document.querySelector('.hd-grid .podium');
   if (!nav || !word) return;
+  if (typeof FRAME_BUSY !== 'undefined' && FRAME_BUSY) return;     // mid-move the pieces are off their places: fitted when it ends
   [nav, lb, pod].forEach(e => { if (e) { e.style.top = ''; e.style.left = ''; } });
   hdBoxFit();
   if (!(document.body.classList.contains('ex-hdr') && matchMedia('(min-width: 1240px)').matches)) return;
@@ -1565,7 +1568,7 @@ function hdAlignNav() {
   const lo = br.right + 24 - n.left, hi = (lb ? lb.getBoundingClientRect().left : g.right) - 24 - n.right;
   nav.style.left = Math.round(Math.max(lo, Math.min(hi, (g.left + g.right) / 2 - (n.left + n.right) / 2))) + 'px';
 }
-if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(() => requestAnimationFrame(hdAlignNav)).observe(app, { childList: true }); }); window.addEventListener('resize', hdAlignNav); }
+if (globeOn()) { document.addEventListener('DOMContentLoaded', () => { const app = document.getElementById('app'); if (app && window.MutationObserver) new MutationObserver(hdSoon).observe(app, { childList: true }); }); window.addEventListener('resize', hdSoon); }
 
 // ---- a source as a group: every country where it made at least 0.5% of generation in its latest year
 let GLOBE_SRC_PREV = 'all';
@@ -1584,8 +1587,8 @@ function globeSourceGroup(src) {
 }
 // podium names arrive after the header is drawn (and replace it): line them up again
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  if (typeof loadPodium === 'function') { const _lp = loadPodium; window.loadPodium = async function () { const r = await _lp.apply(this, arguments); requestAnimationFrame(() => { hdBoxFit(); hdAlignNav(); }); return r; }; }
-  window.addEventListener('load', () => requestAnimationFrame(hdAlignNav));
+  if (typeof loadPodium === 'function') { const _lp = loadPodium; window.loadPodium = async function () { const r = await _lp.apply(this, arguments); hdSoon(); return r; }; }
+  window.addEventListener('load', hdSoon);
   // first visits: the legend's sources shimmer once, so people find out they colour the map
   try { if (!localStorage.getItem('energle_srcmap_seen')) document.body.classList.add('gl-srcnudge'); } catch (e) {}
 });
@@ -1760,56 +1763,51 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (typeof fitHeader !== 'function') return;
   const _fit = fitHeader;
-  window.fitHeader = function () { const r = _fit.apply(this, arguments); try { hdBoxFit(); hdAlignNav(); } catch (e) {} return r; };
+  window.fitHeader = function () { const r = _fit.apply(this, arguments); try { hdAlignNav(); } catch (e) {} return r; };
   const _rgs = window.renderGameScreen;
-  window.renderGameScreen = function () { const r = _rgs.apply(this, arguments); requestAnimationFrame(() => { try { hdBoxFit(); hdAlignNav(); } catch (e) {} }); return r; };
+  window.renderGameScreen = function () { const r = _rgs.apply(this, arguments); hdSoon(); return r; };
 });
 
-// Switching between Daily, Archive and Explore: #app's width animates (CSS, body.tab-anim) from one tab's width to the
-// next. Once it has settled, everything that measures the page (the map, the charts, the card columns) measures again.
-if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => document.body.classList.add('tab-anim'), 600);          // not on the first paint
-  const app = document.getElementById('app'); if (!app) return;
-  // while it moves, the centred tab bar is kept centred frame by frame (it is placed by hdAlignNav, not by CSS)
-  let moving = false;
-  const follow = () => { if (!moving) return; try { hdAlignNav(); } catch (err) {} requestAnimationFrame(follow); };
-  app.addEventListener('transitionrun', e => { if (e.target === app && e.propertyName === 'max-width' && !moving) { moving = true; requestAnimationFrame(follow); } });
-  app.addEventListener('transitioncancel', e => { if (e.target === app) moving = false; });
-  app.addEventListener('transitionend', e => {
-    if (e.target !== app || e.propertyName !== 'max-width') return;
-    moving = false;
-    if (APP_MOVING) return globeFrameSettled();
-    window.dispatchEvent(new Event('resize'));
-    try { hdBoxFit(); hdAlignNav(); } catch (err) {}
-  });
-});
-
-// ---- the page's width between tabs: narrow (the puzzle, the archive) or wide (Explore). When it changes, the page
-// animates from one to the other; anything drawn to the page's width (the flow chart) waits for the new width, so it
-// plays its entrance once, at the right scale, instead of being drawn wide and snapping narrow (or the reverse).
-let APP_MOVING = false, APP_MOVE_T = null, FLOW_PENDING = null;
+// ---- the page's width between tabs: narrow (the puzzle, the archive) or wide (Explore).
+// The new tab is laid out ONCE, at its final width; the change of width is then played with transforms only (the header's
+// pieces slide from where they were, the rule under them stretches, the content fades in). Nothing is re-measured or
+// re-drawn frame by frame: no chart, map or card is resized while the animation runs, so every entrance animation plays
+// once, at the right scale.
+const FRAME_MS = 420, FRAME_EASE = 'cubic-bezier(.22,.8,.24,1)';
+const FRAME_PARTS = ['.hd-brand', '#mode-nav', '.hd-grid .lb-split', '.hd-grid .podium', '.subtitle-row .subtitle', '.subtitle-row > :last-child'];
+let FRAME_READY = false, FRAME_N = 0, FRAME_BUSY = false;
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => setTimeout(() => { FRAME_READY = true; }, 600));   // not on the first paint
 function globeFrame(narrow) {
-  const was = document.body.classList.contains('pz-col');
+  const was = document.body.classList.contains('pz-col'), hd = document.querySelector('header');
+  const play = was !== narrow && FRAME_READY && !REDUCED_MOTION && hd && hd.animate && matchMedia('(min-width: 1100px)').matches;
+  const q = sel => { const e = document.querySelector(sel); return e ? e.getBoundingClientRect() : null; };
+  const first = play ? FRAME_PARTS.map(q) : null, hd0 = play ? hd.getBoundingClientRect() : null;   // where everything is now…
   document.body.classList.toggle('pz-col', narrow);
-  if (was === narrow || !document.body.classList.contains('tab-anim') || !matchMedia('(min-width: 1100px)').matches || REDUCED_MOTION) return;
-  APP_MOVING = true; clearTimeout(APP_MOVE_T); APP_MOVE_T = setTimeout(globeFrameSettled, 800);   // in case the end is never reported
+  if (!play) return;
+  const n = ++FRAME_N;
+  Promise.resolve().then(() => {                                 // …and, once the new tab is drawn (before it is painted), where it ends up
+    if (n !== FRAME_N) return;
+    FRAME_BUSY = false;
+    try { hdAlignNav(); } catch (e) {}
+    const hd = document.querySelector('header'); if (!hd) return;          // the header is drawn anew with each tab
+    const hd1 = hd.getBoundingClientRect(); if (!hd1.width || Math.abs(hd1.width - hd0.width) < 2) return;
+    const opt = { duration: FRAME_MS, easing: FRAME_EASE };
+    FRAME_PARTS.forEach((sel, i) => {
+      const e = document.querySelector(sel), a = first[i]; if (!e || !a || !a.width) return;
+      const b = e.getBoundingClientRect(), dx = Math.round(a.left - b.left); if (!b.width || !dx) return;
+      e.animate([{ transform: 'translateX(' + dx + 'px)' }, { transform: 'none' }], opt);
+    });
+    // the rule under the header: drawn by a stand-in for the time of the move, so it can be scaled
+    hd.querySelectorAll('.hd-rule').forEach(x => x.remove());
+    const rule = document.createElement('span'); rule.className = 'hd-rule'; hd.appendChild(rule); hd.classList.add('hd-moving');
+    FRAME_BUSY = true;
+    const done = () => { rule.remove(); hd.classList.remove('hd-moving'); if (n !== FRAME_N) return; FRAME_BUSY = false; hdSoon(); };
+    setTimeout(() => { if (n === FRAME_N && FRAME_BUSY) done(); }, FRAME_MS + 400);          // should the end go unreported
+    const an = rule.animate([{ transform: 'scaleX(' + (hd0.width / hd1.width).toFixed(4) + ')' }, { transform: 'none' }], opt);
+    an.onfinish = done; an.oncancel = done;
+    document.querySelectorAll('#app > *').forEach(e => { if (e !== hd && !e.contains(hd)) e.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease-out' }); });
+  });
 }
-function globeFrameSettled() {
-  if (!APP_MOVING) return;
-  APP_MOVING = false; clearTimeout(APP_MOVE_T);
-  window.dispatchEvent(new Event('resize'));
-  try { hdBoxFit(); hdAlignNav(); } catch (err) {}
-  if (FLOW_PENDING) {
-    const args = FLOW_PENDING; FLOW_PENDING = null;
-    renderFlowBar.apply(null, args);
-    setTimeout(() => { try { clearTimeout(flowResizeTimer); } catch (e) {} }, 0);   // the resize above must not redraw it again mid-entrance
-  }
-}
-if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  if (typeof renderFlowBar !== 'function') return;
-  const _flow = renderFlowBar;
-  window.renderFlowBar = function () { if (APP_MOVING) { FLOW_PENDING = [...arguments]; return; } return _flow.apply(this, arguments); };
-});
 
 // ---- the puzzle's latest-mix bar: a little thicker in the 1,100 px column (its card is wider there), so it uses the room
 if (globeOn() && window.Chart) window.Chart = class extends window.Chart {
