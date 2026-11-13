@@ -281,6 +281,8 @@ let GLOBE_WRAP_RO = null, GLOBE_CHART_RO = null;
 function globeLayoutFit() {
   const lay = document.getElementById('gl-layout'); if (!lay) return;
   document.body.style.setProperty('--gl-top', Math.round(lay.getBoundingClientRect().top + window.scrollY) + 'px');
+  // the globe is round: past its width, a taller map only adds empty sea. Its height stops a little past its width.
+  const w0 = document.getElementById('gl-wrap'); if (w0 && w0.clientWidth) document.body.style.setProperty('--gl-map-max', Math.round(w0.clientWidth * GLOBE_MAP_RATIO) + 'px');
   // the charts follow their boxes at once (Chart.js's own resize can lag a beat, leaving the mix over the CO2 strip)
   if (typeof ResizeObserver !== 'undefined') {
     if (!GLOBE_CHART_RO) GLOBE_CHART_RO = new ResizeObserver(() => { try { if (lineChart) lineChart.resize(); if (barChart) barChart.resize(); } catch (e) {} });
@@ -299,6 +301,7 @@ window.addEventListener('resize', () => { requestAnimationFrame(() => { globeHea
 let GLOBE_TAB = 0, GLOBE_TAB_NAME = 'Profile';
 const GLOBE_TAB_NAMES = { 'Renewables Potential': 'Sun & wind', 'People & Power': 'People & power', 'Underground Riches': 'Underground', 'Electricity Trade': 'Power trade', 'Fuel Trade': 'Fuel trade' };
 function globeTabs() {
+  const old = document.getElementById('gl-cards-left'); if (old) old.remove();      // the last panel's cards, shared out under the globe
   const bar = document.getElementById('gl-tabs'), cards = [...document.querySelectorAll('#clue-cards .ic-card')]; if (!bar) return;
   const names = cards.map(c => { const t = ((c.querySelector('.ic-title') || {}).textContent || 'Clue card').split('·')[0].trim(); return GLOBE_TAB_NAMES[t] || t; });
   GLOBE_TAB = GLOBE_TAB_NAME === 'Profile' ? 0 : names.indexOf(GLOBE_TAB_NAME) + 1;     // a card the panel lacks: back to Profile
@@ -307,7 +310,60 @@ function globeTabs() {
   bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); });
   globeStackFit();
   globeTab(document.body.classList.contains('gl-stack') ? 0 : GLOBE_TAB, true);
+  globeColumns();
 }
+const GLOBE_MAP_RATIO = 1.06;
+// Very tall screens: under the (capped) globe there is room too, so the clue cards fill both columns, each card going to
+// the shorter one, in order: less to scroll, nothing stretched. The cards keep their order for the tabs.
+function globeColumns() {
+  if (GLOBE_COL_MO) GLOBE_COL_MO.disconnect();                        // our own moves don't count as new cards
+  globeColumnsDo();
+  // cards that arrive later (they're drawn one by one) are shared out too
+  const cc0 = document.getElementById('clue-cards');
+  if (cc0 && document.body.classList.contains('gl-stack') && typeof MutationObserver !== 'undefined') {
+    if (!GLOBE_COL_MO) GLOBE_COL_MO = new MutationObserver(ms => {
+      if (!ms.some(m => [...m.addedNodes].some(n => n.nodeType === 1 && (n.matches('.ic-card') || n.querySelector('.ic-card'))))) return;
+      clearTimeout(GLOBE_COL_RT); GLOBE_COL_RT = setTimeout(globeColumns, 80);
+    });
+    GLOBE_COL_MO.observe(cc0, { childList: true, subtree: true });
+  }
+}
+const GLOBE_CARD_HOME = new WeakMap();    // where each card was drawn (the panel lays them out in its own columns)
+function globeColumnsDo() {
+  const lay = document.getElementById('gl-layout'), wrap = document.getElementById('gl-wrap'), cc0 = document.getElementById('clue-cards');
+  const cc = cc0 && (cc0.querySelector('.ic-slot') || cc0);
+  let left = document.getElementById('gl-cards-left');
+  const ord = c => c.dataset.ord == null ? 1e9 : +c.dataset.ord;
+  // first, every card back where it was drawn, in its order
+  [...document.querySelectorAll('#gl-cards-left .ic-card, #clue-cards .ic-card')].filter(c => GLOBE_CARD_HOME.has(c))
+    .sort((x, y) => ord(x) - ord(y)).forEach(c => { const home = GLOBE_CARD_HOME.get(c); if (home && home.isConnected) home.appendChild(c); });
+  if (lay) lay.classList.remove('gl-cols');
+  if (!lay || !wrap || !cc || !document.body.classList.contains('gl-stack')) { if (left) left.remove(); return; }
+  const avail = window.innerHeight - Math.max(0, lay.getBoundingClientRect().top) - 22, mapH = Math.min(avail, Math.round(wrap.clientWidth * GLOBE_MAP_RATIO));
+  const cards = [...cc0.querySelectorAll('.ic-card')];
+  if (avail - mapH < 220 || !cards.length) { if (left) left.remove(); return; }       // no real room under the globe
+  if (!left) { left = document.createElement('div'); left.id = 'gl-cards-left'; left.className = 'gl-cards-left'; wrap.after(left); }
+  lay.classList.add('gl-cols');
+  cards.forEach((c, i) => { c.dataset.ord = i; GLOBE_CARD_HOME.set(c, c.parentElement); c.remove(); });
+  // then each card, in order, to whichever column ends higher: under the globe, or under the profile (one column there)
+  cards.forEach(c => {
+    const lb = (left.lastElementChild || wrap).getBoundingClientRect().bottom;
+    const rb = (cc.lastElementChild || cc0).getBoundingClientRect().bottom;
+    (lb <= rb ? left : cc).appendChild(c);
+  });
+  cc.classList.add('gl-flat');
+  try { if (GLOBE) GLOBE.resize(); } catch (e) {}
+  const prof = document.getElementById('gl-pane-profile');
+  // the profile settles a beat later (charts, flow bar): share the cards out again if its height changes
+  if (typeof ResizeObserver !== 'undefined' && prof) {
+    if (!GLOBE_COL_RO) GLOBE_COL_RO = new ResizeObserver(es => {
+      const h = Math.round(es[0].contentRect.height); if (Math.abs(h - GLOBE_COL_H) < 8) return; GLOBE_COL_H = h;
+      clearTimeout(GLOBE_COL_RT); GLOBE_COL_RT = setTimeout(globeColumns, 120);
+    });
+    GLOBE_COL_RO.disconnect(); GLOBE_COL_H = Math.round(prof.getBoundingClientRect().height); GLOBE_COL_RO.observe(prof);
+  }
+}
+let GLOBE_COL_RO = null, GLOBE_COL_H = 0, GLOBE_COL_RT = null, GLOBE_COL_MO = null;
 // Tall laptop screens: when the profile leaves room under it for a clue card, the cards are stacked below it instead of
 // behind tabs (nothing is stretched to fill the height); the tabs then jump to each card, and follow the scrolling.
 const GLOBE_STACK_ROOM = 300;
@@ -329,14 +385,21 @@ function globeStackFit() {
 }
 function globeStackSpy() {
   if (!document.body.classList.contains('gl-stack')) return;
-  const cards = [...document.querySelectorAll('#clue-cards .ic-card')], line = 90;   // the card at the top of the screen
-  let t = 0; cards.forEach((c, i) => { if (c.getBoundingClientRect().top < line) t = i + 1; });
+  const cards = [...document.querySelectorAll('#clue-cards .ic-card, #gl-cards-left .ic-card')].sort((a, b) => (+a.dataset.ord || 0) - (+b.dataset.ord || 0)), line = 90;
+  if (Date.now() < GLOBE_SPY_LOCK) return;                      // a tab was just clicked: its card is the one, even if the page can't scroll it to the top
+  // the card that last crossed the top of the screen (with two columns, the nearest one above the line)
+  let t = 0, best = -Infinity; cards.forEach((c, i) => { const y = c.getBoundingClientRect().top; if (y < line && y > best) { best = y; t = i + 1; } });
   if (t === GLOBE_TAB) return;
   GLOBE_TAB = t; document.querySelectorAll('#gl-tabs .gl-tab').forEach(b => b.setAttribute('aria-selected', String(+b.dataset.t === t)));
 }
-let GLOBE_SPY_RAF = 0;
+let GLOBE_SPY_RAF = 0, GLOBE_SPY_LOCK = 0;
 window.addEventListener('scroll', () => { cancelAnimationFrame(GLOBE_SPY_RAF); GLOBE_SPY_RAF = requestAnimationFrame(globeStackSpy); }, { passive: true });
-window.addEventListener('resize', () => { if (!document.getElementById('gl-tabs')) return; const was = document.body.classList.contains('gl-stack'); if (globeStackFit() !== was) globeTab(GLOBE_TAB, true); });
+let GLOBE_COL_T = null;
+window.addEventListener('resize', () => {
+  if (!document.getElementById('gl-tabs')) return;
+  clearTimeout(GLOBE_COL_T);
+  GLOBE_COL_T = setTimeout(() => { globeColumns(); const was = document.body.classList.contains('gl-stack'); if (globeStackFit() !== was) globeTab(GLOBE_TAB, true); globeColumns(); }, 150);
+});
 function globeTab(t, first) {
   const was = GLOBE_TAB; GLOBE_TAB = t;
   const tb = document.querySelector('#gl-tabs .gl-tab[data-t="' + t + '"]'); if (!first && tb) GLOBE_TAB_NAME = tb.textContent;
@@ -347,7 +410,9 @@ function globeTab(t, first) {
     if (cc) { cc.hidden = false; cc.querySelectorAll('.ic-card').forEach(c => { c.hidden = false; }); }
     if (first && was === t) { /* a redraw: keep the scroll */ }
     else if (!first || t) {
-      const el = t ? cc.querySelectorAll('.ic-card')[t - 1] : null, how = first ? 'auto' : 'smooth';
+      const all = [...document.querySelectorAll('#clue-cards .ic-card, #gl-cards-left .ic-card')].sort((a, b) => (+a.dataset.ord || 0) - (+b.dataset.ord || 0));
+      const el = t ? all[t - 1] : null, how = first ? 'auto' : 'smooth';
+      if (!first) GLOBE_SPY_LOCK = Date.now() + 1500;
       requestAnimationFrame(() => el ? el.scrollIntoView({ block: 'start', behavior: how }) : window.scrollTo({ top: 0, behavior: how }));
     }
     if (first) requestAnimationFrame(() => { try { if (lineChart) lineChart.resize(); if (barChart) barChart.resize(); } catch (e) {} if (target) renderFlowBar(false); });
@@ -730,13 +795,17 @@ function gmapShow(on, scroll) {
 // ---------- the map's height (laptops): a grip along its bottom edge to drag, and a button to toggle tall / normal ----------
 const GMAP_GROW_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="gm-sz-grow" d="M8 9l4-4 4 4M8 15l4 4 4-4"/><path class="gm-sz-shrink" d="M8 5l4 4 4-4M8 19l4-4 4 4"/></svg>';
 const GMAP_H_KEY = 'energle_gmap_h';
-function gmapSizeLimits() { return { min: 260, max: Math.max(320, Math.round(window.innerHeight * 0.86)), tall: Math.max(320, Math.round(window.innerHeight * 0.78)) }; }
+// taller is only worth it wider: a tall map breaks out of the column into the page's margins, up to 1,400 px, and is
+// never taller than it is wide (a round globe gains nothing from height alone)
+function gmapWideW() { return Math.min(window.innerWidth - 64, 1400); }
+function gmapSizeLimits() { const W = gmapWideW(); return { min: 260, max: Math.max(320, Math.min(Math.round(window.innerHeight * 0.86), W)), tall: Math.max(320, Math.min(Math.round(window.innerHeight * 0.8), Math.round(W * 0.62))) }; }
 function gmapBaseH() { return Math.round(Math.max(300, Math.min(520, window.innerHeight * 0.42))); }   // = .gm-wrap's CSS height on laptops
 function gmapSetH(wrap, h, save) {
   const L = gmapSizeLimits(); h = Math.round(Math.max(L.min, Math.min(L.max, h)));
   const m = GMAP, fitBefore = m ? Math.abs(m.getZoom() - gmapFitZoom(m, m.getCenter().lat)) < 0.08 : false;
+  const tall = h > gmapBaseH() + 40, b = document.getElementById('gm-size'), card = wrap.closest('.gm-card');
+  if (card) card.classList.toggle('is-wide', tall && gmapWideW() > card.parentElement.clientWidth + 40);
   wrap.style.height = h + 'px';
-  const tall = h > gmapBaseH() + 40, b = document.getElementById('gm-size');
   if (b) { b.classList.toggle('is-tall', tall); b.setAttribute('aria-pressed', String(tall)); b.setAttribute('aria-label', tall ? 'Make the map shorter' : 'Make the map taller'); }
   if (m) { m.resize(); if (fitBefore) m.jumpTo({ zoom: gmapFitZoom(m, m.getCenter().lat) }); }   // still at "whole globe": keep it filling the frame
   if (save) try { localStorage.setItem(GMAP_H_KEY, String(h)); } catch (e) {}
@@ -751,9 +820,9 @@ function gmapSizeBind(card) {
     wrap.classList.add('is-anim'); gmapSetH(wrap, tall ? gmapBaseH() : L.tall, true);
     // once the frame has grown or shrunk: a globe that was whole is fitted to the new frame (a zoomed-in view is left alone)
     const end = () => { wrap.classList.remove('is-anim'); if (GMAP) { GMAP.resize(); const fz = gmapFitZoom(GMAP, GMAP.getCenter().lat); if (wasFit || GMAP.getZoom() < fz) GMAP.easeTo({ zoom: fz, duration: 300 }); } };
-    let done = false; const once = () => { if (done) return; done = true; wrap.removeEventListener('transitionend', onEnd); end(); };
-    const onEnd = e => { if (e.target === wrap && e.propertyName === 'height') once(); };
-    wrap.addEventListener('transitionend', onEnd); setTimeout(once, 700);   // after the height has settled (a slow device may be late)
+    // refit once the height has settled: on the transition's end, and at 700 ms in case it never reports (both are harmless)
+    const onEnd = e => { if (e.target === wrap && e.propertyName === 'height') { wrap.removeEventListener('transitionend', onEnd); end(); } };
+    wrap.addEventListener('transitionend', onEnd); setTimeout(end, 700);
     if (!tall) requestAnimationFrame(() => card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
   });
   let y0 = null, h0 = 0, raf = 0;
