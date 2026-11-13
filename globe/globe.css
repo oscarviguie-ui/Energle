@@ -655,7 +655,7 @@ body.at-globe.gl-srcnudge #legend-shared .lg-items .legend-item { animation: glN
 .pc-onmap svg { width: 13px; height: 13px; flex-shrink: 0; }
 .pc-onmap span { margin-left: auto; }
 @media (min-width: 1100px) {
-  body.ex-picker #app { max-width: min(1320px, calc(100vw - 64px)); }
+  body.ex-picker #app { max-width: min(1520px, calc(100vw - 64px)); }
   body.ex-picker .pc-grid { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); }
 }
 
@@ -756,3 +756,6 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
 .hub-scroll, #lb-modal .lb-body, #shop-modal { overscroll-behavior: contain; }
 /* the laptop's legend row scrolls sideways, which would clip the halo: give it room */
 body.at-globe.gl-hint-open .gl-side #legend-shared .lg-items { padding: 7px 8px; margin: -7px -8px; }
+
+/* the whole Explore tab (map, list and picker) is one width, so its one-line header sits in the same place on every view */
+@media (min-width: 1100px) { body.ex-hdr #app { max-width: min(1520px, calc(100vw - 64px)); } body.ex-hdr { padding-top: 14px; } }
