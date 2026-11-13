@@ -903,3 +903,7 @@ body.gl-stack.at-globe .ic-slot.gl-flat { display: flex; flex-direction: column;
 body.gl-stack.at-globe .ic-slot.gl-flat > .ic-cols:empty, body.gl-stack.at-globe .ic-slot.gl-flat .ic-col:empty { display: none; }
 .gl-cards-left { align-items: stretch; }
 body.gl-stack.at-globe #clue-cards .ic-slot.gl-flat { align-items: stretch; }
+/* with cards in both columns, the map's bottom lines up with the end of the profile (set in globeColumns) */
+@media (min-width: 1100px) {
+  body.gl-stack.at-globe .gl-layout.gl-cols .gl-wrap { height: var(--gl-map-h, 600px); max-height: none; }
+}

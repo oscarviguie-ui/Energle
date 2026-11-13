@@ -281,7 +281,7 @@ function globeSide() {
     if (pill) { const fresh = pill.cloneNode(false); fresh.removeAttribute('id');      // a fresh node: the count-up keeps writing to the old one
       fresh.textContent = reg.region === 'all' ? reg.n + ' countries' : Math.round(100 * reg.latestTotal / w.latestTotal) + '% of world generation'; pill.replaceWith(fresh); }
     globeRegionCards(reg); globeTabs();
-  } else if (typeof renderAtlasCards === 'function') { renderAtlasCards(); globeTabs(); }
+  } else if (typeof renderAtlasCards === 'function') { renderAtlasCards(); if (!globeOn()) globeTabs(); }   // the wrapper below lays them out
   el.scrollTop = 0;
   const x = document.getElementById('gl-x'); if (x) x.addEventListener('click', () => GLOBE_SEL ? globeSelect(null) : globeRegion('all'));
   const foot = document.querySelector('#app > footer'); if (foot && lay && matchMedia(GLOBE_WIDE).matches) lay.appendChild(foot);   // credits under the map
@@ -328,7 +328,7 @@ function globeTabs() {
   GLOBE_TAB = GLOBE_TAB_NAME === 'Profile' ? 0 : names.indexOf(GLOBE_TAB_NAME) + 1;     // a card the panel lacks: back to Profile
   bar.innerHTML = '<button type="button" class="gl-tab" role="tab" data-t="0">Profile</button>'
     + (cards.length ? '<span class="gl-tabs-sep" aria-hidden="true"></span>' : '') + names.map((n, i) => '<button type="button" class="gl-tab gl-tab--card" role="tab" data-t="' + (i + 1) + '">' + n + '</button>').join('');
-  bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); });
+  if (!bar.dataset.bound) { bar.dataset.bound = '1'; bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); }); }
   globeStackFit();
   globeTab(document.body.classList.contains('gl-stack') ? 0 : GLOBE_TAB, true);
   globeColumns();
@@ -360,9 +360,15 @@ function globeColumnsDo() {
     .sort((x, y) => ord(x) - ord(y)).forEach(c => { const home = GLOBE_CARD_HOME.get(c); if (home && home.isConnected) home.appendChild(c); });
   if (lay) lay.classList.remove('gl-cols');
   if (!lay || !wrap || !cc || !document.body.classList.contains('gl-stack')) { if (left) left.remove(); return; }
-  const avail = window.innerHeight - Math.max(0, lay.getBoundingClientRect().top) - 22, mapH = Math.min(avail, Math.round(wrap.clientWidth * GLOBE_MAP_RATIO));
+  // the map ends where the profile ends (its legend): the two columns start level, and the cards share out under both.
+  // Never shorter than 420 px, never taller than the screen or (a round globe) 15% past its width.
+  const avail = window.innerHeight - Math.max(0, lay.getBoundingClientRect().top) - 22;
+  const prof0 = document.getElementById('gl-pane-profile');
+  const profH = prof0 ? Math.round(prof0.getBoundingClientRect().bottom - wrap.getBoundingClientRect().top) : avail;
+  const mapH = Math.max(420, Math.min(profH, avail, Math.round(wrap.clientWidth * 1.15)));   // a touch more leeway than alone, to line up
   const cards = [...cc0.querySelectorAll('.ic-card')];
-  if (avail - mapH < 220 || !cards.length) { if (left) left.remove(); return; }       // no real room under the globe
+  if (avail - mapH < 220 || !cards.length) { wrap.style.removeProperty('--gl-map-h'); if (left) left.remove(); return; }   // no real room under the globe
+  wrap.style.setProperty('--gl-map-h', mapH + 'px');
   if (!left) { left = document.createElement('div'); left.id = 'gl-cards-left'; left.className = 'gl-cards-left'; wrap.after(left); }
   lay.classList.add('gl-cols');
   cards.forEach((c, i) => { c.dataset.ord = i; GLOBE_CARD_HOME.set(c, c.parentElement); c.remove(); });
@@ -1720,4 +1726,27 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       style: 'left: ' + pos(t).toFixed(1) + '%' + (i === 0 ? '; transform: none' : i === a.length - 1 ? '; transform: translateX(-100%)' : '') }));
     return v;
   };
+});
+
+// ============================================================
+//  THE GAME'S CARD REDRAW ON RESIZE, IN EXPLORE: the daily redraws its clue cards when the window is resized. In Explore
+//  that put the daily's version of a group's cards in the panel ("No data for this country", world ranks instead of
+//  shares) and showed every card at once behind the tabs. Here a group keeps its own cards, and a country's are redrawn
+//  then laid out again (tabs, columns).
+// ============================================================
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  const inPanel = () => document.body.classList.contains('at-globe') && document.querySelector('#gl-side #clue-cards');
+  if (typeof renderClueCards === 'function') {
+    const _rcc = renderClueCards;
+    window.renderClueCards = function () { if (inPanel()) return; return _rcc.apply(this, arguments); };
+  }
+  if (typeof renderAtlasCards === 'function') {
+    const _rac = renderAtlasCards;
+    window.renderAtlasCards = function () {
+      if (inPanel() && !GLOBE_SEL) return;                 // a group: its cards are Explore's own
+      const r = _rac.apply(this, arguments);
+      if (inPanel()) globeTabs();
+      return r;
+    };
+  }
 });
