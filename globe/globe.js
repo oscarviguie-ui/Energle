@@ -1600,7 +1600,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  as the bars move, and the page behind doesn't scroll.
 // ============================================================
 (function () {
-  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
+  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'welcome-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
   const vv = window.visualViewport;
   const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
   function fit() {
@@ -1895,12 +1895,167 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const r = _maybe.apply(this, arguments);
     let due = false;
     try { due = !localStorage.getItem(HOWTO_KEY) && !(localStorage.getItem(LS_KEY) || localStorage.getItem(LS_STATS_KEY)); } catch (e) {}
-    if (/[?&]howto=1\b/.test(location.search)) due = true;
+    if (/[?&](howto|welcome)=1\b/.test(location.search)) due = true;
     if (due && MODE === 'normal') {
       let tries = 0;
-      const go = () => { if (document.querySelector('#username-modal, #notice-modal, #tour-modal, #shop-intro, #stats-modal')) { if (++tries < 120) setTimeout(go, 500); return; } showHowTo(); };
+      const go = () => { if (document.querySelector('#username-modal, #notice-modal, #tour-modal, #shop-intro, #stats-modal')) { if (++tries < 120) setTimeout(go, 500); return; } showWelcome(); };   // the detailed walkthrough; How to play is the short version for later
       setTimeout(go, REDUCED_MOTION ? 0 : 600);
     }
     return r;
   };
+});
+
+// ============================================================
+//  WELCOME: the detailed how-to-play, step by step, opened once on a newcomer's first daily (How to play is the short
+//  version, for later). It walks through one real example country (never today's answer), card by card, then the
+//  guesses on it, the map, the Clue Shop and what comes after. Test page only for now (window.ENERGLE_TEST).
+// ============================================================
+const WELCOME_KEY = 'energle_welcome_v1';
+const WL_EXAMPLES = ['Italy', 'Finland', 'Hungary', 'Portugal'];
+function wlExample() {
+  const name = WL_EXAMPLES.find(n => ALL_DATA[n] && !(typeof target !== 'undefined' && target && target.name === n)) || WL_EXAMPLES[0];
+  const info = ALL_DATA[name], y = info.latestYear, d = info.years[y], c = COUNTRIES.find(x => x.name === name);
+  return { name, info, y, d, c };
+}
+function wlBearing(a, b) {   // flat geometry, as in the game
+  const deg = (Math.atan2(b.lng - a.lng, b.lat - a.lat) * 180 / Math.PI + 360) % 360;
+  const DIRS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  return { deg, dir: DIRS[Math.round(deg / 22.5) % 16] };
+}
+function wlGuesses(ex) {
+  const pick = n => COUNTRIES.find(x => x.name === n);
+  const far = pick('Brazil'), near = ex.name === 'Italy' ? pick('Germany') : ex.name === 'Finland' ? pick('Poland') : ex.name === 'Hungary' ? pick('France') : pick('France');
+  return [far, near].filter(Boolean).map(g => {
+    const km = Math.round(haversineKm(g.lat, g.lng, ex.c.lat, ex.c.lng)), b = wlBearing(g, ex.c);
+    return { c: g, km, dir: b.dir, deg: b.deg, p: closeness(km) };
+  });
+}
+function wlStage(k, ex) {
+  const { d, info, y, name } = ex;
+  const srcs = SOURCES.filter(s => (d[s] || 0) > 0.5).sort((a, b) => d[b] - d[a]);
+  const pct = s => d[s] / d.Total * 100;
+  const fmtP = v => (v < 10 ? v.toFixed(1) : Math.round(v)) + '%';
+  const mixBar = (h) => '<span class="wl-mix" style="height:' + h + 'px">' + srcs.map(s => '<i style="flex:' + d[s] + ';background:' + colorOf(s) + '"></i>').join('') + '</span>';
+  if (k === 0) return '<div class="wl-hero"><span class="wl-q">?</span>' + mixBar(30)
+    + '<span class="wl-hero-cap">' + srcs.slice(0, 4).map(s => '<b style="color:' + darker(hexRGB(colorOf(s))) + '">' + s + ' ' + fmtP(pct(s)) + '</b>').join('') + '</span></div>';
+  if (k === 1) {
+    const wg = WORLD_GEN[y] ?? WORLD_GEN[Math.max(...Object.keys(WORLD_GEN).map(Number))], wd = WORLD_DPC[y] ?? WORLD_DPC[Math.max(...Object.keys(WORLD_DPC).map(Number))];
+    return '<div class="wl-stats"><div><span class="stat-label">Electricity generated</span><b>' + fmtTWh(d.Total) + '</b><span class="bc-world bc-world--gen">World Avg: ' + fmtTWh(wg) + '</span></div>'
+      + '<div><span class="stat-label">Demand per capita</span><b>' + info.latestDpc.toFixed(1) + ' MWh</b><span class="bc-world bc-world--dem">World Avg: ' + wd.toFixed(1) + ' MWh</span></div></div>';
+  }
+  if (k === 2) {
+    const imp = Math.max(d.NetImports || 0, 0), exp = Math.max(-(d.NetImports || 0), 0), dem = d.Total + (d.NetImports || 0);
+    const box = (lbl, v, col) => '<span class="wl-fbox"><span style="color:' + col + '">' + lbl + '</span><b>' + fmtTWh(v) + '</b></span>';
+    const left = imp ? '<span class="wl-fcol">' + box('Net imports', imp, FLOW_COLORS.imp) + box('Generated', d.Total, FLOW_COLORS.gen) + '</span>' : box('Generated', d.Total, FLOW_COLORS.gen);
+    const right = exp ? '<span class="wl-fcol">' + box('Net exports', exp, FLOW_COLORS.exp) + box('Demand', dem, FLOW_COLORS.dem) + '</span>' : box('Demand', dem, FLOW_COLORS.dem);
+    const share = imp ? imp / dem * 100 : exp / d.Total * 100;
+    return '<div class="wl-flow">' + left + '<span class="wl-farrow"><i style="background:' + (imp ? FLOW_COLORS.imp : exp ? FLOW_COLORS.exp : FLOW_COLORS.gen) + '"></i><em>'
+      + (imp ? fmtP(share) + ' of demand imported' : exp ? fmtP(share) + ' of output exported' : 'no net trade') + '</em></span>' + right + '</div>';
+  }
+  if (k === 3) {
+    const yrs = Object.keys(info.years).map(Number).filter(v => v >= 2000).sort((a, b) => a - b);
+    const top = srcs.slice(0, 5), W = 300, H = 132, max = Math.max(...yrs.flatMap(v => top.map(s => info.years[v][s] || 0))) || 1;
+    const X = v => 4 + (v - yrs[0]) / (yrs[yrs.length - 1] - yrs[0]) * (W - 96), Y = v => 6 + (1 - v / max) * (H - 22);
+    const lines = top.map(s => '<polyline fill="none" stroke="' + colorOf(s) + '" stroke-width="2" stroke-linejoin="round" points="' + yrs.map(v => X(v).toFixed(1) + ',' + Y(info.years[v][s] || 0).toFixed(1)).join(' ') + '"/>').join('');
+    // end labels, nudged apart
+    const ends = top.map(s => ({ s, y: Y(info.years[yrs[yrs.length - 1]][s] || 0) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 12) ends[i].y = ends[i - 1].y + 12;
+    const labels = ends.map(e => '<text x="' + (X(yrs[yrs.length - 1]) + 6) + '" y="' + (e.y + 4).toFixed(1) + '" fill="' + darker(hexRGB(colorOf(e.s))) + '">' + e.s + '</text>').join('');
+    const axis = '<text x="4" y="' + (H - 2) + '" class="wl-ax">' + yrs[0] + '</text><text x="' + (X(yrs[yrs.length - 1]) - 26) + '" y="' + (H - 2) + '" class="wl-ax">' + yrs[yrs.length - 1] + '</text>'
+      + '<line x1="4" x2="' + X(yrs[yrs.length - 1]) + '" y1="' + Y(0) + '" y2="' + Y(0) + '" stroke="#e3e1db"/>';
+    return '<svg class="wl-line" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + name + '’s generation by source since 2000">' + axis + lines + labels + '</svg>';
+  }
+  if (k === 4) return '<div class="wl-latest">' + mixBar(26)
+    + '<span class="wl-chips">' + srcs.map(s => '<span><i style="background:' + colorOf(s) + '"></i>' + s + ' <b>' + fmtP(pct(s)) + '</b></span>').join('') + '</span>'
+    + (d.CO2 ? '<span class="wl-co2">CO<sub>2</sub> intensity <b>' + Math.round(d.CO2) + '</b> g/kWh</span>' : '') + '</div>';
+  if (k === 5) {
+    const gs = wlGuesses(ex);
+    const row = (g, i) => { const col = closeRGB(g.p);
+      return '<span class="wl-grow"><span class="wl-gn">' + (i + 1) + '</span><span class="wl-gname">' + g.c.name + '</span>'
+        + '<svg class="ht-arrow" viewBox="0 0 16 16" width="15" height="15" style="transform:rotate(' + Math.round(g.deg) + 'deg)" aria-hidden="true"><path d="M8 2v12M3.5 6.5 8 2l4.5 4.5" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        + '<span class="ht-gkm" style="color:' + darker(col) + ';background:' + rgbaOf(col, .16) + '">' + fmtKm(g.km) + ' ' + g.dir + '</span></span>'; };
+    return '<div class="wl-guess">' + gs.map(row).join('')
+      + '<span class="wl-grow is-win"><span class="wl-gn">' + (gs.length + 1) + '</span><span class="wl-gname">' + name + '</span><span class="ht-gkm" style="color:' + darker(WIN_RGB) + ';background:' + rgbaOf(WIN_RGB, .16) + '">Solved</span></span>'
+      + '<span class="ht-batt">' + [0, 0, 0, 1, 1, 1].map(f => '<i class="' + (f ? 'is-on' : '') + '"></i>').join('') + '</span></div>';
+  }
+  if (k === 6) return '<div class="wl-map" id="wl-map"></div>';
+  if (k === 7) return '<div class="wl-shop"><span class="ht-batt">' + [0, 1, 1, 1, 1, 1].map(f => '<i class="' + (f ? 'is-on' : '') + '"></i>').join('') + '</span>'
+    + '<span class="wl-cards">' + ['Renewables potential', 'Underground riches', 'Fuel trade', 'People & power', 'Power market & neighbours'].map(t => '<span>' + t + '</span>').join('') + '</span></div>';
+  return '<div class="wl-after">' + [['Share', 'your result'], ['Leaderboard', 'today and all time'], ['Archive', 'every past puzzle'], ['Explore', 'every country on a globe']].map(([a, b]) => '<span><b>' + a + '</b>' + b + '</span>').join('') + '</div>';
+}
+function hexRGB(h) { const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(h || ''); return m ? [1, 2, 3].map(i => parseInt(m[i], 16)) : [90, 90, 90]; }
+function wlSteps(ex) {
+  const { d, name, y } = ex, top = SOURCES.filter(s => (d[s] || 0) > 0.5).sort((a, b) => d[b] - d[a]);
+  return [
+    ['Welcome to Energle', 'Every day, one country hides behind its electricity. You see how it makes and uses its power, never its name, and you have six tries to find it. Let’s walk through one: our example is ' + name + '.'],
+    ['How much power it makes', 'The first card: how much electricity the country generated in ' + y + ', and how much each person uses. Compare both with the world average: a big total points to a big country or heavy industry; high use per person to a rich or a cold one.'],
+    ['What it trades', 'The flow shows what the country generates and what it buys from or sells to its neighbours. A big importer usually sits next to a bigger grid; a big exporter has power to spare, often from hydro or nuclear.'],
+    ['How that changed since 2000', 'Each line is one source, year by year. Coal falling, wind and solar rising, nuclear switching off: a country’s history is one of the strongest clues.'],
+    ['The latest mix', 'The latest year’s mix, source by source, and how much CO₂ each kWh emits. Here ' + top[0] + ' leads with ' + Math.round(d[top[0]] / d.Total * 100) + '%. “What each source covers”, under the charts, explains each one.'],
+    ['Make a guess', 'Type a country and pick it from the list. After a miss, the arrow points to the answer, with the distance, and the colour runs from red (far) to green (close). The battery counts your six guesses.'],
+    ['Or guess on the map', 'Rather point? The Map button next to Guess opens a globe above the guess bar: tap a country, then Guess. Your misses are coloured on it, the same red to green.'],
+    ['Stuck? Buy a clue', 'From your second try, the Clue Shop trades one guess for a clue card: sun and wind, what lies underground, fuel trade, how people live and, in Europe, the power market. If a card has no data for that country, it’s free, and that’s a clue in itself.'],
+    ['After the puzzle', 'Share your result, put your name on the leaderboard, replay any past puzzle in the Archive, and once today’s is done, explore every country on the globe. A new country comes every day at midnight UTC.'],
+  ];
+}
+function showWelcome() {
+  if (document.getElementById('welcome-modal') || !ALL_DATA) return;
+  try { localStorage.setItem(WELCOME_KEY, '1'); localStorage.setItem(HOWTO_KEY, '1'); } catch (e) {}
+  const ex = wlExample(), steps = wlSteps(ex), n = steps.length;
+  const modal = document.createElement('div'); modal.id = 'welcome-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="nt-box tr-box wl-box" role="dialog" aria-modal="true" aria-labelledby="wl-title">'
+    + '<div class="tr-top"><span class="nt-eyebrow">Welcome <span class="tr-n" id="wl-n"></span></span>'
+    + '<button type="button" class="gl-x tr-x" aria-label="Skip the welcome">×</button></div>'
+    + '<div class="tr-main"><div class="wl-stage" id="wl-stage"></div>'
+    + '<div class="tr-text"><h2 class="tr-title" id="wl-title"></h2><p class="tr-say" id="wl-say" aria-live="polite"></p>'
+    + '<div class="tr-foot"><button type="button" class="tr-back" id="wl-back">← Back</button>'
+    + '<span class="tr-dots" id="wl-dots" aria-hidden="true"></span>'
+    + '<button type="button" class="tr-next" id="wl-next">Next →</button></div>'
+    + '<button type="button" class="wl-skip" id="wl-skip">Skip, I’ll figure it out</button></div></div></div>';
+  let k = 0, x0 = null;
+  const stage = modal.querySelector('#wl-stage');
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const show = i => {
+    k = i;
+    stage.innerHTML = '<div class="wl-pic">' + wlStage(k, ex) + '</div>';
+    if (k === 6) wlMap(stage.querySelector('#wl-map'), ex);
+    modal.querySelector('#wl-n').textContent = '· ' + (k + 1) + ' of ' + n;
+    modal.querySelector('#wl-title').textContent = steps[k][0];
+    modal.querySelector('#wl-say').textContent = steps[k][1];
+    modal.querySelector('#wl-back').disabled = k === 0;
+    const nx = modal.querySelector('#wl-next'), last = k === n - 1;
+    nx.textContent = last ? 'Let’s play →' : 'Next →'; nx.classList.toggle('is-last', last);
+    modal.querySelector('#wl-skip').style.visibility = last ? 'hidden' : '';   // kept in place: the box keeps its height
+    modal.querySelector('#wl-dots').innerHTML = steps.map((_, j) => '<i' + (j === k ? ' class="on"' : '') + '></i>').join('');
+  };
+  const go = dl => { const j = k + dl; if (j < 0) return; if (j >= n) { close(); const inp = document.getElementById('guess-input'); if (inp && !matchMedia('(hover: none)').matches) inp.focus({ preventScroll: true }); return; } show(j); };
+  const onKey = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); };
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  modal.querySelector('.tr-x').addEventListener('click', close);
+  modal.querySelector('#wl-skip').addEventListener('click', close);
+  modal.querySelector('#wl-back').addEventListener('click', () => go(-1));
+  modal.querySelector('#wl-next').addEventListener('click', () => go(1));
+  stage.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(modal);
+  show(0);
+  modal.querySelector('#wl-next').focus({ preventScroll: true });
+}
+// the map step: the demo world map, the example's misses coloured as on the real map, the answer in green
+function wlMap(el, ex) {
+  if (!el) return;
+  nxMapSVG().then(svg => {
+    if (!svg || !document.body.contains(el)) return;
+    el.innerHTML = svg;
+    wlGuesses(ex).forEach(g => { const p = el.querySelector('path[data-i="' + g.c.iso3 + '"]'); if (p) { p.style.fill = rgbaOf(closeRGB(g.p), .75); p.style.stroke = darker(closeRGB(g.p)); } });
+    const a = el.querySelector('path[data-i="' + ex.c.iso3 + '"]'); if (a) { a.style.fill = rgbaOf(WIN_RGB, .85); a.style.stroke = darker(WIN_RGB); a.style.strokeWidth = '1'; }
+  });
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (!howtoOn()) return;
+  window.showHowTo = (function (_h) { return function () { _h(); const box = document.querySelector('#howto-modal .ht-foot');
+    if (box && !box.querySelector('.ht-full')) { box.insertAdjacentHTML('beforeend', ' <button type="button" class="ft-link ht-full">See the full walkthrough</button>');
+      box.querySelector('.ht-full').addEventListener('click', () => { document.getElementById('howto-modal').remove(); showWelcome(); }); } }; })(showHowTo);
 });
