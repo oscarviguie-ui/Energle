@@ -586,6 +586,8 @@ function globeGroupMiddle(g) {
   return [lng, Math.max(-30, Math.min(35, lat))];   // kept near the equator so both hemispheres show
 }
 function globeRegion(r) {
+  // one layer at a time: picking a group (not a source's producers) stops the map's colouring by a source
+  if (window.ENERGLE_TEST && GLOBE_SHADE && !String(r).startsWith('src_')) globeShadeOff();   // (test page first)
   GLOBE_REGION = GLOBE_REGIONS[r] ? r : 'all';
   if (ATLAS.region !== GLOBE_REGION) ATLAS.region = GLOBE_REGION;
   globeApplyGroup();
@@ -1521,6 +1523,12 @@ function globeShade(src) {
     key.hidden = false;
   }
 }
+// stop colouring the map by a source: the legend's chip lets go too
+function globeShadeOff() {
+  lockedSource = null; GLOBE_SRC_PREV = null;
+  if (typeof _globeFocus === 'function') _globeFocus(null);
+  globeShade(null);
+}
 // after the panel (and its legend) is redrawn: keep the source that colours the map selected
 function globeShadeRelock() {
   if (!GLOBE_SHADE) return;
@@ -2065,4 +2073,19 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   window.showHowTo = (function (_h) { return function () { _h(); const box = document.querySelector('#howto-modal .ht-foot');
     if (box && !box.querySelector('.ht-full')) { box.insertAdjacentHTML('beforeend', ' <button type="button" class="ft-link ht-full">See the full walkthrough</button>');
       box.querySelector('.ht-full').addEventListener('click', () => { document.getElementById('howto-modal').remove(); showWelcome(); }); } }; })(showHowTo);
+});
+
+// By source / By category: a colouring the new view has no chip for is switched off (with its group), not left on unselected
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (typeof setChartView !== 'function' || !window.ENERGLE_TEST) return;   // (test page first)
+  const _scv = setChartView;
+  window.setChartView = function () {
+    const r = _scv.apply(this, arguments);
+    if (GLOBE_SHADE && document.body.classList.contains('at-globe') && !document.querySelector('#legend-shared .legend-item[data-src="' + GLOBE_SHADE + '"]')) {
+      const back = String(GLOBE_REGION).startsWith('src_') ? (GLOBE_SRC_PREV || 'all') : null;
+      globeShadeOff();
+      if (back && !GLOBE_SEL) globeRegion(back);
+    }
+    return r;
+  };
 });
