@@ -1051,8 +1051,8 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  WHAT'S NEW (test page): a wider window that fits one screen on laptops, led by the Explore update
 //  with a small demo that plays through what Explore does, using the real numbers.
 // ============================================================
-const EXPLORE_UPDATE = ['10 Nov', 'Explore: the world on a map',
-  'Practice is now Explore. Click any country for its full profile and clue cards. Add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders, clue cards included. Click a source under the charts to colour the map by it. And practise on any group.'];
+const EXPLORE_UPDATE = ['13 Nov', 'Explore: the world on a map',
+  'Practice is now Explore. Click any country for its full profile and clue cards. Add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders, clue cards included. Click a source under the charts to colour the map by it. And practise on any group. In the daily, the Map button opens a globe to pick your guesses on.'];
 let NX_SVG = null;
 function nxMapSVG() {
   if (!NX_SVG) NX_SVG = fetch(GLOBE_DIR + 'explore-demo.svg').then(r => r.ok ? r.text() : '').catch(() => '');
