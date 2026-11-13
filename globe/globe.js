@@ -1869,12 +1869,13 @@ function showHowTo() {
   document.addEventListener('keydown', onKey);
   modal.querySelector('#ht-ok').focus({ preventScroll: true });
 }
-// the link on the puzzle line: spelled out until a first game is played, then a small "?"
+// the link on the puzzle line: only for people who have never played a game (they may have skipped the welcome);
+// regulars find How to play in the footer
 function howtoLink() {
-  if (!howtoOn() || document.getElementById('ht-q')) return;
+  if (!howtoOn() || document.getElementById('ht-q') || !howtoNewcomer()) return;
   const vis = e => e && getComputedStyle(e).display !== 'none';            // phones hide the task: the link then follows the puzzle number
   const rest = [document.querySelector('.subtitle-row .sub-rest'), document.querySelector('.subtitle-row .sub-lead'), document.querySelector('.subtitle-row .subtitle')].find(vis); if (!rest) return;
-  const nb = howtoNewcomer();
+  const nb = true;
   rest.insertAdjacentHTML('beforeend', '<button type="button" class="ht-q' + (nb ? ' is-text' : '') + '" id="ht-q" title="How to play" aria-label="How to play">'
     + (nb ? 'How to play' : '?') + '</button>');
   document.getElementById('ht-q').addEventListener('click', showHowTo);
