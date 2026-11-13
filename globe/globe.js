@@ -944,7 +944,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   };
   const _browse = renderBrowseScreen;
   window.renderBrowseScreen = function () {
-    document.body.classList.remove('gm-on', 'ex-picker', 'pz-col'); document.body.classList.add('ex-hdr');
+    document.body.classList.remove('gm-on', 'ex-picker'); globeFrame(false); document.body.classList.add('ex-hdr');
     _browse();
     const t = document.querySelector('.sub-lead'), r = document.querySelector('.sub-rest');
     if (t) t.textContent = 'Explore'; if (r) r.textContent = 'every country’s electricity on the map';
@@ -991,7 +991,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   Object.assign(CAT_EMOJIS, { asiaonly: '🌏', oceania: '🌏', namerica: '🌎', samerica: '🌎', eu: '🇪🇺', g7: '🏛️', opec: '🛢️', brics: '🌐' });
   const _picker = renderPracticePickerScreen;
   window.renderPracticePickerScreen = function () {
-    document.body.classList.remove('gm-on', 'pz-col'); document.body.classList.add('ex-hdr', 'ex-picker');
+    document.body.classList.remove('gm-on'); globeFrame(false); document.body.classList.add('ex-hdr', 'ex-picker');
     // the picker draws region, profile and trend; the blocs ride in the region grid, then move to their own section
     const blocs = PRACTICE_CATEGORIES.filter(c => c.group === 'bloc'); blocs.forEach(c => c.group = 'region');
     try { _picker(); } finally { blocs.forEach(c => c.group = 'bloc'); }
@@ -1025,11 +1025,11 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       + '<span class="pc-atlas-cta">Suggest a category →</span></button>';
   };
   const _archive = renderArchiveScreen;
-  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-picker'); document.body.classList.add('ex-hdr', 'pz-col'); return _archive(d); };
+  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-picker'); globeFrame(true); document.body.classList.add('ex-hdr'); return _archive(d); };
   // the game screen: one information block, the guess bar under it, a Map button in the guess bar
   const _game = renderGameScreen;
   window.renderGameScreen = function () {
-    document.body.classList.remove('ex-picker'); document.body.classList.add('ex-hdr', 'pz-col');   // the same header on every tab; the puzzle in its own column
+    document.body.classList.remove('ex-picker'); globeFrame(true); document.body.classList.add('ex-hdr');   // the same header on every tab; the puzzle in its own column
     const old = document.getElementById('gm-card'); if (old) old.remove();
     _game();
     gwLayout();
@@ -1778,7 +1778,35 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   app.addEventListener('transitionend', e => {
     if (e.target !== app || e.propertyName !== 'max-width') return;
     moving = false;
+    if (APP_MOVING) return globeFrameSettled();
     window.dispatchEvent(new Event('resize'));
     try { hdBoxFit(); hdAlignNav(); } catch (err) {}
   });
+});
+
+// ---- the page's width between tabs: narrow (the puzzle, the archive) or wide (Explore). When it changes, the page
+// animates from one to the other; anything drawn to the page's width (the flow chart) waits for the new width, so it
+// plays its entrance once, at the right scale, instead of being drawn wide and snapping narrow (or the reverse).
+let APP_MOVING = false, APP_MOVE_T = null, FLOW_PENDING = null;
+function globeFrame(narrow) {
+  const was = document.body.classList.contains('pz-col');
+  document.body.classList.toggle('pz-col', narrow);
+  if (was === narrow || !document.body.classList.contains('tab-anim') || !matchMedia('(min-width: 1100px)').matches || REDUCED_MOTION) return;
+  APP_MOVING = true; clearTimeout(APP_MOVE_T); APP_MOVE_T = setTimeout(globeFrameSettled, 800);   // in case the end is never reported
+}
+function globeFrameSettled() {
+  if (!APP_MOVING) return;
+  APP_MOVING = false; clearTimeout(APP_MOVE_T);
+  window.dispatchEvent(new Event('resize'));
+  try { hdBoxFit(); hdAlignNav(); } catch (err) {}
+  if (FLOW_PENDING) {
+    const args = FLOW_PENDING; FLOW_PENDING = null;
+    renderFlowBar.apply(null, args);
+    setTimeout(() => { try { clearTimeout(flowResizeTimer); } catch (e) {} }, 0);   // the resize above must not redraw it again mid-entrance
+  }
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (typeof renderFlowBar !== 'function') return;
+  const _flow = renderFlowBar;
+  window.renderFlowBar = function () { if (APP_MOVING) { FLOW_PENDING = [...arguments]; return; } return _flow.apply(this, arguments); };
 });
