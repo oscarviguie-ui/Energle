@@ -1,4 +1,25 @@
 // ============================================================
+//  PHONES: Safari's bars slide in and out as the page scrolls, and each time the window "resizes" in height only. The
+//  game redrew its clue cards on every resize, which on a finished game yanked the page back down while scrolling up.
+//  On touch screens, a resize that keeps the width is swallowed here, before the game's own listeners (this file loads
+//  first, by capturing). Real changes (rotating the phone) still go through. Not on the Explore map, whose layout follows the height.
+// ============================================================
+(function () {
+  let w = window.innerWidth;
+  const touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  window.addEventListener('resize', e => {
+    const nw = window.innerWidth;
+    if (touch && nw === w && !document.body.classList.contains('at-globe')) {
+      e.stopImmediatePropagation();
+      // the clue cards' own listener was added before this one and still runs: cancel the redraw it just scheduled
+      setTimeout(() => { try { clearTimeout(packTimer); } catch (err) {} }, 0);
+      return;
+    }
+    w = nw;
+  }, { capture: true });   // capture: runs before the listeners added earlier (shop.js loads before this file)
+})();
+
+// ============================================================
 //  GLOBE — test page at energle.org/globe/ (everything it needs lives in this folder).
 //  Only active there (globe/index.html sets window.GLOBE_PAGE). Three parts:
 //   1. EXPLORE: the Practice tab becomes "Explore" and opens on a terrain globe; click a country to
