@@ -933,9 +933,9 @@ body.gl-stack.at-globe #clue-cards .ic-slot.gl-flat { align-items: stretch; }
    mix) keep the share of the width they had in the 900 px layout (220 of 888 px ≈ 24.8%), a little more (29%), instead of a fixed 220 px,
    so all four grow together and the two narrow ones stay the same width as each other */
 @media (min-width: 601px) {
-  body.pz-col:not(.at-globe) #balance-card { grid-template-columns: minmax(220px, 29%) minmax(0, 1fr); }
+  body.pz-col:not(.at-globe) #balance-card { grid-template-columns: minmax(220px, 34%) minmax(0, 1fr); }
   body.pz-col:not(.at-globe) #charts-section { grid-template-columns: minmax(0, 1fr) minmax(220px, 29%); }
   /* the flow: no wider than it needs, centred in its card (both ways), its title centred above it */
   body.pz-col:not(.at-globe) .bc-flow > .stat-label { text-align: center; }
-  body.pz-col:not(.at-globe) #flow-chart { width: 100%; max-width: 580px; margin: auto; }
+  body.pz-col:not(.at-globe) #flow-chart { width: 100%; margin: auto 0; }
 }
