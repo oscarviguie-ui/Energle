@@ -284,11 +284,25 @@ body.at-globe .at-tools { margin-top: 14px; }
 .gl-maphint[hidden] { display: none; }
 @media (max-width: 600px) { .gl-maphint { bottom: 40px; font-size: .7rem; } .gl-p-head { flex-wrap: wrap; } .gl-p-head .gl-tabs { order: 3; flex-basis: 100%; margin-left: 0; justify-content: flex-start; } }
 @media (min-width: 1100px) {
-  /* the legend: the toggle, the sources (wrapping onto a second line when they don't fit, so every one stays clickable), the (i) */
-  body.at-globe .gl-side #legend-shared { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; column-gap: 12px; padding: .45rem .7rem; }
+  /* the legend on one line: the toggle, the sources (sliding sideways when they don't fit: arrows at the ends, the mouse
+     wheel, a swipe; see globeLegendScroll), the (i) */
+  body.at-globe .gl-side #legend-shared { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: .45rem .7rem; }
   body.at-globe .gl-side .lg-head { display: contents; }
   body.at-globe .gl-side #legend-shared .view-toggle { grid-column: 1; grid-row: 1; }
-  body.at-globe .gl-side #legend-shared .lg-items { grid-column: 2; grid-row: 1; flex-wrap: wrap; gap: 5px 6px; align-self: center; }
+  body.at-globe .gl-side #legend-shared .lg-items { grid-column: 2; grid-row: 1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth;
+    padding: 7px 6px; margin: -7px -6px; }   /* room for the glow, which a sliding row would clip */
+  body.at-globe .gl-side #legend-shared .lg-items::-webkit-scrollbar { display: none; }
+  body.at-globe .gl-side #legend-shared.can-r .lg-items { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 46px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 46px), transparent); }
+  body.at-globe .gl-side #legend-shared.can-l .lg-items { -webkit-mask-image: linear-gradient(90deg, transparent, #000 46px); mask-image: linear-gradient(90deg, transparent, #000 46px); }
+  body.at-globe .gl-side #legend-shared.can-l.can-r .lg-items { -webkit-mask-image: linear-gradient(90deg, transparent, #000 46px, #000 calc(100% - 46px), transparent); mask-image: linear-gradient(90deg, transparent, #000 46px, #000 calc(100% - 46px), transparent); }
+  body.at-globe .gl-side #legend-shared .lg-arr { grid-column: 2; grid-row: 1; z-index: 2; display: none; width: 26px; height: 26px; padding: 0; border: 0; border-radius: 50%;
+    align-items: center; justify-content: center; background: #fff; color: #1a1a1a; box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer; }
+  body.at-globe .gl-side #legend-shared .lg-arr svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+  body.at-globe .gl-side #legend-shared .lg-arr:hover { background: #f4f3ef; }
+  body.at-globe .gl-side #legend-shared .lg-arr:focus-visible { outline: 2px solid #f5c842; outline-offset: 2px; }
+  body.at-globe .gl-side #legend-shared .lg-arr-l { justify-self: start; }
+  body.at-globe .gl-side #legend-shared .lg-arr-r { justify-self: end; }
+  body.at-globe .gl-side #legend-shared.can-l .lg-arr-l, body.at-globe .gl-side #legend-shared.can-r .lg-arr-r { display: flex; }
   body.at-globe .gl-side #legend-shared .legend-item { flex-shrink: 0; }
   body.at-globe .gl-side #legend-shared .glossary-btn { grid-column: 3; grid-row: 1; }
   body.at-globe .gl-side #legend-shared .gb-long, body.at-globe .gl-side #legend-shared .gb-short { display: none; }
@@ -811,3 +825,5 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
 @media (max-height: 620px) and (max-width: 600px) { .tr-box .nx-mapbox { aspect-ratio: 640 / 230; } .tr-say { min-height: 0; } }
 /* in the tour the card is the demo's last line (no caption bar under it): a little more room at the bottom */
 .tr-box .nx-card { padding-bottom: 12px; display: flex; flex-direction: column; justify-content: flex-start; }
+/* the legend's slide arrows exist only on laptops (the phone's legend wraps) */
+#legend-shared .lg-arr { display: none; }

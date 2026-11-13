@@ -268,7 +268,7 @@ function globeSide() {
   globeSideFit();
   gphAfterSide();
   globeHeadSlot();
-  globeLayoutFit();
+  globeLayoutFit(); globeLegendScroll();
 }
 // the panel's title stays at the top of the panel (an older layout moved it up to the tools row)
 function globeHeadSlot() {
@@ -1479,3 +1479,43 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   };
   document.addEventListener('touchend', end); document.addEventListener('touchcancel', () => { hide(); x0 = y0 = null; pulling = false; });
 })();
+
+// ============================================================
+//  THE EXPLORE LEGEND ON LAPTOPS: one line that slides sideways when the sources don't fit. The ends fade, and an arrow
+//  appears on the side with more; the mouse wheel and a trackpad swipe slide it too. Re-bound every time the legend is drawn.
+// ============================================================
+function globeLegendScroll() {
+  const lg = document.querySelector('body.at-globe .gl-side #legend-shared'), row = lg && lg.querySelector('.lg-items');
+  if (!row) return;
+  const svg = d => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + d + '"/></svg>';
+  if (!lg.querySelector('.lg-arr')) {
+    lg.insertAdjacentHTML('beforeend', '<button type="button" class="lg-arr lg-arr-l" aria-label="Earlier sources">' + svg('M15 5l-7 7 7 7') + '</button>'
+      + '<button type="button" class="lg-arr lg-arr-r" aria-label="More sources">' + svg('M9 5l7 7-7 7') + '</button>');
+    const by = d => row.scrollBy({ left: d * Math.max(120, row.clientWidth * 0.7) });
+    lg.querySelector('.lg-arr-l').addEventListener('click', () => by(-1));
+    lg.querySelector('.lg-arr-r').addEventListener('click', () => by(1));
+  }
+  const sync = () => {
+    const over = row.scrollWidth > row.clientWidth + 2;
+    lg.classList.toggle('can-l', over && row.scrollLeft > 2);
+    lg.classList.toggle('can-r', over && row.scrollLeft < row.scrollWidth - row.clientWidth - 2);
+  };
+  if (!row.dataset.scr) {
+    row.dataset.scr = '1';
+    row.addEventListener('scroll', sync, { passive: true });
+    row.addEventListener('wheel', e => {
+      if (row.scrollWidth <= row.clientWidth + 2 || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;   // a sideways swipe scrolls by itself
+      const max = row.scrollWidth - row.clientWidth;
+      if ((e.deltaY < 0 && row.scrollLeft <= 0) || (e.deltaY > 0 && row.scrollLeft >= max)) return;  // at the end: let the page scroll
+      e.preventDefault(); row.scrollLeft += e.deltaY;
+    }, { passive: false });
+    // the source picked from the map or the keyboard slides into view
+    row.addEventListener('focusin', e => { const it = e.target.closest('.legend-item'); if (it) it.scrollIntoView({ block: 'nearest', inline: 'nearest' }); });
+  }
+  sync(); requestAnimationFrame(sync);
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  const _lg = renderLegend;
+  window.renderLegend = function (keys) { _lg(keys); globeLegendScroll(); };
+  window.addEventListener('resize', () => globeLegendScroll());
+});
