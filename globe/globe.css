@@ -827,3 +827,11 @@ body.at-globe.gl-hint-open #legend-shared .lg-items .legend-item:nth-child(n+10)
 .tr-box .nx-card { padding-bottom: 12px; display: flex; flex-direction: column; justify-content: flex-start; }
 /* the legend's slide arrows exist only on laptops (the phone's legend wraps) */
 #legend-shared .lg-arr { display: none; }
+
+/* Renewables Potential · Water: like Elevation, each line is its name and value on top, the bar under it at full width,
+   so it fits however narrow the card gets (in the Explore panel the bar had shrunk to nothing) */
+body.gl-page .dd-row.wt-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "l v" "t t"; row-gap: 4px; column-gap: 8px; align-items: baseline; }
+body.gl-page .wt-row .dd-l { grid-area: l; min-width: 0; line-height: 1.25; }
+body.gl-page .wt-row .dd-v { grid-area: v; text-align: right; }
+body.gl-page .wt-row .dd-track { grid-area: t; align-self: center; }
+body.gl-page .wt-rows { gap: 10px; }
