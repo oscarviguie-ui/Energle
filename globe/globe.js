@@ -305,13 +305,54 @@ function globeTabs() {
   bar.innerHTML = '<button type="button" class="gl-tab" role="tab" data-t="0">Profile</button>'
     + (cards.length ? '<span class="gl-tabs-sep" aria-hidden="true"></span>' : '') + names.map((n, i) => '<button type="button" class="gl-tab gl-tab--card" role="tab" data-t="' + (i + 1) + '">' + n + '</button>').join('');
   bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); });
-  globeTab(GLOBE_TAB, true);
+  globeStackFit();
+  globeTab(document.body.classList.contains('gl-stack') ? 0 : GLOBE_TAB, true);
 }
+// Tall laptop screens: when the profile leaves room under it for a clue card, the cards are stacked below it instead of
+// behind tabs (nothing is stretched to fill the height); the tabs then jump to each card, and follow the scrolling.
+const GLOBE_STACK_ROOM = 300;
+function globeStackFit() {
+  const side = document.getElementById('gl-side'), prof = document.getElementById('gl-pane-profile'), cc = document.getElementById('clue-cards');
+  const wide = document.body.classList.contains('at-globe') && matchMedia('(min-width: 1100px)').matches;
+  let stack = false;
+  if (wide && side && prof && cc && cc.querySelector('.ic-card')) {
+    const ph = prof.hidden, ch = cc.hidden; prof.hidden = false; cc.hidden = true;
+    document.body.classList.remove('gl-stack');
+    const lay = document.getElementById('gl-layout');
+    const avail = window.innerHeight - Math.max(0, lay.getBoundingClientRect().top) - 22;      // the screen under the tools
+    const used = prof.getBoundingClientRect().bottom - lay.getBoundingClientRect().top;
+    stack = avail - used >= GLOBE_STACK_ROOM;
+    prof.hidden = ph; cc.hidden = ch;
+  }
+  document.body.classList.toggle('gl-stack', stack);
+  return stack;
+}
+function globeStackSpy() {
+  if (!document.body.classList.contains('gl-stack')) return;
+  const cards = [...document.querySelectorAll('#clue-cards .ic-card')], line = 90;   // the card at the top of the screen
+  let t = 0; cards.forEach((c, i) => { if (c.getBoundingClientRect().top < line) t = i + 1; });
+  if (t === GLOBE_TAB) return;
+  GLOBE_TAB = t; document.querySelectorAll('#gl-tabs .gl-tab').forEach(b => b.setAttribute('aria-selected', String(+b.dataset.t === t)));
+}
+let GLOBE_SPY_RAF = 0;
+window.addEventListener('scroll', () => { cancelAnimationFrame(GLOBE_SPY_RAF); GLOBE_SPY_RAF = requestAnimationFrame(globeStackSpy); }, { passive: true });
+window.addEventListener('resize', () => { if (!document.getElementById('gl-tabs')) return; const was = document.body.classList.contains('gl-stack'); if (globeStackFit() !== was) globeTab(GLOBE_TAB, true); });
 function globeTab(t, first) {
   const was = GLOBE_TAB; GLOBE_TAB = t;
   const tb = document.querySelector('#gl-tabs .gl-tab[data-t="' + t + '"]'); if (!first && tb) GLOBE_TAB_NAME = tb.textContent;
   document.querySelectorAll('#gl-tabs .gl-tab').forEach(b => b.setAttribute('aria-selected', String(+b.dataset.t === t)));
   const prof = document.getElementById('gl-pane-profile'), cc = document.getElementById('clue-cards');
+  if (document.body.classList.contains('gl-stack')) {
+    if (prof) prof.hidden = false;
+    if (cc) { cc.hidden = false; cc.querySelectorAll('.ic-card').forEach(c => { c.hidden = false; }); }
+    if (first && was === t) { /* a redraw: keep the scroll */ }
+    else if (!first || t) {
+      const el = t ? cc.querySelectorAll('.ic-card')[t - 1] : null, how = first ? 'auto' : 'smooth';
+      requestAnimationFrame(() => el ? el.scrollIntoView({ block: 'start', behavior: how }) : window.scrollTo({ top: 0, behavior: how }));
+    }
+    if (first) requestAnimationFrame(() => { try { if (lineChart) lineChart.resize(); if (barChart) barChart.resize(); } catch (e) {} if (target) renderFlowBar(false); });
+    return;
+  }
   if (prof) prof.hidden = t !== 0;
   if (cc) { cc.hidden = t === 0; cc.querySelectorAll('.ic-card').forEach((c, i) => { c.hidden = i !== t - 1; }); cc.scrollTop = 0; }
   // the charts were drawn while hidden: draw them again at their real size
