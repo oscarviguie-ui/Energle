@@ -652,9 +652,12 @@ function gmapShow(on, scroll) {
   if (!card) {
     card = document.createElement('section'); card.id = 'gm-card'; card.className = 'gm-card'; card.setAttribute('aria-label', 'Map');
     card.innerHTML = '<div class="gm-wrap"><div class="gl-canvas" id="gm-canvas"></div><p class="gl-loading" id="gm-loading">Loading the map…</p>'
-      + '<button type="button" class="gm-x" id="gm-x" aria-label="Hide the map">×</button></div>';
+      + '<button type="button" class="gm-x" id="gm-x" aria-label="Hide the map">×</button>'
+      + '<button type="button" class="gm-size" id="gm-size" aria-label="Make the map taller" aria-pressed="false">' + GMAP_GROW_SVG + '</button>'
+      + '<div class="gm-grip" id="gm-grip" role="separator" aria-orientation="horizontal" aria-label="Drag to resize the map" tabindex="0"><span></span></div></div>';
     document.body.appendChild(card); gmapPlace();
     card.querySelector('#gm-x').addEventListener('click', () => gmapShow(false));
+    gmapSizeBind(card);
     // a wide, short strip: the whole world laid flat fills it, every country one tap away
     const cv = document.getElementById('gm-canvas');
     GMAP = null;
@@ -682,6 +685,47 @@ function gmapShow(on, scroll) {
   // opened from the button: bring the map and the guess bar into view together
   if (scroll) requestAnimationFrame(() => { const ia = document.getElementById('input-area'); if (ia) ia.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
   gmapRedrawFlow();
+}
+// ---------- the map's height (laptops): a grip along its bottom edge to drag, and a button to toggle tall / normal ----------
+const GMAP_GROW_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="gm-sz-grow" d="M8 9l4-4 4 4M8 15l4 4 4-4"/><path class="gm-sz-shrink" d="M8 5l4 4 4-4M8 19l4-4 4 4"/></svg>';
+const GMAP_H_KEY = 'energle_gmap_h';
+function gmapSizeLimits() { return { min: 260, max: Math.max(320, Math.round(window.innerHeight * 0.86)), tall: Math.max(320, Math.round(window.innerHeight * 0.78)) }; }
+function gmapBaseH() { return Math.round(Math.max(300, Math.min(520, window.innerHeight * 0.42))); }   // = .gm-wrap's CSS height on laptops
+function gmapSetH(wrap, h, save) {
+  const L = gmapSizeLimits(); h = Math.round(Math.max(L.min, Math.min(L.max, h)));
+  const m = GMAP, fitBefore = m ? Math.abs(m.getZoom() - gmapFitZoom(m, m.getCenter().lat)) < 0.08 : false;
+  wrap.style.height = h + 'px';
+  const tall = h > gmapBaseH() + 40, b = document.getElementById('gm-size');
+  if (b) { b.classList.toggle('is-tall', tall); b.setAttribute('aria-pressed', String(tall)); b.setAttribute('aria-label', tall ? 'Make the map shorter' : 'Make the map taller'); }
+  if (m) { m.resize(); if (fitBefore) m.jumpTo({ zoom: gmapFitZoom(m, m.getCenter().lat) }); }   // still at "whole globe": keep it filling the frame
+  if (save) try { localStorage.setItem(GMAP_H_KEY, String(h)); } catch (e) {}
+}
+function gmapSizeBind(card) {
+  const wrap = card.querySelector('.gm-wrap'), grip = card.querySelector('#gm-grip'), btn = card.querySelector('#gm-size');
+  const wide = () => matchMedia('(min-width: 900px)').matches;
+  try { const h = +localStorage.getItem(GMAP_H_KEY); if (h && wide()) gmapSetH(wrap, h, false); } catch (e) {}
+  btn.addEventListener('click', () => {
+    const tall = btn.classList.contains('is-tall'), L = gmapSizeLimits();
+    const wasFit = GMAP ? Math.abs(GMAP.getZoom() - gmapFitZoom(GMAP, GMAP.getCenter().lat)) < 0.08 : false;
+    wrap.classList.add('is-anim'); gmapSetH(wrap, tall ? gmapBaseH() : L.tall, true);
+    // once the frame has grown or shrunk: a globe that was whole is fitted to the new frame (a zoomed-in view is left alone)
+    const end = () => { wrap.classList.remove('is-anim'); if (GMAP) { GMAP.resize(); const fz = gmapFitZoom(GMAP, GMAP.getCenter().lat); if (wasFit || GMAP.getZoom() < fz) GMAP.easeTo({ zoom: fz, duration: 300 }); } };
+    let done = false; const once = () => { if (done) return; done = true; wrap.removeEventListener('transitionend', onEnd); end(); };
+    const onEnd = e => { if (e.target === wrap && e.propertyName === 'height') once(); };
+    wrap.addEventListener('transitionend', onEnd); setTimeout(once, 700);   // after the height has settled (a slow device may be late)
+    if (!tall) requestAnimationFrame(() => card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+  });
+  let y0 = null, h0 = 0, raf = 0;
+  grip.addEventListener('pointerdown', e => { if (!wide()) return; y0 = e.clientY; h0 = wrap.offsetHeight; grip.setPointerCapture(e.pointerId); wrap.classList.add('is-drag'); e.preventDefault(); });
+  grip.addEventListener('pointermove', e => { if (y0 == null) return; const y = e.clientY; cancelAnimationFrame(raf); raf = requestAnimationFrame(() => gmapSetH(wrap, h0 + y - y0, false)); });
+  const up = () => { if (y0 == null) return; y0 = null; wrap.classList.remove('is-drag'); gmapSetH(wrap, wrap.offsetHeight, true); };
+  grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
+  grip.addEventListener('dblclick', () => btn.click());
+  grip.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault();
+    gmapSetH(wrap, wrap.offsetHeight + (e.key === 'ArrowDown' ? 40 : -40), true);
+  });
+  window.addEventListener('resize', () => { if (!document.body.contains(wrap)) return; if (!wide()) { wrap.style.height = ''; if (GMAP) GMAP.resize(); } else if (wrap.style.height) gmapSetH(wrap, parseFloat(wrap.style.height), false); });
 }
 function gmapReopenSync() {
   let b = document.getElementById('gm-reopen');

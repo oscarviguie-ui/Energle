@@ -842,3 +842,24 @@ body.gl-page .wt-rows { gap: 10px; }
 .rn-tk::before { content: ""; position: absolute; left: 50%; top: -4px; width: 1px; height: 3px; background: #cfcdc6; }
 .rn-tk:first-child::before { left: 0; } .rn-tk:last-child::before { left: auto; right: 0; }
 .ug-rents .rn-key { margin-top: 4px; }
+
+/* the daily map's height, on laptops: a grip on its bottom edge (drag, or arrow keys; double-click toggles) and a
+   tall / normal button under the × */
+.gm-size, .gm-grip { display: none; }
+@media (min-width: 900px) {
+  .gm-size { position: absolute; top: 46px; right: 8px; z-index: 2; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%;
+    background: rgba(255,255,255,.95); box-shadow: 0 1px 4px rgba(0,0,0,.15); color: #555; cursor: pointer; }
+  .gm-size:hover { color: #1a1a1a; }
+  .gm-size svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .gm-size .gm-sz-shrink, .gm-size.is-tall .gm-sz-grow { display: none; }
+  .gm-size.is-tall .gm-sz-shrink { display: inline; }
+  .gm-grip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; display: flex; justify-content: center; align-items: flex-end; height: 18px; padding-bottom: 5px; cursor: ns-resize; touch-action: none; }
+  .gm-grip span { width: 46px; height: 5px; border-radius: 3px; background: rgba(26,26,26,.28); box-shadow: 0 0 0 2px rgba(255,255,255,.7); transition: background .15s, width .15s; }
+  .gm-grip:hover span, .gm-wrap.is-drag .gm-grip span, .gm-grip:focus-visible span { width: 64px; background: #1a1a1a; }
+  .gm-grip:focus-visible { outline: none; }
+  .gm-wrap.is-anim { transition: height .26s ease; }
+  .gm-wrap.is-drag { user-select: none; }
+  .gm-wrap .maplibregl-ctrl-bottom-right, .gm-wrap .maplibregl-ctrl-bottom-left { bottom: 10px; }
+}
+/* once the game is over and the map is closed, the button to bring it back sits in the middle */
+.gm-reopen { align-self: center; margin-left: auto; margin-right: auto; display: flex; width: max-content; }
