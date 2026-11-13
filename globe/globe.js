@@ -1745,7 +1745,12 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     window.renderAtlasCards = function () {
       if (inPanel() && !GLOBE_SEL) return;                 // a group: its cards are Explore's own
       const r = _rac.apply(this, arguments);
-      if (inPanel()) globeTabs();
+      if (inPanel()) {
+        // cards with no data for this country go last, after the ones worth reading (and so do their tabs)
+        const cc = document.querySelector('#gl-side #clue-cards'), slot = cc && (cc.querySelector('.ic-slot') || cc);
+        if (slot) cc.querySelectorAll('.ic-card.is-empty').forEach(c => slot.appendChild(c));
+        globeTabs();
+      }
       return r;
     };
   }
