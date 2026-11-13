@@ -1810,3 +1810,15 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   const _flow = renderFlowBar;
   window.renderFlowBar = function () { if (APP_MOVING) { FLOW_PENDING = [...arguments]; return; } return _flow.apply(this, arguments); };
 });
+
+// ---- the puzzle's latest-mix bar: a little thicker in the 1,100 px column (its card is wider there), so it uses the room
+if (globeOn() && window.Chart) window.Chart = class extends window.Chart {
+  constructor(ctx, cfg) {
+    try {
+      const cv = ctx && (ctx.canvas || ctx);
+      if (cv && cv.id === 'bar-chart' && document.body.classList.contains('pz-col') && !document.body.classList.contains('at-globe') && innerWidth > 600)
+        (cfg.data.datasets || []).forEach(d => { d.maxBarThickness = 64; });
+    } catch (e) {}
+    super(ctx, cfg);
+  }
+};
