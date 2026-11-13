@@ -1600,7 +1600,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  as the bars move, and the page behind doesn't scroll.
 // ============================================================
 (function () {
-  const IDS = ['notice-modal', 'tour-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
+  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
   const vv = window.visualViewport;
   const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
   function fit() {
@@ -1820,3 +1820,87 @@ if (globeOn() && window.Chart) window.Chart = class extends window.Chart {
     super(ctx, cfg);
   }
 };
+
+// ============================================================
+//  HOW TO PLAY: the rules in four steps, each with a small picture of the thing it describes.
+//  Opens by itself once, on a newcomer's first daily; afterwards from the "How to play" link on the puzzle line
+//  (a small "?" once a game has been played) and from the footer. Test page only for now (window.ENERGLE_TEST).
+// ============================================================
+const HOWTO_KEY = 'energle_howto_v1';
+const howtoOn = () => globeOn() && !!window.ENERGLE_TEST;
+function howtoNewcomer() { try { return !(loadStats().played > 0); } catch (e) { return true; } }
+function howtoHTML() {
+  const seg = (k, w) => '<span style="width:' + w + '%;background:' + colorOf(k) + '"></span>';
+  const row = (name, km, dir, deg, p) => {
+    const c = closeRGB(p);
+    return '<span class="ht-guess"><span class="ht-gname">' + name + '</span>'
+      + '<svg class="ht-arrow" viewBox="0 0 16 16" width="14" height="14" style="transform:rotate(' + deg + 'deg)" aria-hidden="true"><path d="M8 2v12M3.5 6.5 8 2l4.5 4.5" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      + '<span class="ht-gkm" style="color:' + darker(c) + ';background:' + rgbaOf(c, .16) + '">' + km + ' ' + dir + '</span></span>';
+  };
+  const cells = '<span class="ht-batt">' + [1, 1, 1, 1, 1, 0].map(f => '<i class="' + (f ? 'is-on' : '') + '"></i>').join('') + '</span>';
+  const steps = [
+    ['Read the profile', 'One country a day, through its electricity: how much it generates, its mix by source since 2000, and what it trades with its neighbours.',
+      '<span class="ht-mix">' + seg('Coal', 34) + seg('Gas', 22) + seg('Hydro', 18) + seg('Nuclear', 12) + seg('Wind', 9) + seg('Solar', 5) + '</span>'],
+    ['Guess the country', 'Six guesses. After a miss, the arrow points to the answer and gives the distance; the colour turns from red to green as you get closer.',
+      row('Brazil', '9,400 km', 'NE', 40, 6) + row('Poland', '850 km', 'SE', 140, 92)],
+    ['Stuck? Buy a clue', 'From your second try, the Clue Shop trades one guess for a clue card: its sun and wind, what lies underground, its fuel trade, how its people live.', cells],
+    ['Or guess on the map', 'The Map button next to Guess opens a globe: tap a country to fill in your guess.',
+      '<span class="ht-map">' + GMAP_ICON + '</span>'],
+  ];
+  return '<div class="st-backdrop"></div>'
+    + '<div class="nt-box ht-box" role="dialog" aria-modal="true" aria-labelledby="ht-title">'
+    + '<button type="button" class="ht-x" id="ht-x" aria-label="Close">×</button>'
+    + '<span class="nt-eyebrow">Energle</span><h2 class="nt-title" id="ht-title">How to play</h2>'
+    + '<ol class="ht-steps">' + steps.map(([t, x, pic], i) => '<li><span class="ht-pic">' + pic + '</span><span class="ht-txt"><strong><b>' + (i + 1) + '</b>' + t + '</strong>' + x + '</span></li>').join('') + '</ol>'
+    + '<p class="ht-foot">A new country every day at midnight UTC. Finish it to unlock <strong>Explore</strong>: every country on a globe, to practise on.</p>'
+    + '<button type="button" class="nt-btn" id="ht-ok">Let’s play</button>'
+    + '</div>';
+}
+function showHowTo() {
+  if (document.getElementById('howto-modal')) return;
+  try { localStorage.setItem(HOWTO_KEY, '1'); } catch (e) {}
+  const modal = document.createElement('div'); modal.id = 'howto-modal'; modal.innerHTML = howtoHTML();
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); const q = document.getElementById('ht-q'); if (q) q.focus({ preventScroll: true }); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.body.appendChild(modal);
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  modal.querySelector('#ht-x').addEventListener('click', close);
+  modal.querySelector('#ht-ok').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  modal.querySelector('#ht-ok').focus({ preventScroll: true });
+}
+// the link on the puzzle line: spelled out until a first game is played, then a small "?"
+function howtoLink() {
+  if (!howtoOn() || document.getElementById('ht-q')) return;
+  const vis = e => e && getComputedStyle(e).display !== 'none';            // phones hide the task: the link then follows the puzzle number
+  const rest = [document.querySelector('.subtitle-row .sub-rest'), document.querySelector('.subtitle-row .sub-lead'), document.querySelector('.subtitle-row .subtitle')].find(vis); if (!rest) return;
+  const nb = howtoNewcomer();
+  rest.insertAdjacentHTML('beforeend', '<button type="button" class="ht-q' + (nb ? ' is-text' : '') + '" id="ht-q" title="How to play" aria-label="How to play">'
+    + (nb ? 'How to play' : '?') + '</button>');
+  document.getElementById('ht-q').addEventListener('click', showHowTo);
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (!howtoOn()) return;
+  const _rgs = window.renderGameScreen;
+  window.renderGameScreen = function () { const r = _rgs.apply(this, arguments); howtoLink(); return r; };
+  if (typeof footerHTML === 'function') {
+    const _ft = footerHTML;
+    window.footerHTML = function () {
+      return _ft.apply(this, arguments).replace('<span class="ft-nav">', '<span class="ft-nav"><button type="button" class="ft-link" onclick="showHowTo()">How to play</button><span class="ft-dot" aria-hidden="true"> · </span>');
+    };
+  }
+  // a newcomer's first daily: the rules open by themselves, once, after anything else that opens on arrival
+  const _maybe = window.maybeShowNotice;
+  window.maybeShowNotice = function () {
+    const r = _maybe.apply(this, arguments);
+    let due = false;
+    try { due = !localStorage.getItem(HOWTO_KEY) && !(localStorage.getItem(LS_KEY) || localStorage.getItem(LS_STATS_KEY)); } catch (e) {}
+    if (/[?&]howto=1\b/.test(location.search)) due = true;
+    if (due && MODE === 'normal') {
+      let tries = 0;
+      const go = () => { if (document.querySelector('#username-modal, #notice-modal, #tour-modal, #shop-intro, #stats-modal')) { if (++tries < 120) setTimeout(go, 500); return; } showHowTo(); };
+      setTimeout(go, REDUCED_MOTION ? 0 : 600);
+    }
+    return r;
+  };
+});

@@ -940,3 +940,44 @@ header .hd-rule { position: absolute; left: 0; right: 0; bottom: -2px; height: 2
   body.pz-col:not(.at-globe) .bc-flow > .stat-label { text-align: center; }
   body.pz-col:not(.at-globe) #flow-chart { width: 100%; margin: auto 0; }
 }
+
+/* ---- How to play (test page) */
+#howto-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+#howto-modal .st-backdrop { position: absolute; inset: 0; }
+.ht-box { max-width: 540px; max-height: calc(100vh - 32px); overflow-y: auto; gap: 12px; }
+.ht-x { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 1px solid #e6e4de; border-radius: 50%; background: #fff; color: #555; font-size: 18px; line-height: 1; cursor: pointer; }
+.ht-x:hover { color: #1a1a1a; border-color: #ccc; }
+.ht-steps { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.ht-steps li { display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: 16px; align-items: center; }
+.ht-pic { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 58px; padding: 8px; border-radius: 10px; background: #f7f6f2; }
+.ht-txt { font-size: .88rem; line-height: 1.45; color: #444; }
+.ht-txt strong { display: flex; align-items: center; gap: 7px; margin-bottom: 2px; font-size: .95rem; color: #1a1a1a; }
+.ht-txt strong b { display: inline-grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: #1a1a1a; color: #fff; font-size: 11px; }
+.ht-mix { display: flex; width: 100%; height: 26px; border-radius: 4px; overflow: hidden; gap: 1px; }
+.ht-mix span { display: block; height: 100%; }
+.ht-guess { display: flex; align-items: center; gap: 6px; width: 100%; font-size: 12px; white-space: nowrap; }
+.ht-gname { flex: 1; font-weight: 600; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis; }
+.ht-arrow { flex: none; }
+.ht-gkm { padding: 1px 5px; border-radius: 4px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ht-batt { display: flex; gap: 3px; padding: 3px; border: 2px solid #1a1a1a; border-radius: 5px; position: relative; }
+.ht-batt::after { content: ""; position: absolute; right: -6px; top: 50%; width: 3px; height: 8px; margin-top: -4px; border-radius: 0 2px 2px 0; background: #1a1a1a; }
+.ht-batt i { width: 12px; height: 18px; border-radius: 2px; background: #e7e5df; }
+.ht-batt i.is-on { background: #54a070; }
+.ht-map { display: grid; place-items: center; width: 44px; height: 44px; border: 1.5px solid #1a1a1a; border-radius: 8px; background: #fff; }
+.ht-map svg { width: 22px; height: 22px; }
+.ht-foot { padding-top: 10px; border-top: 1px solid #eeece6; font-size: .85rem !important; color: #555 !important; }
+/* the link on the puzzle line */
+.ht-q { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-left: 8px; padding: 0; vertical-align: 2px; border: 1px solid #cfccc4; border-radius: 50%; background: #fff; color: #666; font: 600 12px/1 inherit; cursor: pointer; }
+.ht-q.is-text { width: auto; height: auto; padding: 3px 10px; border-radius: 999px; border-color: #e3c56a; background: #fff8e3; color: #8a6510; font-size: 13px; vertical-align: 1px; }
+.ht-q:hover { border-color: #999; color: #1a1a1a; }
+.ht-q.is-text:hover { border-color: #c9a33c; color: #6b4d08; }
+@media (max-width: 600px) {
+  .ht-box { padding: 18px 16px 16px; }
+  .ht-steps { gap: 12px; }
+  .ht-steps li { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; }
+  .ht-pic { min-height: 50px; padding: 6px; }
+  .ht-guess { font-size: 10.5px; gap: 4px; justify-content: center; }
+  .ht-gname { display: none; }
+  .ht-txt { font-size: .84rem; }
+  .ht-q.is-text { font-size: 12px; padding: 2px 9px; }
+}
