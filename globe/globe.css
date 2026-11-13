@@ -835,3 +835,10 @@ body.gl-page .wt-row .dd-l { grid-area: l; min-width: 0; line-height: 1.25; }
 body.gl-page .wt-row .dd-v { grid-area: v; text-align: right; }
 body.gl-page .wt-row .dd-track { grid-area: t; align-self: center; }
 body.gl-page .wt-rows { gap: 10px; }
+
+/* Resource rents: the bar's scale, written under it (0 to 60% of GDP, square-root spaced) */
+.rn-axis { position: relative; display: block; height: 12px; margin-top: 2px; }
+.rn-tk { position: absolute; top: 0; transform: translateX(-50%); font-size: 9.5px; line-height: 12px; color: #9a9a96; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rn-tk::before { content: ""; position: absolute; left: 50%; top: -4px; width: 1px; height: 3px; background: #cfcdc6; }
+.rn-tk:first-child::before { left: 0; } .rn-tk:last-child::before { left: auto; right: 0; }
+.ug-rents .rn-key { margin-top: 4px; }

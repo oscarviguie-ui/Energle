@@ -1519,3 +1519,30 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   window.renderLegend = function (keys) { _lg(keys); globeLegendScroll(); };
   window.addEventListener('resize', () => globeLegendScroll());
 });
+
+// ============================================================
+//  UNDERGROUND RICHES · RESOURCE RENTS: the bar had a hidden 0–20% scale, so a quarter of the oil states ran off its end
+//  and filled it, with nothing to say what its width meant. It now runs 0–60% of GDP on a square-root scale (the median
+//  country is about 1%, Libya 61%), with the scale written under it; the segments split the bar by fuel.
+// ============================================================
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (typeof CARD_TPL === 'undefined' || typeof cardsV3Vals !== 'function') return;
+  const MAX = 60, pos = v => Math.sqrt(Math.max(0, Math.min(v, MAX)) / MAX) * 100;
+  if (CARD_TPL.under && !CARD_TPL.under.includes('rn-axis'))
+    CARD_TPL.under = CARD_TPL.under.replace('<div class="rn-key">',
+      '<span class="rn-axis" aria-hidden="true"><sc-for list="{{rentAxis}}" as="a" hint-placeholder-count="7"><span class="rn-tk" style="{{a.style}}">{{a.t}}</span></sc-for></span>\n                <div class="rn-key">');
+  const _v3 = cardsV3Vals;
+  window.cardsV3Vals = function (st0) {
+    const v = _v3(st0), C = st0 && st0.C;
+    if (!C || !C.rents) return v;
+    const W = Object.assign({ rent: 2.9 }, st0.W || {});
+    const RENT = [['oil', 'Oil', '#c0654a'], ['gas', 'Gas', '#e8925a'], ['coal', 'Coal', '#4a4a4a'], ['min', 'Minerals', '#5b6573']];
+    const tot = Object.values(C.rents).reduce((a, x) => a + x, 0), T = pos(tot);
+    v.rentSegs = RENT.filter(([k]) => C.rents[k] > 0).map(([k, name, col]) => ({ name, hl: 'rent:' + k,
+      style: 'width: ' + Math.max(0.6, tot ? T * C.rents[k] / tot : 0).toFixed(2) + '%; background: ' + col + '8c; box-shadow: inset 0 0 0 1px ' + col }));
+    v.rentMark = 'left: ' + pos(W.rent).toFixed(1) + '%';
+    v.rentAxis = [0, 1, 5, 10, 20, 40, 60].map((t, i, a) => ({ t: t ? t + '%' : '0',
+      style: 'left: ' + pos(t).toFixed(1) + '%' + (i === 0 ? '; transform: none' : i === a.length - 1 ? '; transform: translateX(-100%)' : '') }));
+    return v;
+  };
+});
