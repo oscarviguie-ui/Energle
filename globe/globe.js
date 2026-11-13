@@ -944,7 +944,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   };
   const _browse = renderBrowseScreen;
   window.renderBrowseScreen = function () {
-    document.body.classList.remove('gm-on', 'ex-picker'); document.body.classList.add('ex-hdr');
+    document.body.classList.remove('gm-on', 'ex-picker', 'pz-col'); document.body.classList.add('ex-hdr');
     _browse();
     const t = document.querySelector('.sub-lead'), r = document.querySelector('.sub-rest');
     if (t) t.textContent = 'Explore'; if (r) r.textContent = 'every country’s electricity on the map';
@@ -991,7 +991,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   Object.assign(CAT_EMOJIS, { asiaonly: '🌏', oceania: '🌏', namerica: '🌎', samerica: '🌎', eu: '🇪🇺', g7: '🏛️', opec: '🛢️', brics: '🌐' });
   const _picker = renderPracticePickerScreen;
   window.renderPracticePickerScreen = function () {
-    document.body.classList.remove('gm-on'); document.body.classList.add('ex-hdr', 'ex-picker');
+    document.body.classList.remove('gm-on', 'pz-col'); document.body.classList.add('ex-hdr', 'ex-picker');
     // the picker draws region, profile and trend; the blocs ride in the region grid, then move to their own section
     const blocs = PRACTICE_CATEGORIES.filter(c => c.group === 'bloc'); blocs.forEach(c => c.group = 'region');
     try { _picker(); } finally { blocs.forEach(c => c.group = 'bloc'); }
@@ -1025,11 +1025,11 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       + '<span class="pc-atlas-cta">Suggest a category →</span></button>';
   };
   const _archive = renderArchiveScreen;
-  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-hdr', 'ex-picker'); return _archive(d); };
+  window.renderArchiveScreen = function (d) { document.body.classList.remove('gm-on', 'ex-picker'); document.body.classList.add('ex-hdr', 'pz-col'); return _archive(d); };
   // the game screen: one information block, the guess bar under it, a Map button in the guess bar
   const _game = renderGameScreen;
   window.renderGameScreen = function () {
-    document.body.classList.remove('ex-hdr', 'ex-picker');
+    document.body.classList.remove('ex-picker'); document.body.classList.add('ex-hdr', 'pz-col');   // the same header on every tab; the puzzle in its own column
     const old = document.getElementById('gm-card'); if (old) old.remove();
     _game();
     gwLayout();
@@ -1754,4 +1754,13 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       return r;
     };
   }
+});
+
+// the header is re-fitted by the game (a new tab bar once the daily is solved, a resize): line it up again each time
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (typeof fitHeader !== 'function') return;
+  const _fit = fitHeader;
+  window.fitHeader = function () { const r = _fit.apply(this, arguments); try { hdBoxFit(); hdAlignNav(); } catch (e) {} return r; };
+  const _rgs = window.renderGameScreen;
+  window.renderGameScreen = function () { const r = _rgs.apply(this, arguments); requestAnimationFrame(() => { try { hdBoxFit(); hdAlignNav(); } catch (e) {} }); return r; };
 });
