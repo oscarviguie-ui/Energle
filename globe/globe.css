@@ -912,5 +912,19 @@ body.gl-stack.at-globe #clue-cards .ic-slot.gl-flat { align-items: stretch; }
    tabs, Stats & Leaderboard and the podium never move. Under it, the puzzle and the archive keep a narrower column
    (1,100 px, centred): a puzzle reads better narrow. Explore uses the full width for its map. */
 @media (min-width: 1100px) {
-  body.ex-hdr.pz-col #app > :not(header) { width: 100%; max-width: 1100px; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+  body.ex-hdr.pz-col #app { max-width: min(1100px, calc(100vw - 64px)); }   /* the header is as wide as the puzzle under it */
+  /* switching tab: the page widens or narrows smoothly to the new tab's width (not on the first paint) */
+  body.gl-page.tab-anim #app { transition: max-width .42s cubic-bezier(.22,.8,.24,1); }
+}
+@media (prefers-reduced-motion: reduce) { body.gl-page.tab-anim #app { transition: none; } }
+/* the puzzle's narrower header (1,100 px): the same one-line header, a touch tighter so it fits on one line */
+@media (min-width: 1240px) {
+  body.ex-hdr .hd-grid #mode-nav { flex-wrap: nowrap; white-space: nowrap; }
+  body.ex-hdr.pz-col .hd-grid { column-gap: 16px; }
+  body.ex-hdr.pz-col .hd-grid #mode-nav .mode-btn { padding: 0 15px; }
+  body.ex-hdr.pz-col .hd-grid .lb-split .mode-btn { padding: 0 8px; }
+  body.ex-hdr.pz-col .hd-grid .lb-split .mode-btn:first-child { padding-left: 12px; }
+  body.ex-hdr.pz-col .hd-grid .lb-split .mode-btn:last-child { padding-right: 12px; }
+  body.ex-hdr.pz-col .hd-grid .podium { gap: 8px; }
+  body.ex-hdr.pz-col .hd-grid .podium-name { max-width: 60px; }
 }

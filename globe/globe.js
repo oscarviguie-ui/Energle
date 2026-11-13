@@ -1764,3 +1764,21 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   const _rgs = window.renderGameScreen;
   window.renderGameScreen = function () { const r = _rgs.apply(this, arguments); requestAnimationFrame(() => { try { hdBoxFit(); hdAlignNav(); } catch (e) {} }); return r; };
 });
+
+// Switching between Daily, Archive and Explore: #app's width animates (CSS, body.tab-anim) from one tab's width to the
+// next. Once it has settled, everything that measures the page (the map, the charts, the card columns) measures again.
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => document.body.classList.add('tab-anim'), 600);          // not on the first paint
+  const app = document.getElementById('app'); if (!app) return;
+  // while it moves, the centred tab bar is kept centred frame by frame (it is placed by hdAlignNav, not by CSS)
+  let moving = false;
+  const follow = () => { if (!moving) return; try { hdAlignNav(); } catch (err) {} requestAnimationFrame(follow); };
+  app.addEventListener('transitionrun', e => { if (e.target === app && e.propertyName === 'max-width' && !moving) { moving = true; requestAnimationFrame(follow); } });
+  app.addEventListener('transitioncancel', e => { if (e.target === app) moving = false; });
+  app.addEventListener('transitionend', e => {
+    if (e.target !== app || e.propertyName !== 'max-width') return;
+    moving = false;
+    window.dispatchEvent(new Event('resize'));
+    try { hdBoxFit(); hdAlignNav(); } catch (err) {}
+  });
+});
