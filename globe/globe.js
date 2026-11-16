@@ -1608,7 +1608,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  as the bars move, and the page behind doesn't scroll.
 // ============================================================
 (function () {
-  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'welcome-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal'];
+  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'welcome-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal', 'rename-modal'];
   const vv = window.visualViewport;
   const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
   function fit() {
@@ -2102,4 +2102,108 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const f = window[fn]; if (typeof f !== 'function') return;
     window[fn] = function () { const r = f.apply(this, arguments); lbRankFit(); return r; };
   });
+});
+
+// ============================================================
+//  CHANGE NAME: a name keeps its history when it changes. There are no accounts: this browser holds a random key, and a
+//  name is tied to the first key that claims it (on any visit, or when it is first chosen). Only that browser can
+//  rename it, to a name nobody else uses (capitals ignored). The rename runs in the database (rename_player), which
+//  moves every past score to the new name and logs it. Test page only for now (window.ENERGLE_TEST).
+// ============================================================
+const PLAYER_KEY_LS = 'energle_player_key';
+function playerKey() {
+  let k = null; try { k = localStorage.getItem(PLAYER_KEY_LS); } catch (e) {}
+  if (k && k.length >= 32) return k;
+  const b = new Uint8Array(16); crypto.getRandomValues(b); k = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  try { localStorage.setItem(PLAYER_KEY_LS, k); } catch (e) {}
+  return k;
+}
+async function sbRpc(fn, args) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: SB_HEADERS, body: JSON.stringify(args) });
+  if (!res.ok) throw new Error(fn + ' ' + res.status);
+  return res.json();
+}
+let NAME_CLAIM = null;   // 'mine' | 'other' | null (not asked yet / offline)
+async function nameClaim() {
+  const u = getUsername(); if (!u) return null;
+  try { NAME_CLAIM = await sbRpc('claim_name', { p_name: u, p_key: playerKey() }); } catch (e) { NAME_CLAIM = null; }
+  return NAME_CLAIM;
+}
+function showRenameModal() {
+  const old = getUsername(); if (!old || document.getElementById('rename-modal')) return;
+  const modal = document.createElement('div'); modal.id = 'rename-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="st-box rn-box" role="dialog" aria-modal="true" aria-labelledby="rn-title">'
+    + '<div class="st-header"><span class="st-title" id="rn-title">Change your name</span><button type="button" class="rn-x" aria-label="Close">×</button></div>'
+    + '<div class="rn-body"><p class="rn-note">Your scores, rank and streak move to the new name.</p>'
+    + '<input id="rn-input" type="text" maxlength="20" autocomplete="off" spellcheck="false" value="' + escHtml(old) + '">'
+    + '<p class="rn-msg" id="rn-msg" aria-live="polite"></p>'
+    + '<button type="button" class="rn-go" id="rn-go" disabled>Change name</button></div></div>';
+  document.body.appendChild(modal);
+  const input = modal.querySelector('#rn-input'), msg = modal.querySelector('#rn-msg'), go = modal.querySelector('#rn-go');
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  const say = (t, ok) => { msg.textContent = t; msg.classList.toggle('is-ok', !!ok); };
+  let seq = 0, T = null;
+  const check = () => {
+    const v = input.value.trim(); go.disabled = true;
+    if (v === old) return say('');
+    if (v.length < 2) return say('At least 2 characters.');
+    if (!/^[a-zA-Z0-9_ .\-]+$/.test(v)) return say('Letters, numbers, spaces, _ - . only.');
+    if (v.toLowerCase() === old.toLowerCase()) { go.disabled = false; return say('Same name, new capitals.', true); }
+    say('Checking…'); const n = ++seq; clearTimeout(T);
+    T = setTimeout(async () => {
+      let free = null; try { free = await sbRpc('name_free', { p_name: v }); } catch (e) {}
+      if (n !== seq) return;
+      if (free === null) return say('Couldn’t check the name. Try again in a moment.');
+      go.disabled = !free; say(free ? 'Available.' : 'Someone already uses this name.', free);
+    }, 300);
+  };
+  input.addEventListener('input', check);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter' && !go.disabled) go.click(); });
+  go.addEventListener('click', async () => {
+    const v = input.value.trim(); go.disabled = true; say('Changing…');
+    if (NAME_CLAIM !== 'mine') await nameClaim();
+    let r = null; try { r = await sbRpc('rename_player', { p_old: old, p_new: v, p_key: playerKey() }); } catch (e) {}
+    if (r === 'ok') {
+      setUsername(v); NAME_CLAIM = 'mine';
+      MY_SCORES = null; STREAKS_P = null; PODIUM = null;
+      try { loadPodium(); } catch (e) {}
+      close();
+      const st = document.getElementById('stats-modal'); if (st) showStatsModal(false);
+      return;
+    }
+    go.disabled = false;
+    say(r === 'not_yours' ? 'This name was first used on another device, so it can only be changed there.'
+      : r === 'taken' ? 'Someone already uses this name.' : r === 'invalid' ? 'Letters, numbers, spaces, _ - . only (2 to 20).'
+      : 'Couldn’t reach the server. Try again in a moment.');
+  });
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  modal.querySelector('.rn-x').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+  input.focus(); input.select();
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (!window.ENERGLE_TEST) return;
+  nameClaim();                                                     // tie this browser to its name early (first come)
+  const _set = window.setUsername;
+  window.setUsername = function (n) { const r = _set.apply(this, arguments); if (!document.getElementById('rename-modal')) nameClaim(); return r; };
+  // the first-name prompt no longer says the name is final
+  const _ens = window.ensureUsername;
+  window.ensureUsername = function () {
+    const p = _ens.apply(this, arguments);
+    const note = document.querySelector('#username-modal p'); if (note) note.textContent = 'How you appear on the leaderboard. You can change it later in Stats.';
+    return p;
+  };
+  // Stats: a small "Change name" link under the name
+  const _stats = window.showStatsModal;
+  window.showStatsModal = function () {
+    const r = _stats.apply(this, arguments);
+    const who = document.querySelector('#stats-modal .sx-who');
+    if (who && getUsername() && !who.querySelector('.rn-link')) {
+      who.insertAdjacentHTML('beforeend', '<button type="button" class="rn-link">Change name</button>');
+      who.querySelector('.rn-link').addEventListener('click', showRenameModal);
+    }
+    return r;
+  };
 });
