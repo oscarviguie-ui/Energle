@@ -2205,3 +2205,23 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     return r;
   };
 });
+
+// ---- Today's leaderboard: a dashed line where the scores pass today's average (a miss counts as 7, as in Avg).
+// Same look as the All time "Typical result" line. Test page first (window.ENERGLE_TEST).
+function lbTodayAvgLine(rows) {
+  const list = document.querySelector('#lb-body .lb-list'); if (!list || !rows || rows.length < 2) return;
+  const eff = r => r.won ? Number(r.guesses) : 7;
+  const avg = rows.reduce((a, r) => a + eff(r), 0) / rows.length;
+  const after = [...list.querySelectorAll('.lb-row')].find(el => {
+    const t = (el.querySelector('.lb-score') || {}).textContent || '';
+    const v = /^X/i.test(t) ? 7 : parseInt(t, 10);
+    return v > avg;
+  });
+  if (!after) return;                               // everyone on the same score: no line to draw
+  after.insertAdjacentHTML('beforebegin', '<div class="lb-avg-divider lb-avg-today"><span>Today’s average · ' + avg.toFixed(2) + ' guesses</span></div>');
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (!window.ENERGLE_TEST || typeof renderLbToday !== 'function') return;
+  const _t = window.renderLbToday;
+  window.renderLbToday = function (rows) { const r = _t.apply(this, arguments); lbTodayAvgLine(rows); return r; };
+});
