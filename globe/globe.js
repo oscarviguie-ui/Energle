@@ -587,7 +587,7 @@ function globeGroupMiddle(g) {
 }
 function globeRegion(r) {
   // one layer at a time: picking a group (not a source's producers) stops the map's colouring by a source
-  if (window.ENERGLE_TEST && GLOBE_SHADE && !String(r).startsWith('src_')) globeShadeOff();   // (test page first)
+  if (GLOBE_SHADE && !String(r).startsWith('src_')) globeShadeOff();
   GLOBE_REGION = GLOBE_REGIONS[r] ? r : 'all';
   if (ATLAS.region !== GLOBE_REGION) ATLAS.region = GLOBE_REGION;
   globeApplyGroup();
@@ -1832,10 +1832,10 @@ if (globeOn() && window.Chart) window.Chart = class extends window.Chart {
 // ============================================================
 //  HOW TO PLAY: the rules in four steps, each with a small picture of the thing it describes.
 //  Opens by itself once, on a newcomer's first daily; afterwards from the "How to play" link on the puzzle line
-//  (a small "?" once a game has been played) and from the footer. Test page only for now (window.ENERGLE_TEST).
+//  (only until a first game is played) and from the footer.
 // ============================================================
 const HOWTO_KEY = 'energle_howto_v1';
-const howtoOn = () => globeOn() && !!window.ENERGLE_TEST;
+const howtoOn = () => globeOn();
 function howtoNewcomer() { try { return !(loadStats().played > 0); } catch (e) { return true; } }
 function howtoHTML() {
   const seg = (k, w) => '<span style="width:' + w + '%;background:' + colorOf(k) + '"></span>';
@@ -1917,7 +1917,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 //  WELCOME: the detailed how-to-play, step by step, opened once on a newcomer's first daily (How to play is the short
 //  version, for later). It walks through one real example country (never today's answer), card by card, then the
-//  guesses on it, the map, the Clue Shop and what comes after. Test page only for now (window.ENERGLE_TEST).
+//  guesses on it, the map, the Clue Shop and what comes after.
 // ============================================================
 const WELCOME_KEY = 'energle_welcome_v1';
 const WL_EXAMPLES = ['Italy', 'Finland', 'Hungary', 'Portugal'];
@@ -2077,7 +2077,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 
 // By source / By category: a colouring the new view has no chip for is switched off (with its group), not left on unselected
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  if (typeof setChartView !== 'function' || !window.ENERGLE_TEST) return;   // (test page first)
+  if (typeof setChartView !== 'function') return;
   const _scv = setChartView;
   window.setChartView = function () {
     const r = _scv.apply(this, arguments);
@@ -2097,7 +2097,6 @@ function lbRankFit() {
   body.querySelectorAll('.lb-list').forEach(l => l.style.setProperty('--lb-rank-n', n));
 }
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  if (!window.ENERGLE_TEST) return;   // (test page first)
   ['renderLbToday', 'renderLbAllTime'].forEach(fn => {
     const f = window[fn]; if (typeof f !== 'function') return;
     window[fn] = function () { const r = f.apply(this, arguments); lbRankFit(); return r; };
@@ -2108,7 +2107,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  CHANGE NAME: a name keeps its history when it changes. There are no accounts: this browser holds a random key, and a
 //  name is tied to the first key that claims it (on any visit, or when it is first chosen). Only that browser can
 //  rename it, to a name nobody else uses (capitals ignored). The rename runs in the database (rename_player), which
-//  moves every past score to the new name and logs it. Test page only for now (window.ENERGLE_TEST).
+//  moves every past score to the new name and logs it.
 // ============================================================
 const PLAYER_KEY_LS = 'energle_player_key';
 function playerKey() {
@@ -2184,7 +2183,6 @@ function showRenameModal() {
   input.focus(); input.select();
 }
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  if (!window.ENERGLE_TEST) return;
   nameClaim();                                                     // tie this browser to its name early (first come)
   const _set = window.setUsername;
   window.setUsername = function (n) { const r = _set.apply(this, arguments); if (!document.getElementById('rename-modal')) nameClaim(); return r; };
