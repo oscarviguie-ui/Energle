@@ -2089,3 +2089,17 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     return r;
   };
 });
+
+// ---- leaderboard: the rank column is as wide as the longest rank in the list ("1234." no longer runs into the name)
+function lbRankFit() {
+  const body = document.getElementById('lb-body'); if (!body) return;
+  const n = Math.max(0, ...[...body.querySelectorAll('.lb-rank')].map(e => e.textContent.trim().length));
+  body.querySelectorAll('.lb-list').forEach(l => l.style.setProperty('--lb-rank-n', n));
+}
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
+  if (!window.ENERGLE_TEST) return;   // (test page first)
+  ['renderLbToday', 'renderLbAllTime'].forEach(fn => {
+    const f = window[fn]; if (typeof f !== 'function') return;
+    window[fn] = function () { const r = f.apply(this, arguments); lbRankFit(); return r; };
+  });
+});

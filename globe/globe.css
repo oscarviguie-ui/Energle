@@ -1036,3 +1036,8 @@ header .hd-rule { position: absolute; left: 0; right: 0; bottom: -2px; height: 2
   .wl-stage { padding: 10px; }
   .wl-after span { padding: 9px; }
 }
+
+/* ---- leaderboard rank column: sized to its longest rank (lbRankFit sets --lb-rank-n, the characters in it); without
+   it, the widths are as before */
+.lb-list .lb-rank { width: max(var(--lb-rank-min, 32px), calc(var(--lb-rank-n, 0) * 0.52rem + 8px)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 600px) { #lb-modal .lb-list { --lb-rank-min: 26px; } #lb-modal .lb-list .lb-rank { width: max(var(--lb-rank-min, 26px), calc(var(--lb-rank-n, 0) * 0.52rem + 6px)); } }
