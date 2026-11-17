@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Energle – how to play the daily energy game, and where its data comes from</title>
+    <meta name="description" content="How Energle works: guess the country from its electricity mix in six tries, with direction and distance hints, clue cards and a globe of every country's power. Built on open data from Ember, the World Bank, EIA, OPEC, NASA and more." />
+    <link rel="canonical" href="https://energle.org/about/" />
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/img/icon-48.png" type="image/png" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
+    <meta name="theme-color" content="#f7f7f5" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Energle" />
+    <meta property="og:url" content="https://energle.org/about/" />
+    <meta property="og:title" content="About Energle, the daily energy game" />
+    <meta property="og:description" content="Guess the country from its electricity mix in six tries. How it works, and the open data behind it." />
+    <meta property="og:image" content="https://energle.org/img/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"AboutPage","@id":"https://energle.org/about/#page","url":"https://energle.org/about/","name":"About Energle","isPartOf":{"@id":"https://energle.org/#site"},"about":{"@id":"https://energle.org/#game"},"inLanguage":"en"},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is Energle free?","acceptedAnswer":{"@type":"Answer","text":"Yes. There is no sign-up and no download: Energle works in any browser, on a phone or a computer."}},{"@type":"Question","name":"When is there a new puzzle?","acceptedAnswer":{"@type":"Answer","text":"Every day at midnight UTC. Every past puzzle stays playable in the Archive."}},{"@type":"Question","name":"How are the hints worked out?","acceptedAnswer":{"@type":"Answer","text":"After a wrong guess, Energle shows the distance between the centres of the two countries, an arrow pointing from your guess toward the answer, and a colour that runs from red when you are far to green when you are close."}},{"@type":"Question","name":"Where does the data come from?","acceptedAnswer":{"@type":"Answer","text":"Electricity data comes from Ember's yearly electricity data. The clue cards use the World Bank, EIA, OPEC, USGS, NASA, NOAA, ENTSO-E, CEPII and the CIA World Factbook. Everything is refreshed automatically every month."}}]}]}</script>
+    <style>
+      :root { --ink: #1a1a1a; --mute: #5f5f5b; --line: #e6e4de; --bg: #f7f7f5; --card: #ffffff; --accent: #f5c842; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 16px; line-height: 1.6; }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 28px max(20px, env(safe-area-inset-left, 0px)) 56px max(20px, env(safe-area-inset-right, 0px)); }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+      .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); text-decoration: none; font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; }
+      .brand img { width: 26px; height: 26px; }
+      .play { display: inline-block; padding: 9px 16px; border-radius: 6px; background: var(--ink); color: #fff; font-weight: 600; font-size: .92rem; text-decoration: none; white-space: nowrap; }
+      .play:hover { background: #333; }
+      h1 { margin: 34px 0 8px; font-size: 2rem; line-height: 1.2; letter-spacing: -.015em; text-wrap: balance; }
+      .lead { margin: 0 0 22px; font-size: 1.08rem; color: #3a3a37; max-width: 62ch; }
+      h2 { margin: 40px 0 10px; font-size: 1.25rem; letter-spacing: -.005em; }
+      p, li, dd { color: #3a3a37; }
+      p { max-width: 66ch; }
+      ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 14px 0 0; display: grid; gap: 10px; }
+      ol.steps li { counter-increment: s; display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+      ol.steps li::before { content: counter(s); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--ink); color: #fff; font-size: .78rem; font-weight: 700; margin-top: 1px; }
+      ol.steps b, .cards b { color: var(--ink); }
+      .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-top: 14px; }
+      .cards div { padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; font-size: .94rem; }
+      .cards small { display: block; margin-top: 6px; color: #8a8a85; font-size: .78rem; }
+      .table { overflow-x: auto; margin-top: 12px; }
+      table { width: 100%; border-collapse: collapse; font-size: .93rem; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+      th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+      th { font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: #77776f; }
+      tr:last-child td { border-bottom: 0; }
+      td a { color: var(--ink); }
+      dl { margin: 14px 0 0; }
+      dt { margin-top: 16px; font-weight: 600; }
+      dd { margin: 4px 0 0; max-width: 66ch; }
+      .end { margin-top: 44px; padding: 22px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+      .end p { margin: 0; font-weight: 600; color: var(--ink); }
+      footer { margin-top: 28px; font-size: .8rem; color: #8a8a85; }
+      footer a { color: #6f6f6a; }
+      @media (max-width: 600px) {
+        h1 { font-size: 1.55rem; margin-top: 26px; }
+        .brand { font-size: 1.35rem; }
+        .play { padding: 8px 12px; font-size: .86rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <a class="brand" href="/"><img src="/img/favicon.svg" alt="" width="26" height="26" />Energle</a>
+        <a class="play" href="/">Play today’s puzzle</a>
+      </header>
+
+      <main>
+        <h1>Energle, the daily energy game</h1>
+        <p class="lead">Every day, one country hides behind its electricity: how much power it makes, how it makes it, and what it trades with its neighbours. You have six guesses to name it. Energle is free, takes a few minutes, and teaches you something about the world’s energy each time you play.</p>
+
+        <h2>How to play</h2>
+        <ol class="steps">
+          <li><span><b>Read the country’s energy profile.</b> How much electricity it generated and how much each person uses, compared with the world average; its net imports or exports; its power mix since 2000, source by source (coal, gas, nuclear, hydro, wind, solar, bioenergy and more); and how much CO₂ each kilowatt-hour emits.</span></li>
+          <li><span><b>Guess a country.</b> Type its name, or tap it on the map. After a wrong guess you get the distance to the answer, an arrow pointing toward it, and a colour that runs from red (far) to green (close).</span></li>
+          <li><span><b>Stuck? Buy a clue.</b> From your second try, the Clue Shop trades one guess for a clue card (see below).</span></li>
+          <li><span><b>Share your result</b> without spoiling the answer, and come back tomorrow: a new country arrives every day at midnight UTC.</span></li>
+        </ol>
+
+        <h2>The Clue Shop</h2>
+        <p>Each clue card costs one guess and brings a new angle on the country. If a card has no data for that country, it’s free, and that’s a clue in itself.</p>
+        <div class="cards">
+          <div><b>Renewables potential</b><br />Sun and wind month by month, rainfall, fresh water, and how high the land sits.<small>NASA · NOAA · World Bank</small></div>
+          <div><b>Underground riches</b><br />Oil, gas and coal reserves, transition minerals, and what mining brings in.<small>OPEC · USGS · EIA · CIA · World Bank</small></div>
+          <div><b>Fuel trade</b><br />Who the country buys its oil, gas and coal from, and who it sells to.<small>CEPII</small></div>
+          <div><b>Electricity trade</b><br />How much power it imports and exports, and with which neighbours.<small>ENTSO-E · CEPII · EIA</small></div>
+          <div><b>People &amp; power</b><br />Who has electricity at home, how often the power cuts out, heating and cooling needs, and way of life.<small>World Bank · NASA</small></div>
+        </div>
+
+        <h2>Explore every country on a globe</h2>
+        <p>Once you have played the daily puzzle, Explore opens: an interactive globe with every country’s full energy profile and clue cards. Add up a continent, the European Union or OPEC as if it were one country, pick a trait like the greenest grids or the biggest importers, or click a source such as nuclear, coal or solar to colour the world by how much of each country’s power it makes. You can also practise on any group of countries.</p>
+
+        <h2>Archive, stats and leaderboard</h2>
+        <p>Every past puzzle stays playable in the Archive (replays don’t count toward your stats). Your stats keep your streak and how many guesses you usually need. The leaderboard ranks today’s players by guesses, and all-time players by a weighted score that rewards both skill and regular play.</p>
+
+        <h2>The data behind Energle</h2>
+        <p>Energle is built entirely on open data, stitched into one profile per country and refreshed automatically every month.</p>
+        <div class="table">
+          <table>
+            <thead><tr><th>Source</th><th>Used for</th></tr></thead>
+            <tbody>
+              <tr><td><a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Ember</a></td><td>Electricity generation by source, demand, net imports and CO₂ intensity, every year since 2000 (Yearly Electricity Data, CC BY 4.0)</td></tr>
+              <tr><td><a href="https://databank.worldbank.org/source/world-development-indicators" target="_blank" rel="noopener">World Bank</a></td><td>Access to electricity, rainfall and fresh water, mining income, way of life</td></tr>
+              <tr><td><a href="https://www.eia.gov/international/data/world" target="_blank" rel="noopener">EIA</a></td><td>Fossil fuel reserves and electricity trade outside Europe</td></tr>
+              <tr><td><a href="https://www.opec.org/annual-statistical-bulletin.html" target="_blank" rel="noopener">OPEC</a></td><td>Oil and gas reserves of the major producers</td></tr>
+              <tr><td><a href="https://www.cia.gov/the-world-factbook/" target="_blank" rel="noopener">CIA World Factbook</a></td><td>Reserves of smaller producers</td></tr>
+              <tr><td><a href="https://www.usgs.gov/centers/national-minerals-information-center/mineral-commodity-summaries" target="_blank" rel="noopener">USGS</a></td><td>Transition minerals: lithium, cobalt, copper, nickel, rare earths and more</td></tr>
+              <tr><td><a href="https://www.cepii.fr/CEPII/en/bdd_modele/bdd_modele_item.asp?id=37" target="_blank" rel="noopener">CEPII</a></td><td>Trade partners for oil, gas, coal and electricity (built on UN trade data)</td></tr>
+              <tr><td><a href="https://transparency.entsoe.eu/" target="_blank" rel="noopener">ENTSO-E</a></td><td>Electricity flows between European countries</td></tr>
+              <tr><td><a href="https://power.larc.nasa.gov/" target="_blank" rel="noopener">NASA</a></td><td>Sunshine, wind speed and temperatures, month by month</td></tr>
+              <tr><td><a href="https://www.ncei.noaa.gov/products/etopo-global-relief-model" target="_blank" rel="noopener">NOAA</a></td><td>Elevation, a hint at hydro potential</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Sources sometimes disagree, and some countries report little. Where a card’s figures differ from another source, Energle marks it with a red asterisk; missing data is part of the puzzle too.</p>
+
+        <h2>Questions</h2>
+        <dl>
+          <dt>Is Energle free?</dt>
+          <dd>Yes. There is no sign-up and no download: Energle works in any browser, on a phone or a computer.</dd>
+          <dt>When is there a new puzzle?</dt>
+          <dd>Every day at midnight UTC. Every past puzzle stays playable in the Archive.</dd>
+          <dt>How are the hints worked out?</dt>
+          <dd>After a wrong guess, Energle shows the distance between the centres of the two countries, an arrow pointing from your guess toward the answer, and a colour that runs from red when you are far to green when you are close.</dd>
+          <dt>How is the leaderboard ranked?</dt>
+          <dd>Today’s leaderboard ranks by the number of guesses, a missed puzzle counting as seven. The all-time leaderboard uses a weighted score: your average number of guesses, pulled toward the typical player’s until you have played enough puzzles for your own average to speak for itself. Lower is better.</dd>
+          <dt>Can I change my name on the leaderboard?</dt>
+          <dd>Yes: open Stats and choose Change name. Your scores, rank and streak move to the new name. It works from the device you first played on.</dd>
+          <dt>Who is it for?</dt>
+          <dd>Anyone curious about energy, geography or climate: students, teachers, energy professionals and puzzle fans.</dd>
+        </dl>
+
+        <h2>Who makes Energle</h2>
+        <p>Energle is made by Oscar Viguié, a student in energy economics and management at IFP School in France, as a fun way to learn about the world’s energy and the energy transition. Ideas and bug reports are welcome through the Feedback button in the game.</p>
+
+        <div class="end"><p>Ready for today’s country?</p><a class="play" href="/">Play Energle</a></div>
+      </main>
+
+      <footer>
+        <p>Electricity data: <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener">Yearly Electricity Data | Ember</a> (CC BY 4.0). <a href="/">Back to the game</a></p>
+      </footer>
+    </div>
+  </body>
+</html>

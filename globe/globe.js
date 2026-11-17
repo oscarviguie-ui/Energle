@@ -1895,7 +1895,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (typeof footerHTML === 'function') {
     const _ft = footerHTML;
     window.footerHTML = function () {
-      return _ft.apply(this, arguments).replace('<span class="ft-nav">', '<span class="ft-nav"><button type="button" class="ft-link" onclick="showHowTo()">How to play</button><span class="ft-dot" aria-hidden="true"> · </span>');
+      return _ft.apply(this, arguments).replace('<span class="ft-nav">', '<span class="ft-nav"><button type="button" class="ft-link" onclick="showHowTo()">How to play</button><span class="ft-dot" aria-hidden="true"> · </span><a class="ft-link" href="/about/">About</a><span class="ft-dot" aria-hidden="true"> · </span>');
     };
   }
   // a newcomer's first daily: the rules open by themselves, once, after anything else that opens on arrival
