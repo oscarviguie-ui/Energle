@@ -1,0 +1,40 @@
+name: EIA probe (one-off)
+
+# Lists the EIA international series for France (codes, names, units, years) so the total-energy layer
+# reads the right ones. Writes data/build/eia_probe.txt. Safe to delete once used.
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: List France's series
+        run: |
+          python3 - <<'PY'
+          import io, json, zipfile, urllib.request
+          raw = urllib.request.urlopen('https://api.eia.gov/bulk/INTL.zip', timeout=600).read()
+          z = zipfile.ZipFile(io.BytesIO(raw)); out = []
+          with z.open(z.namelist()[0]) as f:
+              for line in f:
+                  try: d = json.loads(line)
+                  except ValueError: continue
+                  sid = d.get('series_id') or ''
+                  if '-FRA-' in sid and sid.endswith('.A'):
+                      data = d.get('data') or []
+                      yrs = [str(y)[:4] for y, v in data if v not in (None, 'NA', '--', 'ie', '(s)')]
+                      last = next(((str(y)[:4], v) for y, v in data if v not in (None, 'NA', '--', 'ie', '(s)')), None)
+                      out.append('%s\t%s\t%s\t%s-%s\tlast=%s' % (sid, d.get('name', ''), d.get('units', ''), min(yrs) if yrs else '', max(yrs) if yrs else '', last))
+          open('data/build/eia_probe.txt', 'w').write('\n'.join(sorted(out)) + '\n')
+          print(len(out), 'series')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/build/eia_probe.txt
+          git commit -m "EIA probe: France's series" || true
+          git pull --rebase --autostash && git push
