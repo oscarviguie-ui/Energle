@@ -42,3 +42,8 @@ body.shielded main { filter: blur(9px); pointer-events: none; user-select: none;
   .brand { font-size: 1.25rem; }
   .play { padding: 7px 11px; font-size: .84rem; }
 }
+/* the index: names by continent */
+.az { columns: 3 180px; column-gap: 24px; margin: 0; padding: 0; list-style: none; }
+.az li { break-inside: avoid; padding: 3px 0; }
+.az a { color: #1a1a1a; text-decoration: none; }
+.az a:hover { text-decoration: underline; }

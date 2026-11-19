@@ -1060,3 +1060,8 @@ header .hd-rule { position: absolute; left: 0; right: 0; bottom: -2px; height: 2
 .rn-link { align-self: flex-start; padding: 0; border: 0; background: none; color: #888; font: inherit; font-size: .78rem; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .rn-link:hover { color: #1a1a1a; }
 
+
+/* Explore: the link from a country's panel to its page */
+.gl-more-row { margin: 10px 0 2px; font-size: .82rem; color: #777; text-align: right; }
+.gl-cpage { color: inherit; text-decoration: underline; text-underline-offset: 2px; text-decoration-color: #c9c6bd; white-space: nowrap; }
+.gl-cpage:hover { color: #1a1a1a; text-decoration-color: currentColor; }

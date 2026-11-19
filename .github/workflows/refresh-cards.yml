@@ -1,6 +1,7 @@
 name: Refresh clue cards
 
-# Builds cards.json (the Clue Shop's card data) from open sources. Monthly, the day after the Ember
+# Builds cards.json (the Clue Shop's card data) from open sources, then rebuilds the country pages (energle.org/country/)
+# and the sitemap from the fresh data. Monthly, the day after the Ember
 # refresh; yearly sources (BACI, USGS, NASA POWER) only re-download when they have something new,
 # and elevation is fetched once. See scripts/build_cards.py.
 # A failed run (a source down, or checks that keep the live file) sends the usual GitHub failure email.
@@ -49,13 +50,17 @@ jobs:
           python scripts/build_cards.py ${{ github.event.inputs.sources }}
           echo "status=$?" >> "$GITHUB_OUTPUT"
 
+      - name: Rebuild the country pages and the sitemap
+        if: always() && github.ref == 'refs/heads/main'
+        run: python scripts/build_country_pages.py
+
       - name: Commit the cards and the caches
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          for f in data/cards.json data/build/cards_raw.json data/build/cards_report.md data/build/power_cache.json data/build/elevation_cache.json; do if [ -f "$f" ]; then git add "$f"; fi; done
-          git diff --staged --quiet || git commit -m "Auto-refresh: clue cards $(date +'%Y-%m-%d')"
+          for f in data/cards.json data/build/cards_raw.json data/build/cards_report.md data/build/power_cache.json data/build/elevation_cache.json country sitemap.xml; do if [ -e "$f" ]; then git add "$f"; fi; done
+          git diff --staged --quiet || git commit -m "Auto-refresh: clue cards and country pages $(date +'%Y-%m-%d')"
           git pull --rebase --autostash && git push
 
       - name: Fail loudly if the cards were not published

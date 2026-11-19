@@ -249,7 +249,9 @@ function globeCountryHTML(c) {
   return '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + escHtml(c.name) + '</h3><span>' + (REGION_LABEL[c.continent] || c.continent || '') + '</span></div>'
     + '<div class="gl-tabs" id="gl-tabs" role="tablist" aria-label="Profile and clue cards"></div>'
     + '<button type="button" class="gl-x" id="gl-x" aria-label="Close">×</button></div>'
-    + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML() + '</div><section id="clue-cards" class="gl-cards gl-pane"></section>';
+    + '<div class="gl-pane" id="gl-pane-profile">' + globeCardsHTML()
+    + '<p class="gl-more-row"><a class="gl-cpage" href="/country/' + countrySlug(c.name) + '/" target="_blank" rel="noopener">Read about ' + escHtml(c.name) + '’s electricity ↗</a></p>'   // its own page, in words
+    + '</div><section id="clue-cards" class="gl-cards gl-pane"></section>';
 }
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
@@ -1895,7 +1897,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (typeof footerHTML === 'function') {
     const _ft = footerHTML;
     window.footerHTML = function () {
-      return _ft.apply(this, arguments).replace('<span class="ft-nav">', '<span class="ft-nav"><button type="button" class="ft-link" onclick="showHowTo()">How to play</button><span class="ft-dot" aria-hidden="true"> · </span><a class="ft-link" href="/about/">About</a><span class="ft-dot" aria-hidden="true"> · </span>');
+      return _ft.apply(this, arguments).replace('<span class="ft-nav">', '<span class="ft-nav"><button type="button" class="ft-link" onclick="showHowTo()">How to play</button><span class="ft-dot" aria-hidden="true"> · </span><a class="ft-link" href="/about/">About</a><span class="ft-dot" aria-hidden="true"> · </span><a class="ft-link" href="/country/">Countries</a><span class="ft-dot" aria-hidden="true"> · </span>');
     };
   }
   // a newcomer's first daily: the rules open by themselves, once, after anything else that opens on arrival
@@ -2225,3 +2227,9 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   const _t = window.renderLbToday;
   window.renderLbToday = function (rows) { const r = _t.apply(this, arguments); lbTodayAvgLine(rows); return r; };
 });
+
+// Turkey has no continent in the game's table, so it fell outside Europe and every continent group
+if (globeOn()) document.addEventListener('DOMContentLoaded', () => { try { if (!ISO3_CONTINENT.TUR) ISO3_CONTINENT.TUR = 'Europe'; } catch (e) {} });
+
+// the address of a country's page (scripts/build_country_pages.py makes the same slug)
+function countrySlug(name) { return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }

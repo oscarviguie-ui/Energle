@@ -57,8 +57,8 @@ def pct_round(f):
     return '<1' if p < 1 else str(round(p)) if p < 10 else str(int(5 * round(p / 5)))
 def ratio_words(r):
     if r >= 1.15:
-        x = round(r * 2) / 2
-        return 'about twice' if x == 2 else f'about {x:g} times'
+        x = round(r) if r >= 5 else round(r * 2) / 2
+        return 'a little more than' if x <= 1 else 'about twice' if x == 2 else f'about {x:g} times'
     if r >= 0.87: return 'close to'
     for v, w in [(0.75, 'about three-quarters of'), (2 / 3, 'about two-thirds of'), (0.5, 'about half'), (1 / 3, 'about a third of'),
                  (0.25, 'about a quarter of'), (0.2, 'about a fifth of'), (0.1, 'about a tenth of')]:
@@ -123,9 +123,11 @@ def page(name, info, cards, world, neighbours, preview, built=None):
     fossil = sum(d.get(s, 0) for s in ('Coal', 'Gas', 'Other Fossil')) / tot
     lowc = 1 - fossil
     # sentences
-    s_mix = f'{The} generated {twh(tot)} of electricity in {y}. {share_words(d[lead] / tot).capitalize()} came from {src_word(lead)}'
+    lw = share_words(d[lead] / tot)
+    s_mix = f'{The} generated {twh(tot)} of electricity in {y}. ' + ('Almost all of it' if lw == 'almost all' else lw.capitalize()) + f' came from {src_word(lead)}'
     s_mix += (f', and {share_words(d[second] / tot)} from {src_word(second)}.' if second and d[second] / tot >= 0.05 else '.')
-    s_low = (f' Low-carbon sources (nuclear and renewables) supplied {share_words(lowc)} of the total.' if lowc >= 0.05
+    s_low = ('' if lw == 'almost all'                      # already said: nearly everything from one source
+             else f' Low-carbon sources (nuclear and renewables) supplied {share_words(lowc)} of the total.' if lowc >= 0.05
              else ' Almost all of it came from fossil fuels.')
     r_dpc = info['latestDpc'] / world['dpc'] if world['dpc'] else 1
     s_dpc = f'Each person uses {ratio_words(r_dpc)} the world average amount of electricity.'
@@ -159,10 +161,11 @@ def page(name, info, cards, world, neighbours, preview, built=None):
             yr = sum(v * n for v, n in zip(sun, [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]))
             facts.append(f'Sunshine: {ratio_words(yr / world["sun"])} the world average.')
         if cards.get('rain') and world.get('rain'): facts.append(f'Rainfall: {ratio_words(cards["rain"] / world["rain"])} the world average.')
-        nb = ((cards.get('elec') or {}).get('NB') or [])
+        real = lambda x: x and x[1] and not re.match(r'(?i)^(neighbou?rs|others?|rest of|world|unspecified)', x[1])
+        nb = [x for x in ((cards.get('elec') or {}).get('NB') or []) if real(x)]
         names = [x[1] for x in sorted(nb, key=lambda x: -((x[2] or 0) + (x[3] or 0)))[:3] if (x[2] or 0) + (x[3] or 0) > 0]
-        if names: facts.append('Biggest power links: ' + ', '.join(the(n) for n in names) + '.')
-        ins = ((cards.get('trade') or {}).get('IN') or [])
+        if names: facts.append('Biggest electricity trade partners: ' + ', '.join(the(n) for n in names) + '.')
+        ins = [x for x in ((cards.get('trade') or {}).get('IN') or []) if real(x)]
         if ins: facts.append('Main fuel supplier: ' + the(ins[0][1]) + '.')
     title = f'{name} electricity mix: how {the_} makes its power | Energle'
     desc = f'How {the_} generates its electricity: {share_words(d[lead] / tot)} from {src_word(lead)}, its trade with neighbours, and how its mix has changed since {first}. Then guess a country from its mix in Energle.'
@@ -172,7 +175,8 @@ def page(name, info, cards, world, neighbours, preview, built=None):
           'isPartOf': {'@id': SITE + '/#site'}, 'about': {'@type': 'Country', 'name': name},
           'breadcrumb': {'@type': 'BreadcrumbList', 'itemListElement': [
               {'@type': 'ListItem', 'position': 1, 'name': 'Energle', 'item': SITE + '/'},
-              {'@type': 'ListItem', 'position': 2, 'name': f'{name} electricity', 'item': url}]}}
+              {'@type': 'ListItem', 'position': 2, 'name': 'Countries', 'item': SITE + '/country/'},
+              {'@type': 'ListItem', 'position': 3, 'name': f'{name} electricity', 'item': url}]}}
     robots = '<meta name="robots" content="noindex, nofollow" />' if preview else ''
     return f'''<!DOCTYPE html>
 <html lang="en">
@@ -205,7 +209,7 @@ def page(name, info, cards, world, neighbours, preview, built=None):
         <div><a class="play" href="/">Finish today’s puzzle</a><button type="button" id="shield-off">Show anyway</button></div>
       </div>
       <main id="content">
-        <p class="crumb"><a href="/">Energle</a> › Countries › {esc(name)}</p>
+        <p class="crumb"><a href="/">Energle</a> › <a href="/country/">Countries</a> › {esc(name)}</p>
         <h1>How {esc(the_)} makes its electricity</h1>
         <p class="lead">{esc(s_mix)}{esc(s_low)}</p>
 
@@ -266,6 +270,80 @@ def display_names():
     return {a or b: c for a, b, c in re.findall(r"(?:'([^']+)'|\"([^\"]+)\")\s*:\s*'([^']+)'", block)}
 
 
+def continents():
+    """The game's continent per ISO3 code, read from js/script.js."""
+    js = open(os.path.join(ROOT, 'js', 'script.js'), encoding='utf-8').read()
+    block = js[js.index('const ISO3_CONTINENT = {'):]; block = block[:block.index('};')]
+    return {'TUR': 'Europe', **dict(re.findall(r"'([A-Z]{3})'\s*:\s*'([^']+)'", block))}   # Turkey: missing from the game's table
+
+
+CONT_ORDER = ['Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania']
+def index_page(data, preview):
+    """energle.org/country/: every country by continent, names only (no figures, no ranking: rule 1)."""
+    cont = continents(); groups = {}
+    for n in sorted(data, key=lambda x: unicodedata.normalize('NFKD', x).lower()):
+        groups.setdefault(data[n].get('continent') or cont.get(data[n]['iso3']) or 'Other', []).append(n)
+    order = [c for c in CONT_ORDER if c in groups] + [c for c in groups if c not in CONT_ORDER]
+    secs = ''.join(f'<section><h2>{esc(c)}</h2><ul class="az">' + ''.join(f'<li><a href="/country/{slug(n)}/">{esc(n)}</a></li>' for n in groups[c]) + '</ul></section>' for c in order)
+    title = 'Electricity by country: how every country makes its power | Energle'
+    desc = f'How {len(data)} countries make their electricity: the power mix, its change since 2000, trade with neighbours and CO₂ intensity, country by country. Then guess a country from its mix in Energle.'
+    robots = '<meta name="robots" content="noindex, nofollow" />' if preview else ''
+    ld = {'@context': 'https://schema.org', '@type': 'CollectionPage', 'name': title, 'url': SITE + '/country/', 'description': desc,
+          'isPartOf': {'@id': SITE + '/#site'}, 'inLanguage': 'en'}
+    return f'''<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{esc(title)}</title>
+    <meta name="description" content="{esc(desc)}" />
+    {robots}
+    <link rel="canonical" href="{SITE}/country/" />
+    <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#f7f7f5" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Energle" />
+    <meta property="og:url" content="{SITE}/country/" />
+    <meta property="og:title" content="Electricity by country" />
+    <meta property="og:description" content="{esc(desc)}" />
+    <meta property="og:image" content="{SITE}/img/og-image.png" />
+    <script type="application/ld+json">{json.dumps(ld, ensure_ascii=False, separators=(',', ':'))}</script>
+    <link rel="stylesheet" href="/country/country.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <a class="brand" href="/"><img src="/img/favicon.svg" alt="" width="24" height="24" />Energle</a>
+        <a class="play" href="/">Play today’s puzzle</a>
+      </header>
+      <main>
+        <p class="crumb"><a href="/">Energle</a> › Countries</p>
+        <h1>Electricity by country</h1>
+        <p class="lead">How {len(data)} countries make their electricity: the mix of sources, how it has changed since 2000, what each country trades with its neighbours and how much CO₂ its power emits. Pick a country to read its profile.</p>
+        {secs}
+        <div class="cta">
+          <p><b>Think you could recognise a country from its electricity alone?</b> Every day, Energle shows one country’s energy profile, and you have six guesses to name it.</p>
+          <a class="play" href="/">Play today’s Energle</a>
+        </div>
+      </main>
+      <footer>
+        <p>Electricity data: <a href="https://ember-energy.org/data/yearly-electricity-data/" rel="noopener">Yearly Electricity Data | Ember</a> (CC BY 4.0). Other data: World Bank, NASA, ENTSO-E, CEPII. <a href="/about/">About Energle</a></p>
+      </footer>
+    </div>
+  </body>
+</html>
+'''
+
+
+def write_sitemap(names):
+    today = date.today().isoformat()
+    urls = [(SITE + '/', 'daily', '1.0', None), (SITE + '/about/', 'monthly', '0.7', today), (SITE + '/country/', 'monthly', '0.7', today)]
+    urls += [(f'{SITE}/country/{slug(n)}/', 'monthly', '0.6', today) for n in sorted(names)]
+    body = ''.join(f'  <url><loc>{u}</loc>' + (f'<lastmod>{m}</lastmod>' if m else '') + f'<changefreq>{c}</changefreq><priority>{p}</priority></url>\n' for u, c, p, m in urls)
+    with open(os.path.join(ROOT, 'sitemap.xml'), 'w', encoding='utf-8') as f:
+        f.write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + body + '</urlset>\n')
+
+
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--preview', action='store_true'); ap.add_argument('names', nargs='*')
     a = ap.parse_args()
@@ -289,6 +367,9 @@ def main():
         p = os.path.join(out, slug(n)); os.makedirs(p, exist_ok=True)
         with open(os.path.join(p, 'index.html'), 'w', encoding='utf-8') as f:
             f.write(page(n, info, cards['countries'].get(info['iso3']), world, near, a.preview, set(names) if a.names else None))
+    if not a.names:                                     # the full set: the index, and the sitemap
+        with open(os.path.join(out, 'index.html'), 'w', encoding='utf-8') as f: f.write(index_page(data, a.preview))
+        if not a.preview: write_sitemap(names)
     print(f'{len(names)} page(s) written to country/')
 
 
