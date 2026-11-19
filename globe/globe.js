@@ -2239,7 +2239,7 @@ function countrySlug(name) { return name.normalize('NFKD').replace(/[\u0300-\u03
 //  Explore with one country picked (window.ENERGLE_COUNTRY). The page carries a few sentences about the country in
 //  words, no figures (#cp-words). Until today's puzzle is finished in this browser, the profile stays locked: the
 //  panel shows those words and a blurred outline, the map tools are put away, and clicking another country opens its
-//  own page. Search engines never play, so they only ever see the words. Once the puzzle is done, it is Explore.
+//  own page. Search engines never play, so they only ever see the words. Once the puzzle is done, it is plain Explore.
 // ============================================================
 const CP_ISO = window.ENERGLE_COUNTRY || null, CP_INDEX = CP_ISO === '*';   // '*': the countries index (the whole world)
 function cpLocked() { try { const s = loadDailyState(); return !(s && s.gameOver); } catch (e) { return true; } }
@@ -2292,11 +2292,9 @@ if (globeOn() && CP_ISO) document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const r = _side.apply(this, arguments);
-    if (el && GLOBE_SEL && GLOBE_SEL.iso3 === CP_ISO) {                  // unlocked, on this page's country: its words too, under the profile
-      const more = el.querySelector('.gl-more-row');
-      if (more) { more.insertAdjacentHTML('beforebegin', cpWordsClone()); more.remove(); }
+    if (el && GLOBE_SEL && GLOBE_SEL.iso3 === CP_ISO) {                  // unlocked: plain Explore (the words are only for those who haven't played)
+      const more = el.querySelector('.gl-more-row'); if (more) more.remove();   // no link to the page it is on
     }
-    if (el && CP_INDEX && !GLOBE_SEL && GLOBE_REGION === 'all') el.insertAdjacentHTML('beforeend', cpWordsClone());   // the index: the list under the world
     return r;
   };
   const _sel = window.globeSelect;
