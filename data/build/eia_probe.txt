@@ -1,386 +1,199 @@
-INTL.1-8-FRA-MMTCD.A	Coal and coke CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 22.977354299823073)
-INTL.11-1-FRA-MT.A	Anthracite production, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.11-1-FRA-MTOE.A	Anthracite production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.11-1-FRA-QBTU.A	Anthracite production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.11-1-FRA-TJ.A	Anthracite production, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.11-1-FRA-TST.A	Anthracite production, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.11-2-FRA-MT.A	Anthracite consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 195.48199999999892)
-INTL.11-2-FRA-MTOE.A	Anthracite consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.12926146860642349)
-INTL.11-2-FRA-QBTU.A	Anthracite consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0051295096430778245)
-INTL.11-2-FRA-TJ.A	Anthracite consumption, France, Annual	terajoules	1980-2024	last=('2024', 5411.919169999986)
-INTL.11-2-FRA-TST.A	Anthracite consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 215.48201968212)
-INTL.11-3-FRA-MT.A	Anthracite imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 195.48199999999892)
-INTL.11-3-FRA-MTOE.A	Anthracite imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.12926146860642349)
-INTL.11-3-FRA-QBTU.A	Anthracite imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0051295096430778245)
-INTL.11-3-FRA-TJ.A	Anthracite imports, France, Annual	terajoules	1980-2024	last=('2024', 5411.919169999986)
-INTL.11-3-FRA-TST.A	Anthracite imports, France, Annual	thousand short tons	1980-2024	last=('2024', 215.48201968212)
-INTL.11-4-FRA-MT.A	Anthracite exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.11-4-FRA-MTOE.A	Anthracite exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.11-4-FRA-QBTU.A	Anthracite exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.11-4-FRA-TJ.A	Anthracite exports, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.11-4-FRA-TST.A	Anthracite exports, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.116-12-FRA-BKWH.A	Solar electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 23.51252)
-INTL.116-12-FRA-MTOE.A	Solar electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 2.0217128108024713)
-INTL.116-12-FRA-QBTU.A	Solar electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.08022804839175335)
-INTL.116-12-FRA-TJ.A	Solar electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 84645.07199999996)
-INTL.116-7-FRA-MK.A	Solar electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 21.528)
-INTL.117-12-FRA-BKWH.A	Tide and wave electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 0.45)
-INTL.117-12-FRA-MTOE.A	Tide and wave electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.03869303523659361)
-INTL.117-12-FRA-QBTU.A	Tide and wave electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.001535463734907573)
-INTL.117-12-FRA-TJ.A	Tide and wave electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 1619.999999999999)
-INTL.117-7-FRA-MK.A	Tide and wave electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 0.212)
-INTL.119-1-FRA-MT.A	Subbituminous production, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.119-1-FRA-MTOE.A	Subbituminous production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.119-1-FRA-QBTU.A	Subbituminous production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.119-1-FRA-TJ.A	Subbituminous production, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.119-1-FRA-TST.A	Subbituminous production, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.119-2-FRA-MT.A	Subbituminous consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 361.3037749999999)
-INTL.119-2-FRA-MTOE.A	Subbituminous consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.18687626571948726)
-INTL.119-2-FRA-QBTU.A	Subbituminous consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.007415849575322312)
-INTL.119-2-FRA-TJ.A	Subbituminous consumption, France, Annual	terajoules	1980-2024	last=('2024', 7824.135496593346)
-INTL.119-2-FRA-TST.A	Subbituminous consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 398.26923786218)
-INTL.119-3-FRA-MT.A	Subbituminous imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 361.3037749999999)
-INTL.119-3-FRA-MTOE.A	Subbituminous imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.18687626571948726)
-INTL.119-3-FRA-QBTU.A	Subbituminous imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.007415849575322312)
-INTL.119-3-FRA-TJ.A	Subbituminous imports, France, Annual	terajoules	1980-2024	last=('2024', 7824.135496593346)
-INTL.119-3-FRA-TST.A	Subbituminous imports, France, Annual	thousand short tons	1980-2024	last=('2024', 398.26923786218)
-INTL.119-4-FRA-MT.A	Subbituminous exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.119-4-FRA-MTOE.A	Subbituminous exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.119-4-FRA-QBTU.A	Subbituminous exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.119-4-FRA-TJ.A	Subbituminous exports, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.119-4-FRA-TST.A	Subbituminous exports, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.12-1-FRA-MT.A	Bituminous production, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.12-1-FRA-MTOE.A	Bituminous production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.12-1-FRA-QBTU.A	Bituminous production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.12-1-FRA-TJ.A	Bituminous production, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.12-1-FRA-TST.A	Bituminous production, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.12-2-FRA-MT.A	Bituminous consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 5396.318000000027)
-INTL.12-2-FRA-MTOE.A	Bituminous consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 3.2434876853473833)
-INTL.12-2-FRA-QBTU.A	Bituminous consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.12871199390323804)
-INTL.12-2-FRA-TJ.A	Bituminous consumption, France, Annual	terajoules	1980-2024	last=('2024', 135798.34247000105)
-INTL.12-2-FRA-TST.A	Bituminous consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 5948.4223687449)
-INTL.12-3-FRA-MT.A	Bituminous imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 4434.01200000003)
-INTL.12-3-FRA-MTOE.A	Bituminous imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 2.6661472258235963)
-INTL.12-3-FRA-QBTU.A	Bituminous imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.1058012728167914)
-INTL.12-3-FRA-TJ.A	Bituminous imports, France, Annual	terajoules	1980-2024	last=('2024', 111626.25210000109)
-INTL.12-3-FRA-TST.A	Bituminous imports, France, Annual	thousand short tons	1980-2024	last=('2024', 4887.6615803745)
-INTL.12-4-FRA-MT.A	Bituminous exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 153.2832700000028)
-INTL.12-4-FRA-MTOE.A	Bituminous exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.09187550537293404)
-INTL.12-4-FRA-QBTU.A	Bituminous exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0036459147173088374)
-INTL.12-4-FRA-TJ.A	Bituminous exports, France, Annual	terajoules	1980-2024	last=('2024', 3846.643660650082)
-INTL.12-4-FRA-TST.A	Bituminous exports, France, Annual	thousand short tons	1980-2024	last=('2024', 168.96588229648)
-INTL.13-1-FRA-TBPD.A	LPG and ethane production, France, Annual	thousand barrels per day	1980-2013	last=('2013', 47)
-INTL.13-2-FRA-TBPD.A	LPG and ethane consumption, France, Annual	thousand barrels per day	1980-2013	last=('2013', 107)
-INTL.13-3-FRA-TBPD.A	LPG and ethane imports, France, Annual	thousand barrels per day	1986-2013	last=('2013', 96)
-INTL.13-4-FRA-TBPD.A	LPG and ethane exports, France, Annual	thousand barrels per day	1986-2013	last=('2013', 35)
-INTL.130-1-FRA-MT.A	Metallurgical coal production, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.130-1-FRA-MTOE.A	Metallurgical coal production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.130-1-FRA-QBTU.A	Metallurgical coal production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.130-1-FRA-TJ.A	Metallurgical coal production, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.130-1-FRA-TST.A	Metallurgical coal production, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.130-2-FRA-MT.A	Metallurgical coal consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 2682.269082000023)
-INTL.130-2-FRA-MTOE.A	Metallurgical coal consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 2.023491897717357)
-INTL.130-2-FRA-QBTU.A	Metallurgical coal consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.08029864826644274)
-INTL.130-2-FRA-TJ.A	Metallurgical coal consumption, France, Annual	terajoules	1980-2024	last=('2024', 84719.55881098523)
-INTL.130-2-FRA-TST.A	Metallurgical coal consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 2956.6955480314)
-INTL.130-3-FRA-MT.A	Metallurgical coal imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 2682.269082000023)
-INTL.130-3-FRA-MTOE.A	Metallurgical coal imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 2.023491897717357)
-INTL.130-3-FRA-QBTU.A	Metallurgical coal imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.08029864826644274)
-INTL.130-3-FRA-TJ.A	Metallurgical coal imports, France, Annual	terajoules	1980-2024	last=('2024', 84719.55881098523)
-INTL.130-3-FRA-TST.A	Metallurgical coal imports, France, Annual	thousand short tons	1980-2024	last=('2024', 2956.6955480314)
-INTL.130-4-FRA-MT.A	Metallurgical coal exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.130-4-FRA-MTOE.A	Metallurgical coal exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.130-4-FRA-QBTU.A	Metallurgical coal exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.130-4-FRA-TJ.A	Metallurgical coal exports, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.130-4-FRA-TST.A	Metallurgical coal exports, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.14-1-FRA-MT.A	Lignite production, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.14-1-FRA-MTOE.A	Lignite production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.14-1-FRA-QBTU.A	Lignite production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.14-1-FRA-TJ.A	Lignite production, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.14-1-FRA-TST.A	Lignite production, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.14-2-FRA-MT.A	Lignite consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 16.577000000000382)
-INTL.14-2-FRA-MTOE.A	Lignite consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.00673089232530216)
-INTL.14-2-FRA-QBTU.A	Lignite consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.00026710339485838257)
-INTL.14-2-FRA-TJ.A	Lignite consumption, France, Annual	terajoules	1980-2024	last=('2024', 281.80900000000736)
-INTL.14-2-FRA-TST.A	Lignite consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 18.273014601194)
-INTL.14-3-FRA-MT.A	Lignite imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 16.577000000000382)
-INTL.14-3-FRA-MTOE.A	Lignite imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.00673089232530216)
-INTL.14-3-FRA-QBTU.A	Lignite imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.00026710339485838257)
-INTL.14-3-FRA-TJ.A	Lignite imports, France, Annual	terajoules	1980-2024	last=('2024', 281.80900000000736)
-INTL.14-3-FRA-TST.A	Lignite imports, France, Annual	thousand short tons	1980-2024	last=('2024', 18.273014601194)
-INTL.14-4-FRA-MT.A	Lignite exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.14-4-FRA-MTOE.A	Lignite exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.14-4-FRA-QBTU.A	Lignite exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.14-4-FRA-TJ.A	Lignite exports, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.14-4-FRA-TST.A	Lignite exports, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.2-12-FRA-BKWH.A	Electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 537.226520875)
-INTL.2-2-FRA-BKWH.A	Electricity net consumption, France, Annual	billion kilowatthours	1980-2024	last=('2024', 409.682280875)
-INTL.2-23-FRA-BKWH.A	Electricity net imports, France, Annual	billion kilowatthours	1980-2024	last=('2024', -89.850955)
-INTL.2-23-FRA-MTOE.A	Electricity net imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', -7.725470797550758)
-INTL.2-23-FRA-QBTU.A	Electricity net imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', -0.30657145846)
-INTL.2-23-FRA-TJ.A	Electricity net imports, France, Annual	terajoules	1980-2024	last=('2024', -323450.0114944722)
-INTL.2-3-FRA-BKWH.A	Electricity imports, France, Annual	billion kilowatthours	1980-2024	last=('2024', 15.108677)
-INTL.2-3-FRA-MTOE.A	Electricity imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 1.299058456898169)
-INTL.2-3-FRA-QBTU.A	Electricity imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.051550805924)
-INTL.2-3-FRA-TJ.A	Electricity imports, France, Annual	terajoules	1980-2024	last=('2024', 54388.979497393964)
-INTL.2-4-FRA-BKWH.A	Electricity exports, France, Annual	billion kilowatthours	1980-2024	last=('2024', 104.959632)
-INTL.2-4-FRA-MTOE.A	Electricity exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 9.024529254448927)
-INTL.2-4-FRA-QBTU.A	Electricity exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.358122264384)
-INTL.2-4-FRA-TJ.A	Electricity exports, France, Annual	terajoules	1980-2024	last=('2024', 377838.99099186616)
-INTL.2-7-FRA-MK.A	Electricity installed capacity, France, Annual	million kilowatts	1980-2024	last=('2024', 160.87715)
-INTL.2-9-FRA-BKWH.A	Electricity distribution losses, France, Annual	billion kilowatthours	1980-2024	last=('2024', 37.693285)
-INTL.21-1-FRA-MT.A	Metallurgical coke production, France, Annual	1000 metric tons	1980-2024	last=('2024', 1982.3783646940115)
-INTL.21-1-FRA-MTOE.A	Metallurgical coke production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 1.32575222573226)
-INTL.21-1-FRA-QBTU.A	Metallurgical coke production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.052610100283879774)
-INTL.21-1-FRA-TJ.A	Metallurgical coke production, France, Annual	terajoules	1980-2024	last=('2024', 55506.59421143248)
-INTL.21-1-FRA-TST.A	Metallurgical coke production, France, Annual	thousand short tons	1980-2024	last=('2024', 2185.198093934)
-INTL.21-2-FRA-MT.A	Metallurgical coke consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 2773.855000000029)
-INTL.21-2-FRA-MTOE.A	Metallurgical coke consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 1.8550668760331361)
-INTL.21-2-FRA-QBTU.A	Metallurgical coke consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0736150032314685)
-INTL.21-2-FRA-TJ.A	Metallurgical coke consumption, France, Annual	terajoules	1980-2024	last=('2024', 77667.94000000104)
-INTL.21-2-FRA-TST.A	Metallurgical coke consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 3057.6517413642)
-INTL.21-3-FRA-MT.A	Metallurgical coke imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 838.0230000000015)
-INTL.21-3-FRA-MTOE.A	Metallurgical coke imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.5604433932753887)
-INTL.21-3-FRA-QBTU.A	Metallurgical coke imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.022240191305257263)
-INTL.21-3-FRA-TJ.A	Metallurgical coke imports, France, Annual	terajoules	1980-2024	last=('2024', 23464.644000000113)
-INTL.21-3-FRA-TST.A	Metallurgical coke imports, France, Annual	thousand short tons	1980-2024	last=('2024', 923.76223171479)
-INTL.21-4-FRA-MT.A	Metallurgical coke exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 112.29628400000239)
-INTL.21-4-FRA-MTOE.A	Metallurgical coke exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.07510021855865288)
-INTL.21-4-FRA-QBTU.A	Metallurgical coke exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0029802175346375324)
-INTL.21-4-FRA-TJ.A	Metallurgical coke exports, France, Annual	terajoules	1980-2024	last=('2024', 3144.2959520000763)
-INTL.21-4-FRA-TST.A	Metallurgical coke exports, France, Annual	thousand short tons	1980-2024	last=('2024', 123.78546402798)
-INTL.26-1-FRA-BCF.A	Dry natural gas production, France, Annual	billion cubic feet	1980-2024	last=('2024', 0.446017719)
-INTL.26-1-FRA-BCM.A	Dry natural gas production, France, Annual	billion cubic meters	1980-2024	last=('2024', 0.012629815329804905)
-INTL.26-1-FRA-MTOE.A	Dry natural gas production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.01278391027507646)
-INTL.26-1-FRA-QBTU.A	Dry natural gas production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0005073065604098182)
-INTL.26-1-FRA-TJ.A	Dry natural gas production, France, Annual	terajoules	1980-2024	last=('2024', 535.2367556329002)
-INTL.26-2-FRA-BCF.A	Dry natural gas consumption, France, Annual	billion cubic feet	1980-2024	last=('2024', 1089.683444)
-INTL.26-2-FRA-BCM.A	Dry natural gas consumption, France, Annual	billion cubic meters	1980-2024	last=('2024', 30.85639892630769)
-INTL.26-2-FRA-MTOE.A	Dry natural gas consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 30.434752483248605)
-INTL.26-2-FRA-QBTU.A	Dry natural gas consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 1.2077485892014115)
-INTL.26-2-FRA-TJ.A	Dry natural gas consumption, France, Annual	terajoules	1980-2024	last=('2024', 1274242.2175304973)
-INTL.26-3-FRA-BCF.A	Dry natural gas imports, France, Annual	billion cubic feet	1990-2024	last=('2024', 1489.019764)
-INTL.26-3-FRA-BCM.A	Dry natural gas imports, France, Annual	billion cubic meters	1990-2024	last=('2024', 42.1643442415562)
-INTL.26-3-FRA-MTOE.A	Dry natural gas imports, France, Annual	million metric tons of oil equivalent	1990-2024	last=('2024', 41.58817701556775)
-INTL.26-3-FRA-QBTU.A	Dry natural gas imports, France, Annual	quadrillion Btu	1990-2024	last=('2024', 1.6503522460271762)
-INTL.26-3-FRA-TJ.A	Dry natural gas imports, France, Annual	terajoules	1990-2024	last=('2024', 1741213.7960555346)
-INTL.26-4-FRA-BCF.A	Dry natural gas exports, France, Annual	billion cubic feet	1990-2024	last=('2024', 489.8962618)
-INTL.26-4-FRA-BCM.A	Dry natural gas exports, France, Annual	billion cubic meters	1990-2024	last=('2024', 13.87231729530404)
-INTL.26-4-FRA-MTOE.A	Dry natural gas exports, France, Annual	million metric tons of oil equivalent	1990-2024	last=('2024', 14.041571866221117)
-INTL.26-4-FRA-QBTU.A	Dry natural gas exports, France, Annual	quadrillion Btu	1990-2024	last=('2024', 0.5572146059322449)
-INTL.26-4-FRA-TJ.A	Dry natural gas exports, France, Annual	terajoules	1990-2024	last=('2024', 587892.5311541619)
-INTL.27-12-FRA-BKWH.A	Nuclear electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 361.7)
-INTL.27-12-FRA-MTOE.A	Nuclear electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 31.100601877946467)
-INTL.27-12-FRA-QBTU.A	Nuclear electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 1.2341716287023758)
-INTL.27-12-FRA-TJ.A	Nuclear electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 1302119.9999999993)
-INTL.27-7-FRA-MK.A	Nuclear electricity installed capacity, France, Annual	million kilowatts	1980-2024	last=('2024', 63)
-INTL.28-12-FRA-BKWH.A	Fossil fuels electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 26.753912)
-INTL.28-7-FRA-MK.A	Fossil fuels electricity installed capacity, France, Annual	million kilowatts	1980-2024	last=('2024', 21)
-INTL.2890-12-FRA-BKWH.A	Other gases fossil fuel, France, Annual	billion kilowatthours	2000-2024	last=('2024', 0.327)
-INTL.29-12-FRA-BKWH.A	Renewable electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 150.861944306)
-INTL.29-12-FRA-MTOE.A	Renewable electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 12.971792281984625)
-INTL.29-12-FRA-QBTU.A	Renewable electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.5147623210211312)
-INTL.29-12-FRA-TJ.A	Renewable electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 543102.9995015997)
-INTL.29-7-FRA-MK.A	Renewable electricity installed capacity, France, Annual	million kilowatts	1980-2024	last=('2024', 70.08415)
-INTL.3-1-FRA-BCF.A	Gross natural gas production, France, Annual	billion cubic feet	1990-2015	last=('2015', 0.741615)
-INTL.3-1-FRA-BCM.A	Gross natural gas production, France, Annual	billion cubic meters	1990-2015	last=('2015', 0.021000198191259)
-INTL.30-12-FRA-BKWH.A	Coal fossil fuel, France, Annual	billion kilowatthours	2000-2024	last=('2024', 0.992871)
-INTL.3002-8-FRA-MMTCD.A	Natural gas CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 64.079114314)
-INTL.31-12-FRA-BKWH.A	Natural gas fossil fuel, France, Annual	billion kilowatthours	2000-2024	last=('2024', 18.429655)
-INTL.32-12-FRA-BKWH.A	Petroleum fossil fuel, France, Annual	billion kilowatthours	2000-2024	last=('2024', 7.004386)
-INTL.33-12-FRA-BKWH.A	Hydroelectricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 70.817275331)
-INTL.33-12-FRA-MTOE.A	Hydroelectricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 6.089189621648743)
-INTL.33-12-FRA-QBTU.A	Hydroelectricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.24163857350158932)
-INTL.33-12-FRA-TJ.A	Hydroelectricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 254942.19119159985)
-INTL.33-7-FRA-MK.A	Hydroelectricity installed capacity, France, Annual	million kilowatts	1980-2024	last=('2024', 20.385)
-INTL.34-12-FRA-BKWH.A	Non-hydro renewable electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 80.044668975)
-INTL.34-12-FRA-MTOE.A	Non-hydro renewable electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 6.882602660335881)
-INTL.34-12-FRA-QBTU.A	Non-hydro renewable electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.2731237475195418)
-INTL.34-12-FRA-TJ.A	Non-hydro renewable electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 288160.8083099998)
-INTL.34-7-FRA-MK.A	Non-hydro renewable electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 49.69915)
-INTL.35-12-FRA-BKWH.A	Geothermal electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 0.102342)
-INTL.35-12-FRA-MTOE.A	Geothermal electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.008799828027074363)
-INTL.35-12-FRA-QBTU.A	Geothermal electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0003492053990175796)
-INTL.35-12-FRA-TJ.A	Geothermal electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 368.4311999999998)
-INTL.35-7-FRA-MK.A	Geothermal electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 0.01615)
-INTL.36-12-FRA-BKWH.A	Solar, tide, wave, fuel cell electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 23.96252)
-INTL.36-12-FRA-MTOE.A	Solar, tide, wave, fuel cell electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 2.060405846039065)
-INTL.36-12-FRA-QBTU.A	Solar, tide, wave, fuel cell electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.08176351212666093)
-INTL.36-12-FRA-TJ.A	Solar, tide, wave, fuel cell electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 86265.07199999996)
-INTL.36-7-FRA-MK.A	Solar, tide, wave, fuel cell electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 21.74)
-INTL.37-12-FRA-BKWH.A	Wind electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 46.1819165)
-INTL.37-12-FRA-MTOE.A	Wind electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 3.970930049839831)
-INTL.37-12-FRA-QBTU.A	Wind electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.15757923998728815)
-INTL.37-12-FRA-TJ.A	Wind electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 166254.8993999999)
-INTL.37-7-FRA-MK.A	Wind electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 24.592)
-INTL.38-12-FRA-BKWH.A	Biomass and waste electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', 9.797890475)
-INTL.38-12-FRA-MTOE.A	Biomass and waste electricity net generation, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.842466936429911)
-INTL.38-12-FRA-QBTU.A	Biomass and waste electricity net generation, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.03343179000657519)
-INTL.38-12-FRA-TJ.A	Biomass and waste electricity net generation, France, Annual	terajoules	1980-2024	last=('2024', 35272.40570999998)
-INTL.38-7-FRA-MK.A	Biomass and waste electricity installed capacity, France, Annual	million kilowatts	2000-2024	last=('2024', 3.351)
-INTL.4002-8-FRA-MMTCD.A	Coal and coke CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 22.977354299823073)
-INTL.4006-8-FRA-MMTCD.A	Petroleum and other liquids CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 204.27039)
-INTL.4008-8-FRA-MMTCD.A	CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 291.326858614)
-INTL.4010-8-FRA-MMTCD.A	Consumed natural gas CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 64.079114314)
-INTL.43-1-FRA-BCF.A	Vented and flared natural gas production, France, Annual	billion cubic feet	1980-2015	last=('2015', 0)
-INTL.43-1-FRA-BCM.A	Vented and flared natural gas production, France, Annual	billion cubic meters	1980-2015	last=('2015', 0)
-INTL.44-1-FRA-MTOE.A	Total energy production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 110.92344133583065)
-INTL.44-1-FRA-QBTU.A	Total energy production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 4.401797907062042)
-INTL.44-1-FRA-TJ.A	Total energy production, France, Annual	terajoules	1980-2024	last=('2024', 4644142.643896274)
-INTL.44-2-FRA-MTOE.A	Total energy consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 215.77533112736455)
-INTL.44-2-FRA-QBTU.A	Total energy consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 8.562657176100853)
-INTL.44-2-FRA-TJ.A	Total energy consumption, France, Annual	terajoules	1980-2024	last=('2024', 9034081.567623846)
-INTL.4411-1-FRA-QBTU.A	Total energy production from coal, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.4411-2-FRA-QBTU.A	Total energy consumption from coal, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.22182310478293932)
-INTL.4413-1-FRA-QBTU.A	Total energy production from natural gas, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0005073065604098182)
-INTL.4413-2-FRA-QBTU.A	Total energy consumption from natural gas, France, Annual	quadrillion Btu	1980-2024	last=('2024', 1.2077485892014115)
-INTL.4415-1-FRA-QBTU.A	Total energy production from petroleum and other liquids, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.023617875334801555)
-INTL.4415-2-FRA-QBTU.A	Total energy consumption from petroleum and other liquids, France, Annual	quadrillion Btu	1980-2024	last=('2024', 3.111766121639052)
-INTL.4417-1-FRA-QBTU.A	Total energy production from nuclear, France, Annual	quadrillion Btu	1980-2024	last=('2024', 3.7413398529190727)
-INTL.4417-2-FRA-QBTU.A	Total energy consumption from nuclear, France, Annual	quadrillion Btu	1980-2024	last=('2024', 3.7413398529190727)
-INTL.4418-1-FRA-QBTU.A	Total energy production from renewables and other, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.6363328722477577)
-INTL.4418-2-FRA-QBTU.A	Total energy consumption from renewables and other, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.27997950755837736)
-INTL.4419-1-FRA-QBTU.A	Total energy production from nuclear, renewables, and other, France, Annual	quadrillion Btu	1980-2024	last=('2024', 4.37767272516683)
-INTL.4419-2-FRA-QBTU.A	Total energy consumption from nuclear, renewables, and other, France, Annual	quadrillion Btu	1980-2024	last=('2024', 4.02131936047745)
-INTL.47-33-FRA-MBTUPP.A	Energy consumption per capita, France, Annual	million Btu per person	1980-2024	last=('2024', 124.45248707245237)
-INTL.47-34-FRA-TBTUUSDPP.A	Energy consumption per GDP, France, Annual	thousand Btu per USD at purchasing power parities	1980-2024	last=('2024', 2.7214806541162027)
-INTL.4701-34-FRA-BDOLPPP.A	GDP at purchasing power parities, France, Annual	billion dollars at purchasing power parities	1980-2025	last=('2025', 3174.265)
-INTL.4702-33-FRA-THP.A	Population, France, Annual	people in thousands	1980-2025	last=('2025', 68960.23)
-INTL.48-1-FRA-BCF.A	Reinjected natural gas production, France, Annual	billion cubic feet	1990-2015	last=('2015', 0)
-INTL.48-1-FRA-BCM.A	Reinjected natural gas production, France, Annual	billion cubic meters	1990-2015	last=('2015', 0)
-INTL.5-2-FRA-MT.A	Petroleum and other liquids consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 71181)
-INTL.5-2-FRA-MTOE.A	Petroleum and other liquids consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 78.9811765784075)
-INTL.5-2-FRA-QBTU.A	Petroleum and other liquids consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 3.134226395911775)
-INTL.5-2-FRA-TBPD.A	Petroleum and other liquids consumption, France, Annual	thousand barrels per day	1973-2025	last=('2025', 1534.600001)
-INTL.5-2-FRA-TJ.A	Petroleum and other liquids consumption, France, Annual	terajoules	1980-2025	last=('2025', 3306783.9024428073)
-INTL.5-5-FRA-MBBL.A	Petroleum and other liquids stocks, France, Annual	millions barrels	1973-2025	last=('2025', 147.522)
-INTL.5-8-FRA-MMTCD.A	Petroleum and other liquids CO2 emissions, France, Annual	million metric tonnes carbon dioxide	1980-2024	last=('2024', 204.27039)
-INTL.53-1-FRA-TBPD.A	Petroleum and other liquids production, France, Annual	thousand barrels per day	1980-2025	last=('2025', 105.88877140242192)
-INTL.54-1-FRA-TBPD.A	Refined petroleum products production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 1275.4219178082192)
-INTL.54-13-FRA-TBPD.A	Bunker fuel consumption, France, Annual	thousand barrels per day	1980-2014	last=('2014', 33.69260273972601)
-INTL.54-2-FRA-MT.A	Refined petroleum products consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 71181)
-INTL.54-2-FRA-MTOE.A	Refined petroleum products consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 78.9811765784075)
-INTL.54-2-FRA-QBTU.A	Refined petroleum products consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 3.134226395911775)
-INTL.54-2-FRA-TBPD.A	Refined petroleum products consumption, France, Annual	thousand barrels per day	1973-2025	last=('2025', 1534.600001)
-INTL.54-2-FRA-TJ.A	Refined petroleum products consumption, France, Annual	terajoules	1980-2025	last=('2025', 3306783.9024428073)
-INTL.55-1-FRA-TBPD.A	Crude oil, NGPL, and other liquids production, France, Annual	thousand barrels per day	1980-2025	last=('2025', 78.7308301369863)
-INTL.56-1-FRA-TBPD.A	Refinery processing gain, France, Annual	thousand barrels per day	1993-2025	last=('2025', 27.157941265435618)
-INTL.57-1-FRA-MT.A	Crude oil including lease condensate production, France, Annual	1000 metric tons	1980-1999	last=('1999', 1518)
-INTL.57-1-FRA-MTOE.A	Crude oil including lease condensate production, France, Annual	million metric tons of oil equivalent	1980-1999	last=('1999', 1.614)
-INTL.57-1-FRA-QBTU.A	Crude oil including lease condensate production, France, Annual	quadrillion Btu	1984-2024	last=('2024', 0.023617875334801555)
-INTL.57-1-FRA-TBPD.A	Crude oil including lease condensate production, France, Annual	thousand barrels per day	1984-2025	last=('2025', 10.221830136986302)
-INTL.57-1-FRA-TJ.A	Crude oil including lease condensate production, France, Annual	terajoules	1980-1999	last=('1999', 67523.578)
-INTL.57-3-FRA-TBPD.A	Crude oil including lease condensate imports, France, Annual	thousand barrels per day	1980-2020	last=('2020', 662.564)
-INTL.57-4-FRA-TBPD.A	Crude oil including lease condensate exports, France, Annual	thousand barrels per day	1980-2020	last=('2020', 0)
-INTL.58-1-FRA-MTOE.A	Natural gas plant liquids production, France, Annual	million metric tons of oil equivalent	1980-1999	last=('1999', 0.277)
-INTL.58-1-FRA-QBTU.A	Natural gas plant liquids production, France, Annual	quadrillion Btu	1984-2025	last=('2025', 0)
-INTL.58-1-FRA-TBPD.A	Natural gas plant liquids production, France, Annual	thousand barrels per day	1984-2025	last=('2025', 0)
-INTL.58-1-FRA-TJ.A	Natural gas plant liquids production, France, Annual	terajoules	1980-1999	last=('1999', 11605.615)
-INTL.59-1-FRA-TBPD.A	Other liquids production, France, Annual	thousand barrels per day	1996-2025	last=('2025', 68.509)
-INTL.62-1-FRA-TBPD.A	Motor gasoline production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 265.356164383562)
-INTL.62-2-FRA-MT.A	Motor gasoline consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 12409)
-INTL.62-2-FRA-MTOE.A	Motor gasoline consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 13.87511225023987)
-INTL.62-2-FRA-QBTU.A	Motor gasoline consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 0.550608954499035)
-INTL.62-2-FRA-TBPD.A	Motor gasoline consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 287.172603)
-INTL.62-2-FRA-TJ.A	Motor gasoline consumption, France, Annual	terajoules	1980-2025	last=('2025', 580923.1999491862)
-INTL.63-1-FRA-TBPD.A	Jet fuel production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 79.4246575342466)
-INTL.63-2-FRA-MT.A	Jet fuel consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 7973)
-INTL.63-2-FRA-MTOE.A	Jet fuel consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 8.980394088112764)
-INTL.63-2-FRA-QBTU.A	Jet fuel consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 0.356370839433)
-INTL.63-2-FRA-TBPD.A	Jet fuel consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 172.19726)
-INTL.63-2-FRA-TJ.A	Jet fuel consumption, France, Annual	terajoules	1980-2025	last=('2025', 375991.13984688895)
-INTL.64-1-FRA-TBPD.A	Kerosene production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 0)
-INTL.64-2-FRA-MT.A	Kerosene consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 140)
-INTL.64-2-FRA-MTOE.A	Kerosene consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 0.16288503714097158)
-INTL.64-2-FRA-QBTU.A	Kerosene consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 0.0064638006804)
-INTL.64-2-FRA-TBPD.A	Kerosene consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 3.123288)
-INTL.64-2-FRA-TJ.A	Kerosene consumption, France, Annual	terajoules	1980-2025	last=('2025', 6819.670738025158)
-INTL.65-1-FRA-TBPD.A	Distillate fuel oil production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 528.947945205479)
-INTL.65-13-FRA-TBPD.A	Bunker distillate fuel oil consumption, France, Annual	thousand barrels per day	1984-2008	last=('2008', 4.6)
-INTL.65-2-FRA-MT.A	Distillate fuel oil consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 36865)
-INTL.65-2-FRA-MTOE.A	Distillate fuel oil consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 40.37229568696133)
-INTL.65-2-FRA-QBTU.A	Distillate fuel oil consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 1.602102175320375)
-INTL.65-2-FRA-TBPD.A	Distillate fuel oil consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 753.531507)
-INTL.65-2-FRA-TJ.A	Distillate fuel oil consumption, France, Annual	terajoules	1980-2025	last=('2025', 1690307.276566995)
-INTL.66-1-FRA-TBPD.A	Residual fuel oil production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 114.509589041096)
-INTL.66-13-FRA-MT.A	Bunker residual fuel oil consumption, France, Annual	1000 metric tons	1980-1980	last=('1980', 2033)
-INTL.66-13-FRA-TBPD.A	Bunker residual fuel oil consumption, France, Annual	thousand barrels per day	1980-2014	last=('2014', 31.5608219178082)
-INTL.66-2-FRA-MT.A	Residual fuel oil consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 1476)
-INTL.66-2-FRA-MTOE.A	Residual fuel oil consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 1.507458919247125)
-INTL.66-2-FRA-QBTU.A	Residual fuel oil consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 0.059820804654215)
-INTL.66-2-FRA-TBPD.A	Residual fuel oil consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 26.068493)
-INTL.66-2-FRA-TJ.A	Residual fuel oil consumption, France, Annual	terajoules	1980-2025	last=('2025', 63114.29005886727)
-INTL.67-1-FRA-TBPD.A	Liquefied petroleum gases (LPG) production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 46.9068493150685)
-INTL.67-2-FRA-MT.A	Liquefied petroleum gases (LPG) consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 3114)
-INTL.67-2-FRA-MTOE.A	Liquefied petroleum gases (LPG) consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 3.762700416744691)
-INTL.67-2-FRA-QBTU.A	Liquefied petroleum gases (LPG) consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 0.14931602030975)
-INTL.67-2-FRA-TBPD.A	Liquefied petroleum gases (LPG) consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 99.052055)
-INTL.67-2-FRA-TJ.A	Liquefied petroleum gases (LPG) consumption, France, Annual	terajoules	1980-2025	last=('2025', 157536.74111772852)
-INTL.6798-1-FRA-TBPD.A	LPG and ethane refinery production, France, Annual	thousand barrels per day	1980-2013	last=('2013', 47)
-INTL.6799-1-FRA-TBPD.A	LPG non-refinery production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 0)
-INTL.68-1-FRA-TBPD.A	Other refined products production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 240.276712328767)
-INTL.68-2-FRA-MT.A	Other refined products consumption, France, Annual	1000 metric tons	1980-2025	last=('2025', 9204)
-INTL.68-2-FRA-MTOE.A	Other refined products consumption, France, Annual	million metric tons of oil equivalent	1980-2025	last=('2025', 10.32033017996075)
-INTL.68-2-FRA-QBTU.A	Other refined products consumption, France, Annual	quadrillion Btu	1980-2025	last=('2025', 0.409543801015)
-INTL.68-2-FRA-TBPD.A	Other refined products consumption, France, Annual	thousand barrels per day	1980-2025	last=('2025', 193.454795)
-INTL.68-2-FRA-TJ.A	Other refined products consumption, France, Annual	terajoules	1980-2025	last=('2025', 432091.5841651164)
-INTL.6899-2-FRA-TBPD.A	LPG consumption, France, Annual	thousand barrels per day	1980-2013	last=('2013', 106)
-INTL.6899-3-FRA-TBPD.A	LPG imports, France, Annual	thousand barrels per day	1980-2013	last=('2013', 96)
-INTL.6899-4-FRA-TBPD.A	LPG exports, France, Annual	thousand barrels per day	1980-2013	last=('2013', 35)
-INTL.7-1-FRA-MT.A	Coal production, France, Annual	1000 metric tons	1980-2024	last=('2024', 0)
-INTL.7-1-FRA-MTOE.A	Coal production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0)
-INTL.7-1-FRA-QBTU.A	Coal production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0)
-INTL.7-1-FRA-TJ.A	Coal production, France, Annual	terajoules	1980-2024	last=('2024', 0)
-INTL.7-1-FRA-TST.A	Coal production, France, Annual	thousand short tons	1980-2024	last=('2024', 0)
-INTL.7-2-FRA-MT.A	Coal consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 8651.949857000049)
-INTL.7-2-FRA-MTOE.A	Coal consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 5.589848209715953)
-INTL.7-2-FRA-QBTU.A	Coal consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.22182310478293932)
-INTL.7-2-FRA-TJ.A	Coal consumption, France, Annual	terajoules	1980-2024	last=('2024', 234035.76494757962)
-INTL.7-2-FRA-TST.A	Coal consumption, France, Annual	thousand short tons	1980-2024	last=('2024', 9537.142188921795)
-INTL.7-3-FRA-MT.A	Coal imports, France, Annual	1000 metric tons	1980-2024	last=('2024', 7689.643857000052)
-INTL.7-3-FRA-MTOE.A	Coal imports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 5.012507750192166)
-INTL.7-3-FRA-QBTU.A	Coal imports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.19891238369649267)
-INTL.7-3-FRA-TJ.A	Coal imports, France, Annual	terajoules	1980-2024	last=('2024', 209863.67457757966)
-INTL.7-3-FRA-TST.A	Coal imports, France, Annual	thousand short tons	1980-2024	last=('2024', 8476.381400551394)
-INTL.7-4-FRA-MT.A	Coal exports, France, Annual	1000 metric tons	1980-2024	last=('2024', 153.2832700000028)
-INTL.7-4-FRA-MTOE.A	Coal exports, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.09187550537293404)
-INTL.7-4-FRA-QBTU.A	Coal exports, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0036459147173088374)
-INTL.7-4-FRA-TJ.A	Coal exports, France, Annual	terajoules	1980-2024	last=('2024', 3846.643660650082)
-INTL.7-4-FRA-TST.A	Coal exports, France, Annual	thousand short tons	1980-2024	last=('2024', 168.96588229648)
-INTL.7-6-FRA-MST.A	Coal reserves, France, Annual	million short tons	2008-2023	last=('2023', 176.3696)
-INTL.79-1-FRA-MT.A	Biofuels production, France, Annual	1000 metric tons	1980-2024	last=('2024', 2039.174)
-INTL.79-1-FRA-MTOE.A	Biofuels production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 1.739826109147068)
-INTL.79-1-FRA-QBTU.A	Biofuels production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.06904188)
-INTL.79-1-FRA-TBPD.A	Biofuels production, France, Annual	thousand barrels per day	1980-2024	last=('2024', 42.22661551)
-INTL.79-1-FRA-TJ.A	Biofuels production, France, Annual	terajoules	1980-2024	last=('2024', 72843.03956988773)
-INTL.79-2-FRA-MT.A	Biofuels consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 3946.080803)
-INTL.79-2-FRA-MTOE.A	Biofuels consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 3.48938782252461)
-INTL.79-2-FRA-QBTU.A	Biofuels consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.1384701)
-INTL.79-2-FRA-TBPD.A	Biofuels consumption, France, Annual	thousand barrels per day	1980-2024	last=('2024', 80.6228923)
-INTL.79-2-FRA-TJ.A	Biofuels consumption, France, Annual	terajoules	1980-2024	last=('2024', 146093.68941787665)
-INTL.80-1-FRA-MT.A	Ethanol production, France, Annual	1000 metric tons	1980-2024	last=('2024', 940.787)
-INTL.80-1-FRA-MTOE.A	Ethanol production, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.674808360568416)
-INTL.80-1-FRA-QBTU.A	Ethanol production, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.02677856)
-INTL.80-1-FRA-TBPD.A	Ethanol production, France, Annual	thousand barrels per day	1980-2024	last=('2024', 20.61998904)
-INTL.80-1-FRA-TJ.A	Ethanol production, France, Annual	terajoules	1980-2024	last=('2024', 28252.87645273583)
-INTL.80-2-FRA-MT.A	Ethanol consumption, France, Annual	1000 metric tons	1980-2024	last=('2024', 1334.750614)
-INTL.80-2-FRA-MTOE.A	Ethanol consumption, France, Annual	million metric tons of oil equivalent	1980-2024	last=('2024', 0.95738985506403)
-INTL.80-2-FRA-QBTU.A	Ethanol consumption, France, Annual	quadrillion Btu	1980-2024	last=('2024', 0.0379923)
-INTL.80-2-FRA-TBPD.A	Ethanol consumption, France, Annual	thousand barrels per day	1980-2024	last=('2024', 29.254808)
-INTL.80-2-FRA-TJ.A	Ethanol consumption, France, Annual	terajoules	1980-2024	last=('2024', 40083.99846949483)
-INTL.81-1-FRA-MT.A	Biodiesel production, France, Annual	1000 metric tons	2000-2024	last=('2024', 1098.387)
-INTL.81-1-FRA-MTOE.A	Biodiesel production, France, Annual	million metric tons of oil equivalent	2000-2024	last=('2024', 1.065017748578652)
-INTL.81-1-FRA-QBTU.A	Biodiesel production, France, Annual	quadrillion Btu	2000-2024	last=('2024', 0.04226332)
-INTL.81-1-FRA-TBPD.A	Biodiesel production, France, Annual	thousand barrels per day	2000-2024	last=('2024', 21.60662647)
-INTL.81-1-FRA-TJ.A	Biodiesel production, France, Annual	terajoules	2000-2024	last=('2024', 44590.1631171519)
-INTL.81-2-FRA-MT.A	Biodiesel consumption, France, Annual	1000 metric tons	2000-2024	last=('2024', 2611.330189)
-INTL.81-2-FRA-MTOE.A	Biodiesel consumption, France, Annual	million metric tons of oil equivalent	2000-2024	last=('2024', 2.53199796746058)
-INTL.81-2-FRA-QBTU.A	Biodiesel consumption, France, Annual	quadrillion Btu	2000-2024	last=('2024', 0.1004778)
-INTL.81-2-FRA-TBPD.A	Biodiesel consumption, France, Annual	thousand barrels per day	2000-2024	last=('2024', 51.3680843)
-INTL.81-2-FRA-TJ.A	Biodiesel consumption, France, Annual	terajoules	2000-2024	last=('2024', 106009.69094838183)
-INTL.82-12-FRA-BKWH.A	Hydroelectric pumped storage electricity net generation, France, Annual	billion kilowatthours	1980-2024	last=('2024', -2.089335431)
-INTL.82-7-FRA-MK.A	Hydroelectric pumped storage electricity installed capacity, France, Annual	million kilowatts	1980-2024	last=('2024', 6.793)
-INTL.8399-1-FRA-TBPD.A	Ethane non-refinery production, France, Annual	thousand barrels per day	1980-2014	last=('2014', 0)
-INTL.8499-2-FRA-TBPD.A	Ethane consumption, France, Annual	thousand barrels per day	1980-2013	last=('2013', 0.7)
-INTL.8499-3-FRA-TBPD.A	Ethane imports, France, Annual	thousand barrels per day	1986-2013	last=('2013', 0)
-INTL.8499-4-FRA-TBPD.A	Ethane exports, France, Annual	thousand barrels per day	1986-2013	last=('2013', 0)
+iso	fuel	year	TWh
+BRA	coal	2000	149.0
+BRA	coal	2023	143.0
+BRA	coal	2024	151.7
+BRA	gas	2000	101.6
+BRA	gas	2023	291.8
+BRA	gas	2024	306.3
+BRA	nuclear	2000	14.8
+BRA	nuclear	2023	44.3
+BRA	nuclear	2024	45.7
+BRA	oil	2000	1238.1
+BRA	oil	2023	1794.1
+BRA	oil	2024	1849.0
+BRA	renew_other	2000	384.1
+BRA	renew_other	2023	751.4
+BRA	renew_other	2024	779.1
+BRA	total	2000	1887.5
+BRA	total	2023	3024.6
+BRA	total	2024	3131.9
+CHN	coal	2000	8753.6
+CHN	coal	2023	29707.5
+CHN	coal	2024	30859.7
+CHN	gas	2000	276.4
+CHN	gas	2023	4275.8
+CHN	gas	2024	4595.3
+CHN	nuclear	2000	47.1
+CHN	nuclear	2023	1303.5
+CHN	nuclear	2024	1356.0
+CHN	oil	2000	2828.9
+CHN	oil	2023	9237.2
+CHN	oil	2024	9443.5
+CHN	renew_other	2000	100.5
+CHN	renew_other	2023	3153.7
+CHN	renew_other	2024	3737.3
+CHN	total	2000	12006.4
+CHN	total	2023	47677.7
+CHN	total	2024	49991.8
+DEU	coal	2000	1000.3
+DEU	coal	2023	480.4
+DEU	coal	2024	448.6
+DEU	gas	2000	891.6
+DEU	gas	2023	843.1
+DEU	gas	2024	829.3
+DEU	nuclear	2000	475.1
+DEU	nuclear	2023	20.1
+DEU	nuclear	2024	0.0
+DEU	oil	2000	1676.5
+DEU	oil	2023	1232.4
+DEU	oil	2024	1235.1
+DEU	renew_other	2000	113.6
+DEU	renew_other	2023	374.9
+DEU	renew_other	2024	395.6
+DEU	total	2000	4157.2
+DEU	total	2023	2950.7
+DEU	total	2024	2908.7
+ETH	coal	2000	0.0
+ETH	coal	2023	10.6
+ETH	coal	2024	12.5
+ETH	gas	2000	0.0
+ETH	gas	2023	0.0
+ETH	gas	2024	0.0
+ETH	nuclear	2000	0.0
+ETH	nuclear	2023	0.0
+ETH	nuclear	2024	0.0
+ETH	oil	2000	14.3
+ETH	oil	2023	61.7
+ETH	oil	2024	63.1
+ETH	renew_other	2000	1.8
+ETH	renew_other	2023	16.0
+ETH	renew_other	2024	14.9
+ETH	total	2000	16.0
+ETH	total	2023	88.3
+ETH	total	2024	90.6
+FRA	coal	2000	183.6
+FRA	coal	2023	73.0
+FRA	coal	2024	65.0
+FRA	gas	2000	462.1
+FRA	gas	2023	378.7
+FRA	gas	2024	354.0
+FRA	nuclear	2000	1194.9
+FRA	nuclear	2023	972.4
+FRA	nuclear	2024	1096.5
+FRA	oil	2000	1204.3
+FRA	oil	2023	920.5
+FRA	oil	2024	912.0
+FRA	renew_other	2000	14.2
+FRA	renew_other	2023	113.4
+FRA	renew_other	2024	82.1
+FRA	total	2000	3059.1
+FRA	total	2023	2458.1
+FRA	total	2024	2509.5
+IND	coal	2000	1678.3
+IND	coal	2023	6212.5
+IND	coal	2024	6390.1
+IND	gas	2000	217.8
+IND	gas	2023	785.3
+IND	gas	2024	785.1
+IND	nuclear	2000	49.9
+IND	nuclear	2023	167.6
+IND	nuclear	2024	190.1
+IND	oil	2000	1380.1
+IND	oil	2023	3145.1
+IND	oil	2024	3124.1
+IND	renew_other	2000	101.2
+IND	renew_other	2023	471.0
+IND	renew_other	2024	497.9
+IND	total	2000	3427.3
+IND	total	2023	10781.4
+IND	total	2024	10987.3
+JPN	coal	2000	1155.2
+JPN	coal	2023	1155.6
+JPN	coal	2024	1140.6
+JPN	gas	2000	904.3
+JPN	gas	2023	1069.7
+JPN	gas	2024	1060.4
+JPN	nuclear	2000	911.8
+JPN	nuclear	2023	228.3
+JPN	nuclear	2024	245.8
+JPN	oil	2000	3232.1
+JPN	oil	2023	1934.1
+JPN	oil	2024	1849.1
+JPN	renew_other	2000	116.7
+JPN	renew_other	2023	335.4
+JPN	renew_other	2024	294.9
+JPN	total	2000	6320.0
+JPN	total	2023	4723.1
+JPN	total	2024	4590.8
+NOR	coal	2000	7.8
+NOR	coal	2023	5.8
+NOR	coal	2024	5.2
+NOR	gas	2000	44.5
+NOR	gas	2023	59.6
+NOR	gas	2024	51.5
+NOR	nuclear	2000	0.0
+NOR	nuclear	2023	0.0
+NOR	nuclear	2024	0.0
+NOR	oil	2000	123.2
+NOR	oil	2023	141.3
+NOR	oil	2024	142.1
+NOR	renew_other	2000	126.8
+NOR	renew_other	2023	136.4
+NOR	renew_other	2024	139.0
+NOR	total	2000	302.3
+NOR	total	2023	343.1
+NOR	total	2024	337.7
+PRY	coal	2000	0.0
+PRY	coal	2023	0.0
+PRY	coal	2024	0.0
+PRY	gas	2000	0.0
+PRY	gas	2023	0.0
+PRY	gas	2024	0.0
+PRY	nuclear	2000	0.0
+PRY	nuclear	2023	0.0
+PRY	nuclear	2024	0.0
+PRY	oil	2000	13.7
+PRY	oil	2023	31.1
+PRY	oil	2024	31.2
+PRY	renew_other	2000	6.1
+PRY	renew_other	2023	14.2
+PRY	renew_other	2024	23.6
+PRY	total	2000	19.9
+PRY	total	2023	45.4
+PRY	total	2024	54.8
+SAU	coal	2000	0.0
+SAU	coal	2023	0.3
+SAU	coal	2024	1.0
+SAU	gas	2000	539.8
+SAU	gas	2023	1313.5
+SAU	gas	2024	1337.0
+SAU	nuclear	2000	0.0
+SAU	nuclear	2023	0.0
+SAU	nuclear	2024	0.0
+SAU	oil	2000	955.1
+SAU	oil	2023	2112.9
+SAU	oil	2024	2138.7
+SAU	renew_other	2000	0.0
+SAU	renew_other	2023	3.5
+SAU	renew_other	2024	3.4
+SAU	total	2000	1494.9
+SAU	total	2023	3430.3
+SAU	total	2024	3480.1
+USA	coal	2000	6617.4
+USA	coal	2023	2394.6
+USA	coal	2024	2318.8
+USA	gas	2000	6982.1
+USA	gas	2023	9869.4
+USA	gas	2024	10017.0
+USA	nuclear	2000	2304.2
+USA	nuclear	2023	2373.6
+USA	nuclear	2024	2392.9
+USA	oil	2000	11222.2
+USA	oil	2023	10813.9
+USA	oil	2024	10855.8
+USA	renew_other	2000	1200.3
+USA	renew_other	2023	2430.3
+USA	renew_other	2024	2549.5
+USA	total	2000	28338.1
+USA	total	2023	27466.2
+USA	total	2024	27711.5
