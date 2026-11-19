@@ -4,79 +4,49 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Luxembourg electricity mix: how Luxembourg makes its power | Energle</title>
-    <meta name="description" content="How Luxembourg generates its electricity: about 30% from wind, its trade with neighbours, and how its mix has changed since 2000. Then guess a country from its mix in Energle." />
-    
+    <meta name="description" content="Luxembourg makes its electricity mainly from wind and solar. Bioenergy adds a smaller share. Over the past two decades, solar and wind have grown, while gas and hydro have declined. Explore Luxembourg on Energle’s globe, then guess a country from its electricity mix." />
     <link rel="canonical" href="https://energle.org/country/luxembourg/" />
+    <base href="/" />
     <link rel="icon" href="/img/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/img/icon-48.png" type="image/png" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/img/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="theme-color" content="#f7f7f5" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="Energle" />
     <meta property="og:url" content="https://energle.org/country/luxembourg/" />
     <meta property="og:title" content="How Luxembourg makes its electricity" />
-    <meta property="og:description" content="How Luxembourg generates its electricity: about 30% from wind, its trade with neighbours, and how its mix has changed since 2000. Then guess a country from its mix in Energle." />
+    <meta property="og:description" content="Luxembourg makes its electricity mainly from wind and solar. Bioenergy adds a smaller share. Over the past two decades, solar and wind have grown, while gas and hydro have declined. Explore Luxembourg on Energle’s globe, then guess a country from its electricity mix." />
     <meta property="og:image" content="https://energle.org/img/og-image.png" />
-    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Luxembourg electricity mix: how Luxembourg makes its power | Energle","url":"https://energle.org/country/luxembourg/","description":"How Luxembourg generates its electricity: about 30% from wind, its trade with neighbours, and how its mix has changed since 2000. Then guess a country from its mix in Energle.","inLanguage":"en","isPartOf":{"@id":"https://energle.org/#site"},"about":{"@type":"Country","name":"Luxembourg"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Energle","item":"https://energle.org/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://energle.org/country/"},{"@type":"ListItem","position":3,"name":"Luxembourg electricity","item":"https://energle.org/country/luxembourg/"}]}}</script>
-    <link rel="stylesheet" href="/country/country.css" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Energle: an electricity mix card asking which country it is" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="How Luxembourg makes its electricity" />
+    <meta name="twitter:description" content="Luxembourg makes its electricity mainly from wind and solar. Bioenergy adds a smaller share. Over the past two decades, solar and wind have grown, while gas and hydro have declined. Explore Luxembourg on Energle’s globe, then guess a country from its electricity mix." />
+    <meta name="twitter:image" content="https://energle.org/img/og-image.png" />
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Luxembourg electricity mix: how Luxembourg makes its power | Energle","url":"https://energle.org/country/luxembourg/","description":"Luxembourg makes its electricity mainly from wind and solar. Bioenergy adds a smaller share. Over the past two decades, solar and wind have grown, while gas and hydro have declined. Explore Luxembourg on Energle’s globe, then guess a country from its electricity mix.","inLanguage":"en","isPartOf":{"@id":"https://energle.org/#site"},"about":{"@type":"Country","name":"Luxembourg"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Energle","item":"https://energle.org/"},{"@type":"ListItem","position":2,"name":"Countries","item":"https://energle.org/country/"},{"@type":"ListItem","position":3,"name":"Luxembourg electricity","item":"https://energle.org/country/luxembourg/"}]}}</script>
+    <link rel="stylesheet" href="css/styles.css?v=20261119b" />
+    <link rel="stylesheet" href="css/shop.css?v=20261119b" />
+    <link rel="stylesheet" href="globe/globe.css?v=20261119b" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>window.GLOBE_PAGE = true; window.ENERGLE_COUNTRY = "LUX";</script>
   </head>
   <body>
-    <div class="wrap">
-      <header>
-        <a class="brand" href="/"><img src="/img/favicon.svg" alt="" width="24" height="24" />Energle</a>
-        <a class="play" href="/">Play today’s puzzle</a>
-      </header>
-      <div class="shield" id="shield" hidden>
-        <p><b>You have today’s puzzle in progress.</b> This page could spoil it.</p>
-        <div><a class="play" href="/">Finish today’s puzzle</a><button type="button" id="shield-off">Show anyway</button></div>
-      </div>
-      <main id="content">
-        <p class="crumb"><a href="/">Energle</a> › <a href="/country/">Countries</a> › Luxembourg</p>
-        <h1>How Luxembourg makes its electricity</h1>
-        <p class="lead">Luxembourg generated about 1.5 TWh of electricity in 2025. About 30% came from wind, and about 30% from solar. Low-carbon sources (nuclear and renewables) supplied about 90% of the total.</p>
-
-        <section>
-          <h2>The mix in 2025</h2>
-          <svg class="mix" viewBox="0 0 100 18" preserveAspectRatio="none" role="img" aria-label="Electricity mix"><rect x="0.00" y="0" width="30.52" height="18" fill="#5ab88a"/><rect x="30.52" y="0" width="30.52" height="18" fill="#f5c842"/><rect x="61.04" y="0" width="27.27" height="18" fill="#a0724a"/><rect x="88.31" y="0" width="4.55" height="18" fill="#c0654a"/><rect x="92.86" y="0" width="3.90" height="18" fill="#e8925a"/><rect x="96.75" y="0" width="3.25" height="18" fill="#4a90c4"/></svg><ul class="legend"><li><i style="background:#5ab88a"></i>Wind</li><li><i style="background:#f5c842"></i>Solar</li><li><i style="background:#a0724a"></i>Bioenergy</li><li><i style="background:#c0654a"></i>Other Fossil</li><li><i style="background:#e8925a"></i>Gas</li><li><i style="background:#4a90c4"></i>Hydro</li></ul>
-          <p>Each person uses about 2.5 times the world average amount of electricity. Each kilowatt-hour emits about 120 grams of CO₂, about a quarter of the world average.</p>
-        </section>
-
-        <section>
-          <h2>Since 2000</h2>
-          <svg class="lines" viewBox="0 0 640 260" role="img" aria-label="Luxembourg electricity generation by source since 2000, in TWh"><line x1="46" x2="530" y1="232.0" y2="232.0" class="grid"/><text x="40" y="236.0" class="ax" text-anchor="end">0</text><line x1="46" x2="530" y1="180.0" y2="180.0" class="grid"/><text x="40" y="184.0" class="ax" text-anchor="end">1</text><line x1="46" x2="530" y1="128.0" y2="128.0" class="grid"/><text x="40" y="132.0" class="ax" text-anchor="end">2</text><line x1="46" x2="530" y1="76.0" y2="76.0" class="grid"/><text x="40" y="80.0" class="ax" text-anchor="end">3</text><line x1="46" x2="530" y1="24.0" y2="24.0" class="grid"/><text x="40" y="28.0" class="ax" text-anchor="end">4</text><text x="46.0" y="252" class="ax" text-anchor="middle">2000</text><text x="142.8" y="252" class="ax" text-anchor="middle">2005</text><text x="239.6" y="252" class="ax" text-anchor="middle">2010</text><text x="336.4" y="252" class="ax" text-anchor="middle">2015</text><text x="433.2" y="252" class="ax" text-anchor="middle">2020</text><text x="530.0" y="252" class="ax" text-anchor="middle">2025</text><polyline fill="none" stroke="#e8925a" stroke-width="2.2" stroke-linejoin="round" points="46.0,221.1 65.4,197.2 84.7,95.8 104.1,95.8 123.4,68.2 142.8,70.3 162.2,63.0 181.5,81.7 200.9,107.2 220.2,84.3 239.6,80.2 259.0,110.3 278.3,107.7 297.7,158.2 317.0,156.6 336.4,188.3 355.8,218.5 375.1,220.6 394.5,221.6 413.8,222.1 433.2,222.6 452.6,223.2 471.9,226.8 491.3,227.3 510.6,228.4 530.0,228.9"/><polyline fill="none" stroke="#5ab88a" stroke-width="2.2" stroke-linejoin="round" points="46.0,231.0 65.4,231.0 84.7,231.0 104.1,230.4 123.4,229.9 142.8,229.4 162.2,228.9 181.5,228.9 200.9,228.9 220.2,228.9 239.6,228.9 259.0,228.9 278.3,227.8 297.7,227.8 317.0,227.8 336.4,226.8 355.8,226.8 375.1,220.0 394.5,219.0 413.8,217.4 433.2,213.8 452.6,215.9 471.9,215.9 491.3,206.0 510.6,208.1 530.0,207.6"/><polyline fill="none" stroke="#f5c842" stroke-width="2.2" stroke-linejoin="round" points="46.0,232.0 65.4,232.0 84.7,232.0 104.1,232.0 123.4,231.5 142.8,231.0 162.2,231.0 181.5,231.0 200.9,231.0 220.2,231.0 239.6,231.0 259.0,230.4 278.3,229.9 297.7,228.4 317.0,227.3 336.4,226.8 355.8,226.8 375.1,226.3 394.5,225.8 413.8,225.2 433.2,223.7 452.6,222.6 471.9,217.4 491.3,216.9 510.6,213.3 530.0,207.6"/><polyline fill="none" stroke="#a0724a" stroke-width="2.2" stroke-linejoin="round" points="46.0,231.0 65.4,230.4 84.7,230.4 104.1,230.4 123.4,229.9 142.8,229.4 162.2,228.9 181.5,228.9 200.9,228.4 220.2,227.8 239.6,227.8 259.0,227.3 278.3,227.3 297.7,227.3 317.0,225.8 336.4,225.2 355.8,224.7 375.1,223.2 394.5,220.6 413.8,217.4 433.2,212.8 452.6,211.7 471.9,211.7 491.3,212.2 510.6,209.1 530.0,210.2"/><polyline fill="none" stroke="#4a90c4" stroke-width="2.2" stroke-linejoin="round" points="46.0,225.8 65.4,225.8 84.7,226.8 104.1,227.8 123.4,226.8 142.8,227.3 162.2,226.3 181.5,225.8 200.9,225.2 220.2,226.3 239.6,226.3 259.0,228.9 278.3,226.8 297.7,225.8 317.0,226.3 336.4,226.8 355.8,225.8 375.1,227.3 394.5,227.3 413.8,226.3 433.2,227.3 452.6,226.3 471.9,228.9 491.3,227.3 510.6,226.3 530.0,229.4"/><polyline fill="none" stroke="#c0654a" stroke-width="2.2" stroke-linejoin="round" points="46.0,230.4 65.4,230.4 84.7,230.4 104.1,230.4 123.4,230.4 142.8,230.4 162.2,229.9 181.5,229.9 200.9,229.9 220.2,229.9 239.6,229.4 259.0,228.9 278.3,228.9 297.7,228.9 317.0,228.9 336.4,228.4 355.8,228.4 375.1,227.8 394.5,227.8 413.8,227.8 433.2,228.4 452.6,228.4 471.9,228.4 491.3,228.9 510.6,228.4 530.0,228.4"/><text x="538.0" y="171.0" class="lab" fill="#f5c842">Solar</text><text x="538.0" y="184.0" class="lab" fill="#5ab88a">Wind</text><text x="538.0" y="197.0" class="lab" fill="#a0724a">Bioenergy</text><text x="538.0" y="210.0" class="lab" fill="#c0654a">Other Fossil</text><text x="538.0" y="223.0" class="lab" fill="#e8925a">Gas</text><text x="538.0" y="236.0" class="lab" fill="#4a90c4">Hydro</text><text x="40" y="12" class="ax" text-anchor="end">TWh</text></svg>
-          <p>Since 2000, gas fell from about half to about 4%, solar rose from almost nothing to about 30% and hydro fell from about 30% to about 3% of the mix.</p>
-        </section>
-
-        <section>
-          <h2>Trade and resources</h2>
-          <p>Luxembourg is a net importer: about 75% of the electricity it uses comes from abroad.</p>
-          <ul class="facts"><li>Sunshine: about two-thirds of the world average.</li><li>Rainfall: about three-quarters of the world average.</li><li>Biggest electricity trade partners: Germany, Czechia, Belgium.</li><li>Main fuel supplier: Belgium.</li></ul>
-        </section>
-
-        <div class="cta">
-          <p><b>Could you recognise Luxembourg from its electricity alone?</b> Every day, Energle shows one country’s energy profile, and you have six guesses to name it.</p>
-          <a class="play" href="/">Play today’s Energle</a>
-        </div>
-
-        <section>
-          <h2>Nearby countries</h2>
-          <ul class="near"><li><a href="/country/belgium/">Belgium</a></li><li><a href="/country/netherlands/">Netherlands</a></li><li><a href="/country/germany/">Germany</a></li><li><a href="/country/switzerland/">Switzerland</a></li><li><a href="/country/france/">France</a></li><li><a href="/country/austria/">Austria</a></li></ul>
-        </section>
-      </main>
-      <footer>
-        <p>Figures are rounded. Electricity data: <a href="https://ember-energy.org/data/yearly-electricity-data/" rel="noopener">Yearly Electricity Data | Ember</a> (CC BY 4.0), 2025. Other data: World Bank, NASA, ENTSO-E, CEPII. <a href="/about/">About Energle</a></p>
-      </footer>
+    <section id="cp-words" class="cp-words" aria-labelledby="cp-h1">
+      <h1 id="cp-h1">How Luxembourg makes its electricity</h1>
+      <p>Luxembourg makes its electricity mainly from wind and solar. Bioenergy adds a smaller share. Almost all of its power is low-carbon. Its electricity is far cleaner than the world average. Each person uses far more electricity than the world average. It relies heavily on electricity bought from its neighbours.</p>
+      <p>Over the past two decades, solar and wind have grown, while gas and hydro have declined.</p>
+    </section>
+    <div id="app">
+      <div id="loading">Loading data…</div>
     </div>
-    <script>
-      // the spoiler shield: the same on every country page, shown only while today's daily is unfinished in this browser
-      (function () {
-        try {
-          var s = JSON.parse(localStorage.getItem('energle_daily_v1') || 'null');
-          var now = new Date(), day = Math.floor((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - Date.UTC(2026, 5, 2)) / 86400000) + 1;
-          if (s && s.day === day && !s.gameOver && sessionStorage.getItem('energle_shield_off') !== String(day)) {
-            document.getElementById('shield').hidden = false; document.body.classList.add('shielded');
-            document.getElementById('shield-off').onclick = function () { sessionStorage.setItem('energle_shield_off', String(day)); document.getElementById('shield').hidden = true; document.body.classList.remove('shielded'); };
-          }
-        } catch (e) {}
-      })();
-    </script>
+    <div id="tooltip"></div>
+    <script src="js/practice-art.js?v=20261119b"></script>
+    <script src="js/shop-cards.js?v=20261119b"></script>
+    <script src="js/shop.js?v=20261119b"></script>
+    <script src="globe/globe-art.js?v=20261119b"></script>
+    <script src="globe/globe.js?v=20261119b"></script>
+    <script src="js/script.js?v=20261119b"></script>
   </body>
 </html>

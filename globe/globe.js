@@ -2233,3 +2233,81 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => { try { if (!
 
 // the address of a country's page (scripts/build_country_pages.py makes the same slug)
 function countrySlug(name) { return name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+
+// ============================================================
+//  COUNTRY PAGES (energle.org/country/<name>/, built by scripts/build_country_pages.py): Energle itself, opened on
+//  Explore with one country picked (window.ENERGLE_COUNTRY). The page carries a few sentences about the country in
+//  words, no figures (#cp-words). Until today's puzzle is finished in this browser, the profile stays locked: the
+//  panel shows those words and a blurred outline, the map tools are put away, and clicking another country opens its
+//  own page. Search engines never play, so they only ever see the words. Once the puzzle is done, it is Explore.
+// ============================================================
+const CP_ISO = window.ENERGLE_COUNTRY || null, CP_INDEX = CP_ISO === '*';   // '*': the countries index (the whole world)
+function cpLocked() { try { const s = loadDailyState(); return !(s && s.gameOver); } catch (e) { return true; } }
+function cpCountry() { return CP_ISO && !CP_INDEX && typeof COUNTRIES !== 'undefined' ? COUNTRIES.find(c => c.iso3 === CP_ISO) : null; }
+function cpWordsClone() {
+  const src = document.getElementById('cp-words'); if (!src) return '';
+  const k = src.cloneNode(true); k.removeAttribute('id'); k.removeAttribute('aria-labelledby'); k.className = 'cp-words-in';
+  const h = k.querySelector('h1'); if (h) h.remove();                    // the panel already names the country (or the list)
+  return k.outerHTML;
+}
+function cpLockedHTML(c) {
+  const name = escHtml(c.name);
+  return '<div class="gl-p-head">' + flagImg(c.iso3, 'gl-flag') + '<div><h3>' + name + '</h3><span>' + (REGION_LABEL[c.continent] || c.continent || '') + '</span></div></div>'
+    + cpWordsClone()
+    + '<div class="cp-lock"><div class="cp-skel" aria-hidden="true"><i class="w2"></i><i class="w2"></i><i class="bar"></i><i class="chart"></i><i class="w3"></i><i class="w3"></i><i class="w3"></i></div>'
+    + '<div class="cp-lock-msg"><b>' + name + '’s full profile</b><span>Its figures, charts and clue cards open here once you’ve played today’s puzzle.</span>'
+    + '<a class="cp-play" href="/">Play today’s puzzle</a></div></div>';
+}
+if (globeOn() && CP_ISO) document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('cp-page', 'cp-ready');
+  // start on Explore, this country picked (no notices or intros: the visitor came for the country)
+  window.initApp = function () {
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+    try { migrateDailyToHistory(); } catch (e) {}
+    POOL = COUNTRIES; MODE = 'practice'; ATLAS.view = 'globe'; ATLAS.region = 'all';
+    document.body.classList.toggle('cp-locked', cpLocked());
+    renderBrowseScreen(); updateDonePill();
+    try { loadPodium(); } catch (e) {}
+    const c = cpCountry(); if (!c) { if (CP_INDEX) globeSide(); return; }
+    globeSelect(c, false);
+    let n = 0; const fly = setInterval(() => {                           // fly there once the globe is up
+      if (GLOBE && GLOBE.loaded && GLOBE.loaded()) { clearInterval(fly); if (GLOBE_SEL && GLOBE_SEL.iso3 === CP_ISO) globeSelect(c); }
+      else if (++n > 80) clearInterval(fly);
+    }, 150);
+  };
+  // locked: the panel is the words and the outline, whatever asks for it
+  const _side = window.globeSide;
+  window.globeSide = function () {
+    const locked = cpLocked(); document.body.classList.toggle('cp-locked', locked);
+    const el = document.getElementById('gl-side'), c = cpCountry();
+    if (locked && el && CP_INDEX) {                                     // the index, locked: the world's list of countries
+      el.innerHTML = '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>Electricity by country</h3><span>Pick a country</span></div></div>' + cpWordsClone();
+      el.hidden = false; el.classList.add('is-region');
+      const lay = document.getElementById('gl-layout'); if (lay) lay.classList.add('has-sel');
+      return;
+    }
+    if (locked && el && c) {
+      el.innerHTML = cpLockedHTML(c); el.hidden = false; el.classList.remove('is-region');
+      const lay = document.getElementById('gl-layout'); if (lay) lay.classList.add('has-sel');
+      return;
+    }
+    const r = _side.apply(this, arguments);
+    if (el && GLOBE_SEL && GLOBE_SEL.iso3 === CP_ISO) {                  // unlocked, on this page's country: its words too, under the profile
+      const more = el.querySelector('.gl-more-row');
+      if (more) { more.insertAdjacentHTML('beforebegin', cpWordsClone()); more.remove(); }
+    }
+    if (el && CP_INDEX && !GLOBE_SEL && GLOBE_REGION === 'all') el.insertAdjacentHTML('beforeend', cpWordsClone());   // the index: the list under the world
+    return r;
+  };
+  const _sel = window.globeSelect;
+  window.globeSelect = function (c, fly) {
+    if (cpLocked()) {
+      if (c && (CP_INDEX || c.iso3 !== CP_ISO)) { location.href = '/country/' + countrySlug(c.name) + '/'; return; }   // another country: its own page
+      if (!c) return;                                                    // nothing to close while locked
+    }
+    return _sel.apply(this, arguments);
+  };
+  // the daily lives at energle.org itself
+  const _sw = window.switchMode;
+  window.switchMode = function (mode) { if (mode === 'normal') { location.href = '/'; return; } return _sw.apply(this, arguments); };
+});
