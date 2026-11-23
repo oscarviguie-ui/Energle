@@ -179,7 +179,7 @@ def page(name, info, world, preview, template):
     for prop, val in (('twitter:title', f'How {the_} makes its electricity'), ('twitter:description', desc)):
         h = re.sub(r'<meta name="' + prop + r'" content="[^"]*" />', f'<meta name="{prop}" content="{esc(val)}" />', h)
     h = re.sub(r'<script type="application/ld\+json">.*?</script>', '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False, separators=(',', ':')) + '</script>', h, flags=re.S)
-    h = h.replace('<script>window.GLOBE_PAGE = true;</script>', f'<script>window.GLOBE_PAGE = true; window.ENERGLE_COUNTRY = {json.dumps(info["iso3"])};</script>')
+    h = h.replace('<script>window.GLOBE_PAGE = true;', f'<script>window.GLOBE_PAGE = true; window.ENERGLE_COUNTRY = {json.dumps(info["iso3"])};', 1)
     words_html = (f'\n    <section id="cp-words" class="cp-words" aria-labelledby="cp-h1">\n      <h1 id="cp-h1">How {esc(the_)} makes its electricity</h1>\n'
                   f'      <p>{esc(mix)} {esc(facts)}</p>\n      <p>{esc(change)}</p>\n    </section>')
     h = h.replace('  <body>', '  <body>' + words_html, 1)
@@ -224,7 +224,7 @@ def index_page(data, preview, template):
     for prop, val in (('twitter:title', 'Electricity by country'), ('twitter:description', desc)):
         h = re.sub(r'<meta name="' + prop + r'" content="[^"]*" />', f'<meta name="{prop}" content="{esc(val)}" />', h)
     h = re.sub(r'<script type="application/ld\+json">.*?</script>', '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False, separators=(',', ':')) + '</script>', h, flags=re.S)
-    h = h.replace('<script>window.GLOBE_PAGE = true;</script>', '<script>window.GLOBE_PAGE = true; window.ENERGLE_COUNTRY = "*";</script>')
+    h = h.replace('<script>window.GLOBE_PAGE = true;', '<script>window.GLOBE_PAGE = true; window.ENERGLE_COUNTRY = "*";', 1)
     words_html = (f'\n    <section id="cp-words" class="cp-words" aria-labelledby="cp-h1">\n      <h1 id="cp-h1">Electricity by country</h1>\n'
                   f'      <p>How {len(data)} countries make their electricity: the mix of sources, how it has changed over the past two decades, and what each country trades with its neighbours. Pick a country on the globe or in the list.</p>'
                   + secs + '\n    </section>')
