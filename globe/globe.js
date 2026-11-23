@@ -1055,6 +1055,9 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  WHAT'S NEW (test page): a wider window that fits one screen on laptops, led by the Explore update
 //  with a small demo that plays through what Explore does, using the real numbers.
 // ============================================================
+// What's new: the Clue Shop from round 1 (while window.SHOP_FROM_START is set)
+const SHOP_ROUND1_UPDATE = ['23 Nov', 'Clue Shop from round 1',
+  'The Clue Shop now opens before your first guess: trade a guess for a clue card whenever you like, even to start. Your last guess can never be spent, so you always get a final try.'];
 const EXPLORE_UPDATE = ['13 Nov', 'Explore: the world on a map',
   'Practice is now Explore. Click any country for its full profile and clue cards. Add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders, clue cards included. Click a source under the charts to colour the map by it. And practise on any group. In the daily, the Map button opens a globe to pick your guesses on.'];
 let NX_SVG = null;
@@ -1175,17 +1178,26 @@ function showNoticeWide() {
   if (document.getElementById('notice-modal')) return;
   try { localStorage.setItem(NOTICE_KEY, '1'); localStorage.setItem(NEWS_SEEN_KEY, newsId()); } catch (e) {}
   const sd = document.getElementById('sub-date'); if (sd) { sd.classList.remove('has-news'); const ic = sd.querySelector('.sd-ico'); if (ic) ic.remove(); }
-  const [d0, t0, x0] = UPDATES[0], open = practiceUnlocked();
+  const [d0, t0, x0] = UPDATES[0], open = practiceUnlocked(), shopNews = t0 === SHOP_ROUND1_UPDATE[1];
+  // the featured update: the Clue Shop (its own picture) or Explore (the map demo)
+  const cell = c => '<span class="battery-cell ' + c + '"></span>';
+  const feature = shopNews
+    ? '<div class="nx-shop" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="nx-shop-sign" style="--awn:#f5c842;color:#1a1a1a"')
+      + '<span class="nx-shop-bat"><span class="battery si-bat"><span class="battery-body">' + cell('si-card') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + '</span><span class="battery-cap"></span></span><em>a card before your first guess</em></span>'
+      + '<span class="si-tiles">' + SHOP_CARDS.map(c => '<span class="si-tile"><span class="si-art">' + SHOP_ART[c.k] + '</span><span class="si-name">' + c.name + '</span></span>').join('') + '</span></div>'
+    : nxDemoHTML();
+  const ctas = shopNews
+    ? (MODE !== 'practice' && !gameOver ? '<button type="button" class="nx-cta" id="nx-shop">Open the Clue Shop →</button>' : '') + '<button type="button" class="nx-tour" id="nx-shop-how">How it works</button>'
+    : (open ? '<button type="button" class="nx-cta" id="nx-cta">Open Explore →</button>' : '') + '<button type="button" class="nx-tour" id="nx-tour">Step by step</button>';
   const modal = document.createElement('div'); modal.id = 'notice-modal';
   modal.innerHTML = '<div class="st-backdrop"></div>'
     + '<div class="nt-box nt-box--log nt-wide" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
     + '<div class="nx-top"><div><span class="nt-eyebrow">What’s new</span><h2 class="nt-title" id="nt-title">Latest updates</h2></div>'
     + '<button type="button" class="gl-x nx-close" aria-label="Close">×</button></div>'
-    + '<section class="nx-feature">' + nxDemoHTML()
+    + '<section class="nx-feature' + (shopNews ? ' is-shop' : '') + '">' + feature
     + '<div class="nx-text"><span class="nx-new">New · ' + d0 + '</span><h3>' + t0 + '</h3><p>' + x0 + '</p>'
-    + '<div class="nx-ctas">' + (open ? '<button type="button" class="nx-cta" id="nx-cta">Open Explore →</button>' : '')
-    + '<button type="button" class="nx-tour" id="nx-tour">Step by step</button></div>'
-    + (open ? '' : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
+    + '<div class="nx-ctas">' + ctas + '</div>'
+    + (open || shopNews ? '' : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
     + '<div class="nx-earlier"><span class="nt-eyebrow nx-sub">Earlier updates</span><ol class="nt-log nx-log">'
     + UPDATES.slice(1).map(([d, t, x]) => '<li title="' + escHtml(x.replace(/<[^>]+>/g, '')) + '"><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong><span class="nx-x">' + x + '</span></span></li>').join('') + '</ol></div>'
     + '<div class="nx-foot"><div class="nt-soon"><span class="nt-eyebrow">Coming soon</span><div class="nx-soon-row">'
@@ -1202,8 +1214,10 @@ function showNoticeWide() {
   document.getElementById('nt-ok').addEventListener('click', close);
   const cta = document.getElementById('nx-cta'); if (cta) cta.addEventListener('click', () => { close(); switchMode('practice'); });
   document.addEventListener('keydown', onKey);
-  demo = nxDemoStart(modal.querySelector('.nx-feature'));
+  if (!shopNews) demo = nxDemoStart(modal.querySelector('.nx-feature'));
   const tl = document.getElementById('nx-tour'); if (tl) tl.addEventListener('click', () => { close(); showExploreTour(true); });
+  const so = document.getElementById('nx-shop'); if (so) so.addEventListener('click', () => { close(); const b = document.getElementById('shop-btn'); if (b) b.click(); });
+  const sh = document.getElementById('nx-shop-how'); if (sh) sh.addEventListener('click', () => { close(); showShopIntro(); });
   document.getElementById('nt-ok').focus({ preventScroll: true });
 }
 
@@ -1258,7 +1272,8 @@ function showExploreTour(fromNews) {
   next.focus({ preventScroll: true });
 }
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
-  if (typeof UPDATES !== 'undefined' && UPDATES[0][1] !== EXPLORE_UPDATE[1]) UPDATES.unshift(EXPLORE_UPDATE);
+  if (typeof UPDATES !== 'undefined' && !UPDATES.some(u => u[1] === EXPLORE_UPDATE[1])) UPDATES.unshift(EXPLORE_UPDATE);
+  if (typeof UPDATES !== 'undefined' && window.SHOP_FROM_START && !UPDATES.some(u => u[1] === SHOP_ROUND1_UPDATE[1])) UPDATES.unshift(SHOP_ROUND1_UPDATE);
   window.showNotice = showNoticeWide;
   const _maybe = maybeShowNotice;
   window.maybeShowNotice = function () {
@@ -1853,7 +1868,7 @@ function howtoHTML() {
       '<span class="ht-mix">' + seg('Coal', 34) + seg('Gas', 22) + seg('Hydro', 18) + seg('Nuclear', 12) + seg('Wind', 9) + seg('Solar', 5) + '</span>'],
     ['Guess the country', 'Six guesses. After a miss, the arrow points to the answer and gives the distance; the colour turns from red to green as you get closer.',
       row('Brazil', '9,400 km', 'NE', 40, 6) + row('Poland', '850 km', 'SE', 140, 92)],
-    ['Stuck? Buy a clue', 'From your second try, the Clue Shop trades one guess for a clue card: its sun and wind, what lies underground, its fuel trade, how its people live.', cells],
+    ['Stuck? Buy a clue', (shopOpensAfter() ? 'From your second try, the' : 'At any point, the') + ' Clue Shop trades one guess for a clue card: its sun and wind, what lies underground, its fuel trade, how its people live.', cells],
     ['Or guess on the map', 'The Map button next to Guess opens a globe: tap a country to fill in your guess.',
       '<span class="ht-map">' + GMAP_ICON + '</span>'],
   ];
@@ -1989,7 +2004,7 @@ function wlSteps(ex) {
     ['Welcome to Energle', 'Every day, one country hides behind its electricity: how it makes and uses its power, never its name. You have six tries to find it. Our example: ' + name + '.'],
     ['Read its profile', 'How much it generates, and uses per person, against the world average; what it trades with its neighbours; its mix today and since 2000. Every number is a clue: here, ' + top.toLowerCase() + ' leads with ' + Math.round(d[top] / d.Total * 100) + '%.'],
     ['Guess, by name or on the map', 'Type a country, or tap it on the map. After a miss, an arrow points to the answer, with the distance, from red (far) to green (close).'],
-    ['Stuck? Trade a guess for a clue', 'From your second try, the Clue Shop swaps a guess for a clue card: natural resources, fuel trade, how people live, and more.'],
+    ['Stuck? Trade a guess for a clue', (shopOpensAfter() ? 'From your second try, the' : 'At any point, even before your first guess, the') + ' Clue Shop swaps a guess for a clue card: natural resources, fuel trade, how people live, and more.'],
     ['Then explore the world', 'Once the daily is done, Explore opens: every country on a globe, continents and blocs like the EU added up, the map coloured by any source, and practice on any group.'],
     ['A new country every day', 'At midnight UTC. Keep your streak, climb the leaderboard, share your result, and replay any past puzzle in the Archive.'],
   ];

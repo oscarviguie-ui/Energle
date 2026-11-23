@@ -1090,3 +1090,15 @@ body.cp-locked .at-tools, body.cp-locked .gl-maphint, body.cp-locked .gl-x, body
 .cp-words-in .az li { break-inside: avoid; padding: 2px 0; }
 .cp-words-in .az a { color: #1a1a1a; text-decoration: none; }
 .cp-words-in .az a:hover { text-decoration: underline; }
+
+/* What's new: the Clue Shop as the featured update */
+.nx-shop { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 16px; border-radius: 9px; background: #fff; box-shadow: 0 0 0 1px #ecdfc0; }
+.nx-shop-sign { width: 64px; height: 64px; display: block; }
+.nx-shop-bat { display: flex; align-items: center; gap: 44px; }
+.nx-shop-bat .si-bat { transform: scale(1.4); transform-origin: 100% 50%; }
+.nx-shop-bat em { font-style: normal; font-size: .82rem; color: #6b5a2c; }
+.nx-shop .si-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: 100%; }
+@media (max-width: 600px) { .nx-shop .si-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } .nx-shop-bat { gap: 30px; } }
+.nx-shop .si-tile { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid #ecebe6; border-radius: 6px; background: #fdfcf9; }
+.nx-shop .si-art svg { display: block; width: 100%; height: 44px; }
+.nx-shop .si-name { font-size: .72rem; font-weight: 600; color: #444; }

@@ -12,7 +12,7 @@
 // ============================================================
 const SHOP_LIVE = true;
 const SHOP_LAUNCH_DAY = 151;           // puzzle number of launch day (Friday 30 October 2026): the intro is shown for 7 days from it
-const SHOP_OPENS_AFTER = 1;            // guesses made before the shop opens (daily and archive; practice: right away)
+const SHOP_OPENS_AFTER = window.SHOP_FROM_START ? 0 : 1;   // guesses made before the shop opens (daily and archive; practice: right away). SHOP_FROM_START: open from round 1
 function shopOpensAfter() { return MODE === 'practice' ? 0 : SHOP_OPENS_AFTER; }
 const SHOP_TEST = (() => { try { return new URLSearchParams(location.search).get('shop') === 'on'; } catch (e) { return false; } })();
 function shopLive() { return SHOP_LIVE || SHOP_TEST; }
@@ -533,7 +533,7 @@ function shopIntroSteps() {
     { art: '<span class="si-sign" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="si-shop" style="--awn:#f5c842;color:#1a1a1a"') + '</span>',
       title: 'New: the Clue Shop', text: 'Stuck after a guess? Next to the Guess button you’ll now find the Clue Shop: it trades spare guesses for clue cards about the country you’re guessing, in the daily, the archive and practice.' },
     { art: bat,
-      title: 'You pay with guesses', text: 'Each card costs 1 cell of your battery. The shop opens after your first guess (straight away in practice), and your last guess can never be spent, so you always get a final try.' },
+      title: 'You pay with guesses', text: 'Each card costs 1 cell of your battery. ' + (SHOP_OPENS_AFTER ? 'The shop opens after your first guess (straight away in practice), and your' : 'The shop is open from the very start, and your') + ' last guess can never be spent, so you always get a final try.' },
     { art: '<span class="si-tiles">' + tiles + '</span>',
       title: 'Five cards, five angles', text: 'From sun and wind to what lies underground, who it trades with and how people live. Each card is drawn from open data and shows its source. If the sources have nothing on that country, the card is free and opens empty.' },
     { art: '<span class="si-share" aria-hidden="true">🟥🟨💡🟩</span>',
