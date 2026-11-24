@@ -1,0 +1,31 @@
+name: Refresh total energy data
+
+# The total-energy view: EIA's fuel use and production (scripts/fetch_eia_energy.py), then data/energy.json built from
+# it with Ember's electricity (scripts/build_energy.py). Monthly, after the electricity refresh, and by hand.
+on:
+  schedule:
+    - cron: '30 6 3 * *'
+  workflow_dispatch:
+
+jobs:
+  energy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: EIA fuel use and production
+        run: python scripts/fetch_eia_energy.py
+      - name: Build the total energy data
+        run: |
+          if [ -f scripts/build_energy.py ]; then python scripts/build_energy.py; fi
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for f in data/build/eia_energy.json data/energy.json; do if [ -e "$f" ]; then git add "$f"; fi; done
+          git diff --staged --quiet || git commit -m "Auto-refresh: total energy data $(date +'%Y-%m-%d')"
+          git pull --rebase --autostash && git push
