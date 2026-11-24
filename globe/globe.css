@@ -1102,3 +1102,11 @@ body.cp-locked .at-tools, body.cp-locked .gl-maphint, body.cp-locked .gl-x, body
 .nx-shop .si-tile { display: flex; flex-direction: column; gap: 4px; padding: 6px; border: 1px solid #ecebe6; border-radius: 6px; background: #fdfcf9; }
 .nx-shop .si-art svg { display: block; width: 100%; height: 44px; }
 .nx-shop .si-name { font-size: .72rem; font-weight: 600; color: #444; }
+
+/* ---- All energy view (test page): the switch above the base cards, and what the energy view hides */
+.ev-toggle { display: inline-flex; flex: none; width: max-content; max-width: 100%; align-self: flex-start; justify-self: start; margin: 0 0 10px; padding: 3px; gap: 2px; border-radius: 999px; background: #ecebe6; }
+.ev-toggle button { padding: 5px 14px; border: 0; border-radius: 999px; background: none; color: #555; font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; }
+.ev-toggle button[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
+.ev-toggle button:not([aria-pressed="true"]):hover { color: #1a1a1a; }
+body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smoke, body.view-energy .co2-figure, body.view-energy .co2-box { display: none !important; }
+.ev-note { margin: 6px 0 0; font-size: .74rem; color: #8a6a1c; }

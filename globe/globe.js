@@ -2324,3 +2324,98 @@ if (globeOn() && CP_ISO) document.addEventListener('DOMContentLoaded', () => {
   const _sw = window.switchMode;
   window.switchMode = function (mode) { if (mode === 'normal') { location.href = '/'; return; } return _sw.apply(this, arguments); };
 });
+
+// ============================================================
+//  ALL ENERGY VIEW (test page: window.ENERGY_VIEW): a switch above the base cards, "Electricity | All energy". In the
+//  energy view the same cards show the country's total energy use (data/energy.json, scripts/build_energy.py): what it
+//  consumes by source, what it produces and trades, use per person, and the change since 2000. Oil sits in the
+//  "Other Fossil" slot and is labelled Oil. The swap is the whole data layer (ALL_DATA, world averages), so Daily,
+//  Archive and Explore all follow, and the choice is kept for the visit.
+// ============================================================
+const EV_ON = () => globeOn() && !!window.ENERGY_VIEW;
+let EV = 'elec', EV_DATA = null, EV_ELEC = null, EV_LABELS = null;
+async function evLoad() {
+  if (EV_DATA) return EV_DATA;
+  const raw = await (await fetch('data/energy.json')).json();
+  const wd = raw.__world_dpc__; delete raw.__world_dpc__;
+  EV_DATA = { data: Object.fromEntries(Object.entries(raw).map(([k, v]) => [DISPLAY_NAMES[k] || k, v])), wd };
+  return EV_DATA;
+}
+async function evSet(v) {
+  if (v === EV) return;
+  if (v === 'energy') { try { await evLoad(); } catch (e) { return; } }
+  if (!EV_ELEC) EV_ELEC = { data: ALL_DATA, wd: WORLD_DPC };
+  const src = v === 'energy' ? EV_DATA : EV_ELEC;
+  ALL_DATA = src.data; WORLD_DPC = src.wd; buildWorldGen();
+  EV = v; document.body.classList.toggle('view-energy', v === 'energy');
+  try { sessionStorage.setItem('energle_view', v); } catch (e) {}
+  evRedraw();
+}
+function evRedraw() {
+  if (document.body.classList.contains('at-globe')) { try { globeSide(); } catch (e) {} }
+  else if (target && document.getElementById('balance-card')) { renderStatBar(); renderFlowBar(false); renderCharts(); }
+  evDecorate();
+}
+// the switch, above the base cards wherever they are
+function evToggleHTML() {
+  return '<div class="ev-toggle" role="group" aria-label="What the cards show">'
+    + '<button type="button" data-ev="elec" aria-pressed="' + (EV === 'elec') + '">Electricity</button>'
+    + '<button type="button" data-ev="energy" aria-pressed="' + (EV === 'energy') + '">All energy</button></div>';
+}
+function evDecorate() {
+  const bc = document.getElementById('balance-card'); if (!bc) return;
+  let t = document.querySelector('.ev-toggle');
+  if (!t) { bc.insertAdjacentHTML('beforebegin', evToggleHTML()); t = document.querySelector('.ev-toggle');
+    t.addEventListener('click', e => { const b = e.target.closest('[data-ev]'); if (b) evSet(b.dataset.ev); }); }
+  t.querySelectorAll('[data-ev]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ev === EV)));
+  const labs0 = document.querySelectorAll('#balance-card .stat-label'), fl0 = document.querySelector('#balance-card .bc-flow > .stat-label');
+  if (!EV_LABELS && labs0.length) EV_LABELS = { a: labs0[0].textContent, b: labs0[1] && labs0[1].textContent, f: fl0 && fl0.firstChild && fl0.firstChild.textContent };
+  if (EV !== 'energy') {   // back to electricity: the static labels come back (the rest is redrawn by the game)
+    if (EV_LABELS) { if (labs0[0]) labs0[0].textContent = EV_LABELS.a; if (labs0[1] && EV_LABELS.b) labs0[1].textContent = EV_LABELS.b;
+      if (fl0 && fl0.firstChild && fl0.firstChild.nodeType === 3 && EV_LABELS.f) fl0.firstChild.textContent = EV_LABELS.f; }
+    const n = document.getElementById('ev-note'); if (n) n.remove();
+    return;
+  }
+  const info = target && ALL_DATA[target.name], y = info && info.latestYear;
+  const set = (sel, txt) => { const e = document.querySelector(sel); if (e && e.textContent !== txt) e.textContent = txt; };
+  const labs = document.querySelectorAll('#balance-card .stat-label');
+  if (labs[0]) labs[0].textContent = 'Energy consumed';
+  if (labs[1]) labs[1].textContent = 'Energy use per capita';
+  const fl = document.querySelector('#balance-card .bc-flow > .stat-label');
+  if (fl && fl.firstChild && fl.firstChild.nodeType === 3) fl.firstChild.textContent = 'Energy production & net trade — ';
+  set('#bar-label', 'Energy mix (' + (y || '') + ')');
+  set('#line-label', 'Energy use by ' + (CHART_VIEW === 'category' ? 'category' : 'source') + ' (TWh)');
+  document.querySelectorAll('#flow-chart .fc-box *').forEach(n => { if (n.children.length) return;
+    if (n.textContent === 'GENERATED') n.textContent = 'PRODUCED'; else if (n.textContent === 'DEMAND') n.textContent = 'CONSUMED'; });
+  document.querySelectorAll('#legend-shared, #chart-right, #chart-left').forEach(root => {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let c;
+    while ((c = w.nextNode())) if (c.textContent.includes('Other Fossil')) c.textContent = c.textContent.replace('Other Fossil', 'Oil'); });
+  document.querySelectorAll('.og-src--in').forEach(e => { e.textContent = 'Sources: EIA, Ember, Energy Institute method'; });
+  const note = document.getElementById('ev-note'), gap = info && info.woodGap;
+  const host = document.getElementById('chart-right');
+  if (gap && host && !note) host.insertAdjacentHTML('beforeend', '<p class="ev-note" id="ev-note">Excludes wood and charcoal, a large share of energy use here.</p>');
+  else if (!gap && note) note.remove();
+}
+if (EV_ON()) document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('ev-ready');
+  // every redraw of the cards gets the switch, and the energy labels
+  ['renderStatBar', 'renderFlowBar', 'renderCharts'].forEach(fn => {
+    const f = window[fn]; if (typeof f !== 'function') return;
+    window[fn] = function () { const r = f.apply(this, arguments); try { evDecorate(); } catch (e) {} return r; };
+  });
+  // the flow: in this view, what the country produces + what it trades = what it consumes
+  const _flow = window.renderFlowBar;
+  window.renderFlowBar = function () {
+    const info = EV === 'energy' && target && ALL_DATA[target.name], d = info && info.years[info.latestYear];
+    if (!d || d.Produced == null) return _flow.apply(this, arguments);
+    const keep = d.Total; d.Total = d.Produced;
+    try { return _flow.apply(this, arguments); } finally { d.Total = keep; }
+  };
+  // chart labels: Oil, not Other Fossil, in this view
+  if (window.Chart) { const C = window.Chart; window.Chart = class extends C { constructor(ctx, cfg) {
+    try { if (EV === 'energy') { (cfg.data.datasets || []).forEach(ds => { if (ds.label === 'Other Fossil') ds.label = 'Oil'; });
+      if (Array.isArray(cfg.data.labels)) cfg.data.labels = cfg.data.labels.map(l => l === 'Other Fossil' ? 'Oil' : l); } } catch (e) {}
+    super(ctx, cfg); } }; }
+  let saved = null; try { saved = sessionStorage.getItem('energle_view'); } catch (e) {}
+  if (saved === 'energy') { const go = () => { if (typeof ALL_DATA !== 'undefined' && ALL_DATA) evSet('energy'); else setTimeout(go, 200); }; setTimeout(go, 300); }
+});
