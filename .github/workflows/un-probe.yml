@@ -1,0 +1,34 @@
+name: UN energy probe
+on: workflow_dispatch
+permissions: { contents: write }
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe
+        run: |
+          mkdir -p data/build; O=data/build/un_probe.txt; : > $O
+          H='Accept: application/vnd.sdmx.structure+json;version=1.0'
+          echo "== structure" >> $O
+          curl -sSL -m 120 -H "$H" "https://data.un.org/WS/rest/dataflow/UNSD/DF_UNDATA_ENERGY/latest?references=all" -o s.json -w "%{http_code} %{size_download}\n" >> $O 2>&1 || true
+          python3 - >> $O 2>&1 <<'PY' || true
+          import json
+          s = json.load(open('s.json'))['data'] if 'data' in json.load(open('s.json')) else json.load(open('s.json'))
+          for ds in s.get('dataStructures', []):
+              for d in ds['dataStructureComponents']['dimensionList']['dimensions']: print('DIM', d['position'] if 'position' in d else '', d['id'], d.get('localRepresentation',{}).get('enumeration'))
+          for cl in s.get('codelists', []):
+              codes = cl.get('codes', [])
+              print('CL', cl['id'], len(codes))
+              if len(codes) < 700:
+                  for c in codes: print('   ', c['id'], '|', (c.get('name') or c.get('names',{}).get('en','')) if isinstance(c.get('name'),str) else c.get('names',{}).get('en',''))
+          PY
+          echo "== old UNdata handler (electricity, final consumption)" >> $O
+          curl -sSL -m 120 "https://data.un.org/Handlers/DownloadHandler.ashx?DataFilter=cmID:EL&DataMartId=EDATA&Format=csv" -o el.zip -w "%{http_code} %{size_download}\n" >> $O 2>&1 || true
+          (unzip -p el.zip 2>/dev/null || cat el.zip) | head -c 3000 >> $O || true
+          echo >> $O; echo "== sample SDMX data FRA" >> $O
+          curl -sSL -m 120 -H 'Accept: text/csv' "https://data.un.org/WS/rest/data/UNSD,DF_UNDATA_ENERGY,1.0/.250...?startPeriod=2021&endPeriod=2021" -w "\n%{http_code} %{size_download}\n" 2>&1 | head -c 4000 >> $O || true
+      - name: Commit
+        run: |
+          git config user.name github-actions; git config user.email github-actions@github.com
+          git add data/build/un_probe.txt; git commit -m "UN energy probe" || true; git push
