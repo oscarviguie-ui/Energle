@@ -1110,3 +1110,36 @@ body.cp-locked .at-tools, body.cp-locked .gl-maphint, body.cp-locked .gl-x, body
 .ev-toggle button:not([aria-pressed="true"]):hover { color: #1a1a1a; }
 body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smoke, body.view-energy .co2-figure, body.view-energy .co2-box { display: none !important; }
 .ev-note { margin: 6px 0 0; font-size: .74rem; color: #8a6a1c; }
+
+/* ---- Who uses the energy (test page): a card under the charts */
+#use-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: 1rem 1.1rem .8rem; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.uc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.uc-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: #ecebe6; }
+.uc-switch button { padding: 4px 12px; border: 0; border-radius: 999px; background: none; color: #555; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+.uc-switch button[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
+.uc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.uc-left { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.uc-total { font-size: .86rem; color: #555; }
+.uc-total strong { color: #1a1a1a; font-weight: 700; font-variant-numeric: tabular-nums; }
+.uc-rows { display: flex; flex-direction: column; gap: 9px; }
+.uc-row { display: grid; grid-template-columns: 8.6rem minmax(0, 1fr) 2.6rem 4.6rem; align-items: center; gap: 10px; font-size: .84rem; }
+.uc-name { display: flex; align-items: center; gap: 7px; white-space: nowrap; color: #333; }
+.uc-name i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.uc-track { position: relative; height: 12px; background: #f1f0eb; border-radius: 3px; }
+.uc-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+.uc-world { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #1a1a1a; border-radius: 1px; }
+.uc-pct { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.uc-twh { text-align: right; color: #888; font-size: .76rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.uc-key { margin: 2px 0 0; font-size: .72rem; color: #888; display: flex; align-items: center; gap: 6px; }
+.uc-world-key { display: inline-block; width: 2px; height: 11px; background: #1a1a1a; border-radius: 1px; }
+.uc-right { display: flex; flex-direction: column; min-width: 0; }
+.uc-right .chart-label { margin-bottom: .4rem; }
+.uc-chart { position: relative; height: 190px; }
+.uc-src { margin: 0; text-align: right; }
+@media (max-width: 600px) {
+  #use-card { padding: .9rem .9rem .7rem; }
+  .uc-body { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .uc-row { grid-template-columns: 7.4rem minmax(0, 1fr) 2.4rem; font-size: .8rem; gap: 8px; }
+  .uc-twh { display: none; }
+  .uc-chart { height: 170px; }
+}

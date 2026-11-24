@@ -2419,3 +2419,85 @@ if (EV_ON()) document.addEventListener('DOMContentLoaded', () => {
   let saved = null; try { saved = sessionStorage.getItem('energle_view'); } catch (e) {}
   if (saved === 'energy') { const go = () => { if (typeof ALL_DATA !== 'undefined' && ALL_DATA) evSet('energy'); else setTimeout(go, 200); }; setTimeout(go, 300); }
 });
+
+// ============================================================
+//  WHO USES THE ENERGY (test page: window.USE_CARD): a card under the charts with the country's final energy use by
+//  sector (UN Energy Statistics, data/usage.json, scripts/build_usage.py): industry, transport, homes, services & other,
+//  feedstocks. Each sector's share sits against the world's (a tick), and a chart shows each sector over time. A switch
+//  shows the same split for electricity alone. Daily, Archive and Explore (single countries).
+// ============================================================
+const UC_ON = () => globeOn() && !!window.USE_CARD;
+const UC_SECTORS = [
+  { k: 'Industry', c: '#5b6b82', tip: 'Factories, mines and construction' },
+  { k: 'Transport', c: '#d98a2b', tip: 'Road, rail, domestic flights and shipping, pipelines. International flights and shipping are not counted' },
+  { k: 'Homes', c: '#c0567a', tip: 'Heating, cooking, cooling and appliances in households' },
+  { k: 'Services & other', c: '#3f95a8', tip: 'Offices, shops, schools, hospitals, farming and fishing' },
+  { k: 'Feedstocks', c: '#9a7b5f', tip: 'Fuels used as a raw material, not burnt: plastics, fertiliser, asphalt, lubricants' }
+];
+let UC_DATA = null, UC_MODE = 'e', UC_CHART = null, UC_LOADING = null;
+function ucLoad() {
+  if (UC_DATA) return Promise.resolve(UC_DATA);
+  if (!UC_LOADING) UC_LOADING = fetch('data/usage.json').then(r => r.json()).then(raw => {
+    const world = raw.__world__; delete raw.__world__;
+    UC_DATA = { by: Object.fromEntries(Object.entries(raw).map(([k, v]) => [DISPLAY_NAMES[k] || k, v])), world };
+    return UC_DATA;
+  });
+  return UC_LOADING;
+}
+const ucFmt = v => !v ? '0 TWh' : v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 1 : 2) + ' PWh' : (v >= 100 ? Math.round(v) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + ' TWh';
+const ucPct = s => s > 0 && s < 0.01 ? '<1%' : Math.round(s * 100) + '%';
+function ucPop(name) {   // people, from the electricity data (demand ÷ demand per person)
+  const i = ALL_DATA[name]; if (!i || !i.latestDpc) return 0;
+  const d = i.years[i.latestYear] || {}; return d.Demand ? d.Demand * 1e6 / i.latestDpc : 0;
+}
+function ucRender() {
+  const legend = document.getElementById('legend-shared');
+  let card = document.getElementById('use-card');
+  const info = target && UC_DATA && UC_DATA.by[target.name];
+  if (!legend || !info) { if (card) card.remove(); if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; } return; }
+  if (!card) {
+    legend.insertAdjacentHTML('afterend', '<section id="use-card" aria-label="How the energy is used"></section>');
+    card = document.getElementById('use-card');
+    card.addEventListener('click', e => { const b = e.target.closest('[data-uc]'); if (b && b.dataset.uc !== UC_MODE) { UC_MODE = b.dataset.uc; ucRender(); } });
+  }
+  const el = UC_MODE === 'el', y = String(info.latestYear), d = info.years[y][UC_MODE];
+  const secs = UC_SECTORS.slice(0, d.length), total = d.reduce((a, b) => a + b, 0);
+  const wy = UC_DATA.world[y] || UC_DATA.world[Object.keys(UC_DATA.world).sort().pop()];
+  const w = wy[UC_MODE], wt = w.reduce((a, b) => a + b, 0);
+  const pop = ucPop(target.name), per = pop ? total * 1e6 / pop : 0;
+  const gap = (info.notReported || []).map(i => UC_SECTORS[i].k.toLowerCase());
+  const rows = secs.map((s, i) => {
+    const sh = total ? d[i] / total : 0, ws = wt ? w[i] / wt : 0, nr = (info.notReported || []).includes(i);
+    return '<div class="uc-row" title="' + s.tip + '">'
+      + '<span class="uc-name"><i style="background:' + s.c + '"></i>' + s.k + '</span>'
+      + '<span class="uc-track"><span class="uc-fill" style="width:' + (sh * 100).toFixed(1) + '%;background:' + s.c + '"></span>'
+      + '<span class="uc-world" style="left:' + (ws * 100).toFixed(1) + '%" title="World: ' + ucPct(ws) + '"></span></span>'
+      + '<span class="uc-pct">' + (nr ? '—' : ucPct(sh)) + '</span><span class="uc-twh">' + (nr ? 'n/a' : ucFmt(d[i])) + '</span></div>';
+  }).join('');
+  card.innerHTML = '<div class="uc-head"><span class="stat-label">' + (el ? 'Who uses the electricity' : 'Who uses the energy') + ' — ' + y + '</span>'
+    + '<div class="uc-switch" role="group" aria-label="Energy or electricity">'
+    + '<button type="button" data-uc="e" aria-pressed="' + !el + '">All energy</button>'
+    + '<button type="button" data-uc="el" aria-pressed="' + el + '">Electricity</button></div></div>'
+    + '<div class="uc-body"><div class="uc-left">'
+    + '<div class="uc-total"><strong>' + ucFmt(total) + '</strong> ' + (el ? 'of electricity used' : 'of final energy used')
+    + (per ? ' · <strong>' + (per >= 10 ? Math.round(per) : per.toFixed(1)) + ' MWh</strong> per person' : '') + '</div>'
+    + '<div class="uc-rows">' + rows + '</div>'
+    + '<p class="uc-key"><span class="uc-world-key"></span> world share' + (gap.length ? ' · ' + gap.join(', ') + ' not reported' : '') + '</p></div>'
+    + '<div class="uc-right"><p class="chart-label">' + (el ? 'Electricity' : 'Final energy') + ' use by sector (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
+    + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
+  if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; }
+  const ys = Object.keys(info.years).sort(), cv = document.getElementById('uc-canvas');
+  if (window.Chart && cv) UC_CHART = new Chart(cv, {
+    type: 'line',
+    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, data: ys.map(yy => info.years[yy][UC_MODE][i]), borderColor: s.c, backgroundColor: s.c,
+      borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, tension: .25 })) },
+    options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucFmt(c.parsed.y) } } },
+      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 6, color: '#888', font: { size: 10 } } },
+                y: { beginAtZero: true, grid: { color: '#f0f0ec' }, ticks: { maxTicksLimit: 5, color: '#888', font: { size: 10 } } } } }
+  });
+}
+if (UC_ON()) document.addEventListener('DOMContentLoaded', () => {
+  const f = window.renderCharts; if (typeof f !== 'function') return;
+  window.renderCharts = function () { const r = f.apply(this, arguments); ucLoad().then(() => { try { ucRender(); } catch (e) {} }).catch(() => {}); return r; };
+});
