@@ -2,7 +2,7 @@
 
 Runs in GitHub Actions (the API is not reachable from everywhere). Writes data/build/un_energy.json:
   {"areas": {m49: name}, "data": {m49: {year: {transaction: {commodity: TJ}}}}}
-Every value is converted to terajoules with the database's own CONVERSION_FACTOR (and UNIT_MULT).
+Every value is converted to terajoules with the database's own CONVERSION_FACTOR.
 Licence: UNSD data may be copied and redistributed for non-profit use, citing UNSD as the source.
 """
 import csv, io, json, os, sys, urllib.request
@@ -29,7 +29,7 @@ for tr in SECTORS:   # one query per sector keeps each response a manageable siz
     n = 0
     for r in csv.DictReader(io.StringIO(raw.decode('utf-8'))):
         try:
-            v = float(r['OBS_VALUE']) * 10 ** int(r.get('UNIT_MULT') or 0) * float(r.get('CONVERSION_FACTOR') or 'nan')
+            v = float(r['OBS_VALUE']) * float(r.get('CONVERSION_FACTOR') or 'nan')   # the factor already covers the unit (e.g. TJ per thousand tonnes)
         except ValueError:
             continue
         if v != v:
