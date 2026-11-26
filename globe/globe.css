@@ -1113,7 +1113,14 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 
 /* ---- Final energy use (test page): a card under the charts */
 #use-card { container-type: inline-size; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: 1rem 1.1rem .8rem; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.uc-head { display: flex; align-items: center; gap: 8px; }
+.uc-head { display: flex; align-items: center; gap: 10px 8px; flex-wrap: wrap; }
+.uc-title { margin-right: auto; }
+.uc-ctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.uc-unit { position: relative; display: inline-flex; align-items: center; }
+.uc-unit select { appearance: none; -webkit-appearance: none; padding: 5px 26px 5px 12px; border: 1px solid #dcdcd6; border-radius: 999px; background: #fff; color: #333; font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; transition: border-color .15s; }
+.uc-unit select:hover, .uc-unit select:focus-visible { border-color: #1a1a1a; outline: none; }
+.uc-unit svg { position: absolute; right: 10px; pointer-events: none; color: #666; }
+.uc-unit .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* the title opens the definition of final energy */
 .uc-title { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font: inherit; color: #888; cursor: pointer; }
 .uc-title .stat-label { margin: 0; border-bottom: 1px dotted #c4c4bf; transition: color .15s, border-color .15s; }
@@ -1123,10 +1130,11 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-fe { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: -14px; transition: grid-template-rows .35s ease, opacity .3s ease, margin-top .35s ease; }
 .uc-fe.is-open { grid-template-rows: 1fr; opacity: 1; margin-top: 0; }
 .uc-fe-in { overflow: hidden; min-height: 0; }
-.uc-fe-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 22px; padding: 10px 14px; border-left: 3px solid #1a1a1a; background: #f6f5f1; border-radius: 0 6px 6px 0; }
+.uc-fe-box { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 22px; padding: 10px 14px; border-left: 3px solid #1a1a1a; background: #f6f5f1; border-radius: 0 6px 6px 0; }
 .uc-fe-box p { margin: 0; font-size: .78rem; line-height: 1.45; color: #555; }
 .uc-fe-box b { display: block; margin-bottom: 1px; font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; color: #1a1a1a; }
-@container (max-width: 760px) { .uc-fe-box { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 980px) { .uc-fe-box { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 560px) { .uc-fe-box { grid-template-columns: minmax(0, 1fr); } }
 /* the groups' definitions: a panel sliding in from the left over the flow */
 .uc-defs { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border: 1px solid #dcdcd6; border-radius: 999px; background: #fff; color: #555; font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
 .uc-defs:hover { border-color: #1a1a1a; color: #1a1a1a; }
@@ -1152,14 +1160,13 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-panel.is-open .uc-hl li:nth-child(4) { transition-delay: 0.24s; }
 .uc-panel.is-open .uc-hl li:nth-child(5) { transition-delay: 0.28s; }
 .uc-panel.is-open .uc-hl li:nth-child(6) { transition-delay: 0.32s; }
-.uc-sw { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .uc-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: #ecebe6; }
 .uc-switch button { padding: 4px 12px; border: 0; border-radius: 999px; background: none; color: #555; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
 .uc-switch button[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
 .uc-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: stretch; }
 .uc-left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.uc-stats { display: flex; gap: 28px; flex-wrap: wrap; }
-.uc-stat { display: flex; flex-direction: column; gap: 2px; }
+.uc-stats { display: flex; justify-content: center; gap: 36px; flex-wrap: wrap; text-align: center; }
+.uc-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .uc-big { font-size: 1.45rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: #1a1a1a; }
 .uc-sub { font-size: .74rem; color: #888; }
 /* the flow: sources -> applications */
@@ -1189,15 +1196,14 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-wd > span { white-space: nowrap; }
 .uc-wd b { font-size: .56rem; margin-left: 1px; }
 .uc-wd b.up { color: #2f8a52; } .uc-wd b.dn { color: #b4533a; }
-.uc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.uc-right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .uc-right .chart-label { margin: 2px 0 -6px; }
-.uc-chart { position: relative; flex: 1; min-height: 150px; }
+.uc-chart { position: relative; flex: 1; min-height: 240px; }
 .uc-src { margin: 0; text-align: right; }
 /* the card adapts to its own width: Explore's panel and phones get one column, the flow full width */
 @container (max-width: 980px) {
   .uc-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .uc-sw { justify-content: flex-start; }
-  .uc-chart { flex: none; height: 190px; }
+  .uc-chart { flex: none; height: 250px; min-height: 0; }
 }
 @container (max-width: 560px) {
   .uc-tgs { flex-direction: column; gap: 10px; }
@@ -1213,7 +1219,12 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-big { font-size: 1.25rem; }
   .uc-stats { gap: 20px; }
   .uf-t { font-size: 10.5px; }
-  .uc-chart { height: 170px; }
+  .uc-chart { height: 220px; }
+  .uc-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 8px; }
+  .uc-head .uc-unit { grid-column: 2; grid-row: 1; }
+  .uc-head .uc-ctrls { grid-column: 1 / -1; gap: 6px; }
+  .uc-switch button { padding: 4px 10px; }
+  .uc-defs { padding: 5px 9px; }
 }
 @media (max-width: 600px) { #use-card { padding: .9rem .9rem .7rem; } }
 .rn-held { display: block; margin-top: 4px; font-size: .72rem; color: #b45309; }

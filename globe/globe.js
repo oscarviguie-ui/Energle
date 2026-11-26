@@ -2474,9 +2474,9 @@ const UC_SOURCES = [
     ic: '<path d="M8 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M12 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M16 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2"/><rect x="4.5" y="15.5" width="15" height="4.5" rx="1"/>' }
 ];
 const UC_SRC_ORDER = [0, 1, 2, 4, 3, 5];   // fuels used on site, then electricity and district heat (made elsewhere)
-const UC_FE_TEXT = '<p><b>What it is</b> Energy as it reaches users: fuel in the tank, gas in the boiler, power at the socket, heat from the pipe.</p>'
-  + '<p><b>Not counted</b> Losses in power plants and refineries, and the energy industry’s own use. So its electricity is below the generation shown above.</p>'
-  + '<p><b>Units</b> Joules. 1 EJ = 1,000 PJ ≈ 278 TWh · 1 GJ ≈ 29 litres of petrol.</p>';
+const ucFeText = () => '<p><b>What it is</b> Energy as it reaches users: fuel in the tank, gas in the boiler, power at the socket, heat from the pipe.</p>'
+  + '<p><b>Not counted</b> What is lost turning fuels into electricity, heat and petrol, and what the energy industry uses itself.</p>'
+  + '<p><b>Electricity</b> Only what users consume. It is lower than the generation in the cards above, which also covers grid losses, power plants’ own use and exports.</p>';
 let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null, UC_FE_OPEN = false, UC_DEF_OPEN = false;
 function ucLoad() {
   if (UC_DATA) return Promise.resolve(UC_DATA);
@@ -2487,12 +2487,27 @@ function ucLoad() {
   });
   return UC_LOADING;
 }
-// Final energy is shown in joules (the unit energy statistics use for every fuel), not in TWh like the electricity cards.
-// The data stays in TWh: 1 TWh = 3.6 PJ, 1 EJ = 1,000 PJ, 1 MWh = 3.6 GJ.
-const ucPJ = twh => twh * 3.6;
+// Units (the card's own menu, remembered). The data is in TWh; per person in MWh.
+//   1 TWh = 3.6 PJ · 1 Mtoe = 11.63 TWh · 1 boe = 1.7 MWh (6.12 GJ)
 const ucNum = (v, d) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
-const ucFmt = twh => { const pj = ucPJ(twh || 0); if (!pj) return '0 PJ';
-  return pj >= 1000 ? ucNum(pj / 1000, pj >= 10000 ? 1 : 2) + ' EJ' : ucNum(pj, pj >= 100 ? 0 : pj >= 10 ? 1 : 2) + ' PJ'; };
+const ucSig = v => v >= 100 ? ucNum(v, 0) : v >= 10 ? ucNum(v, 1) : ucNum(v, 2);
+const UC_UNITS = {
+  twh:  { label: 'TWh', name: 'Terawatt-hours',
+          tot: t => t >= 1000 ? ucSig(t / 1000) + ' PWh' : ucSig(t) + ' TWh', per: m => ucSig(m) + ' MWh',
+          axis: big => big >= 1000 ? ['PWh', 1 / 1000] : ['TWh', 1], note: '1 TWh = a billion kWh, the unit of the electricity cards' },
+  pj:   { label: 'PJ', name: 'Joules',
+          tot: t => { const pj = t * 3.6; return pj >= 1000 ? ucSig(pj / 1000) + ' EJ' : ucSig(pj) + ' PJ'; }, per: m => ucSig(m * 3.6) + ' GJ',
+          axis: big => big * 3.6 >= 1000 ? ['EJ', 3.6 / 1000] : ['PJ', 3.6], note: '1 EJ = 1,000 PJ ≈ 278 TWh, the unit of most energy statistics' },
+  mtoe: { label: 'Mtoe', name: 'Tonnes of oil equivalent',
+          tot: t => { const m = t / 11.63; return m >= 1 ? ucSig(m) + ' Mtoe' : ucSig(m * 1000) + ' ktoe'; }, per: m => ucSig(m / 11.63) + ' toe',
+          axis: big => big / 11.63 >= 1 ? ['Mtoe', 1 / 11.63] : ['ktoe', 1000 / 11.63], note: '1 Mtoe = the energy in a million tonnes of oil ≈ 11.6 TWh' },
+  boe:  { label: 'boe/d', name: 'Barrels of oil equivalent a day',
+          tot: t => { const d = t * 1e6 / 1.7 / 365; return d >= 1e6 ? ucSig(d / 1e6) + 'M boe/d' : d >= 1e3 ? ucSig(d / 1e3) + 'k boe/d' : ucSig(d) + ' boe/d'; },
+          per: m => ucSig(m / 1.7) + ' boe a year',
+          axis: big => big * 1e6 / 1.7 / 365 >= 1e6 ? ['M boe/d', 1e6 / 1.7 / 365 / 1e6] : ['k boe/d', 1e6 / 1.7 / 365 / 1e3], note: 'the energy in that many barrels of oil, every day, as on the Fuel Trade card' },
+};
+let UC_UNIT = (() => { try { const u = localStorage.getItem('energle_fe_unit'); return UC_UNITS[u] ? u : 'twh'; } catch (e) { return 'twh'; } })();
+const ucFmt = t => UC_UNITS[UC_UNIT].tot(t || 0);
 const ucPct = s => s > 0 && s < 0.01 ? '<1%' : Math.round(s * 100) + '%';
 function ucPop(name) {   // people, from the electricity data (demand ÷ demand per person)
   const i = ALL_DATA[name]; if (!i || !i.latestDpc) return 0;
@@ -2506,7 +2521,7 @@ function ucWorldPop() {   // people in all the countries the card covers
 function ucIcon(sec) { return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + sec.ic + '</svg>'; }
 // The flow: sources on the left, applications on the right, each band as wide as the TWh going from one to the other.
 function ucFlowSVG(m, W) {
-  const H = W < 420 ? 250 : 290, NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 92 : 116, RW = W < 420 ? 92 : 118;
+  const H = W < 420 ? 250 : 290, NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 108 : 116, RW = W < 420 ? 92 : 118;
   const x0 = LW, x1 = W - RW - NW;
   const sv = UC_SOURCES.map((_, j) => m.reduce((t, r) => t + r[j], 0)), av = m.map(r => r.reduce((t, v) => t + v, 0));
   const tot = sv.reduce((t, v) => t + v, 0) || 1;
@@ -2562,13 +2577,55 @@ function ucPick(kind, i) {   // light up one source or application: its bands in
   card.querySelectorAll('.uf-l').forEach(p => p.classList.toggle('is-hi', i != null && p.dataset[kind] === String(i)));
   card.querySelectorAll('[data-l],[data-r]').forEach(n => n.classList.toggle('is-hi', i != null && ((kind === 's' && n.dataset.l === String(i)) || (kind === 'a' && n.dataset.r === String(i)))));
   const mine = (UC_MODE === 's') === (kind === 's');
-  if (UC_CHART) { UC_CHART.data.datasets.forEach((d, j) => { d.borderColor = i == null || !mine || i === j ? d._c : d._c + '30'; d.borderWidth = mine && i === j ? 3 : 2; }); UC_CHART.update('none'); }
+  if (UC_CHART) { UC_CHART.$pick = mine ? i : null;
+    UC_CHART.data.datasets.forEach(d => { const on = i == null || !mine || i === d._i; d.borderColor = on ? d._c : d._c + '2e'; d.borderWidth = mine && i === d._i ? 2.8 : 2; });
+    UC_CHART.update('none'); }
 }
 let UC_RO = null;
 function ucPanelFit() {   // the panel covers the left column; if its list is taller (small phones), the column grows
   const left = document.querySelector('#use-card .uc-left'), pn = document.getElementById('uc-panel'); if (!left || !pn) return;
   left.style.minHeight = '';
   if (UC_DEF_OPEN && pn.scrollHeight > left.clientHeight) left.style.minHeight = pn.scrollHeight + 'px';
+}
+// end labels on the chart, like the game's main line chart: the name and latest value beside each line
+const UC_END_LABELS = {
+  id: 'ucEndLabels',
+  afterDatasetsDraw(chart) {
+    const narrow = window.innerWidth <= 600, ctx = chart.ctx, area = chart.chartArea, items = [];
+    chart.data.datasets.forEach((d, i) => {
+      const meta = chart.getDatasetMeta(i); if (meta.hidden) return;
+      const pt = meta.data[meta.data.length - 1]; if (!pt) return;
+      const { x, y } = pt.getProps(['x', 'y'], true); if (!isFinite(y)) return;
+      items.push({ d, x, y, ly: y, v: d.data[d.data.length - 1] || 0 });
+    });
+    items.sort((a, b) => a.y - b.y);
+    if (typeof spreadLabels === 'function') spreadLabels(items, narrow ? 12 : 14, area.top + 2, area.bottom + 4);
+    const font = getComputedStyle(document.body).fontFamily, dimAll = chart.$pick != null;
+    ctx.save();
+    items.forEach(it => {
+      const dim = dimAll && chart.$pick !== it.d._i, col = dim ? it.d._c + '40' : it.d._c;
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(it.x, it.y, 3, 0, Math.PI * 2); ctx.fill();
+      const lx = it.x + 8;
+      if (Math.abs(it.ly - it.y) > 2) { ctx.strokeStyle = col; ctx.lineWidth = 1; ctx.globalAlpha = .5; ctx.beginPath(); ctx.moveTo(it.x + 4, it.y); ctx.lineTo(lx - 2, it.ly); ctx.stroke(); ctx.globalAlpha = 1; }
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      const val = ucSig(it.v);
+      if (narrow) { ctx.font = '600 10.5px ' + font; ctx.fillStyle = dim ? '#c8c8c4' : col; ctx.fillText(val, lx, it.ly); }
+      else {
+        ctx.font = '600 11px ' + font; ctx.fillStyle = dim ? '#c8c8c4' : col; ctx.fillText(it.d.label, lx, it.ly);
+        const w = ctx.measureText(it.d.label).width;
+        ctx.font = '400 11px ' + font; ctx.fillStyle = dim ? '#d4d4d0' : '#888'; ctx.fillText(' ' + val, lx + w, it.ly);
+      }
+    });
+    ctx.restore();
+  },
+};
+function ucEndRoom(sets) {
+  const narrow = window.innerWidth <= 600, ctx = document.createElement('canvas').getContext('2d'), font = getComputedStyle(document.body).fontFamily;
+  let w = 0;
+  sets.forEach(d => { const v = ucSig(d.data[d.data.length - 1] || 0);
+    ctx.font = '600 11px ' + font; const nm = narrow ? 0 : ctx.measureText(d.label).width;
+    ctx.font = (narrow ? '600 10.5px ' : '400 11px ') + font; w = Math.max(w, nm + ctx.measureText(' ' + v).width); });
+  return Math.ceil(w) + 14;
 }
 function ucRender() {
   const legend = document.getElementById('legend-shared');
@@ -2591,6 +2648,11 @@ function ucRender() {
       }
       const b = e.target.closest('[data-uc]'); if (b && b.dataset.uc !== UC_MODE) { UC_MODE = b.dataset.uc; ucRender(); }
     });
+    card.addEventListener('change', e => {
+      if (!e.target.matches('.uc-unit select')) return;
+      UC_UNIT = e.target.value; try { localStorage.setItem('energle_fe_unit', UC_UNIT); } catch (x) {}
+      ucRender();
+    });
     card.addEventListener('mouseover', e => {
       const t = e.target.closest('[data-si],[data-l],[data-r],.uf-l');
       if (!t) return ucPick(null);
@@ -2601,6 +2663,7 @@ function ucRender() {
     });
     card.addEventListener('mouseleave', () => ucPick(null));
   }
+  const U = UC_UNITS[UC_UNIT];
   const src = UC_MODE === 's', y = String(info.latestYear), d = info.years[y][UC_MODE];
   const secs = (src ? UC_SOURCES : UC_SECTORS).slice(0, d.length), total = d.reduce((a, b) => a + b, 0);
   const wy = UC_DATA.world[y] || UC_DATA.world[Object.keys(UC_DATA.world).sort().pop()];
@@ -2609,9 +2672,6 @@ function ucRender() {
   const gap = info.notReported || [], gapHere = src ? [] : gap;
   const sh = d.map(v => total ? v / total : 0), ws = w.map(v => wt ? v / wt : 0);
   const top = sh.indexOf(Math.max(...sh));
-  const big = Math.max(...Object.values(info.years).map(v => v[UC_MODE].reduce((a, b) => Math.max(a, b), 0)));
-  const cu = ucPJ(big) >= 1000 ? 'EJ' : 'PJ', cf = cu === 'EJ' ? 3.6 / 1000 : 3.6;   // the chart's unit: EJ for big countries
-  const fmtPer = mwh => { const gj = mwh * 3.6; return ucNum(gj, gj >= 10 ? 0 : 1) + ' GJ'; };
   const tile = i => {
     const s = secs[i], nr = gapHere.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
     return '<div class="uc-tile' + (i === top ? ' is-top' : '') + '" data-si="' + i + '" style="--c:' + s.c + '" title="' + s.tip + '">'
@@ -2620,7 +2680,6 @@ function ucRender() {
       + '<span class="uc-nm">' + s.k + '</span>'
       + '<span class="uc-wd">' + (nr ? 'not reported' : '<span>World avg</span> <span>' + ucPct(ws[i]) + (Math.abs(diff) >= 3 ? ' <b class="' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲' : '▼') + '</b>' : '') + '</span>') + '</span></div>';
   };
-  // sources: fuels used on site, then what is made elsewhere and delivered; applications: one row
   const grp = (cap, idx, cls) => '<div class="uc-tg ' + cls + '" style="--n:' + idx.length + '"><span class="uc-tgl">' + cap + '</span><div class="uc-tiles">' + idx.map(tile).join('') + '</div></div>';
   const tiles = src
     ? '<div class="uc-tgs">' + grp('Fuels used on site', UC_SRC_ORDER.filter(j => UC_SOURCES[j].g === 'f'), 'is-f') + grp('Made elsewhere', UC_SRC_ORDER.filter(j => UC_SOURCES[j].g === 'd'), 'is-d') + '</div>'
@@ -2628,25 +2687,30 @@ function ucRender() {
   const defs = (src ? UC_SRC_ORDER.map(j => UC_SOURCES[j]) : UC_SECTORS)
     .map(x => '<li><span class="uc-hi" style="--c:' + x.c + '">' + ucIcon(x) + '</span><span><b>' + x.k + '</b>' + x.tip + '</span></li>').join('');
   const chev = '<svg class="uc-chev" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  card.innerHTML = '<div class="uc-head"><button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe">'
-    + '<span class="stat-label">Final energy use — ' + y + '</span>' + chev + '</button></div>'
-    + '<div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + UC_FE_TEXT + '</div></div></div>'
+  const big = Math.max(...Object.values(info.years).map(v => v[UC_MODE].reduce((a, b) => Math.max(a, b), 0)));
+  const [cu, cf] = U.axis(big);
+  card.innerHTML = '<div class="uc-head">'
+    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="stat-label">Final energy use — ' + y + '</span>' + chev + '</button>'
+    + '<div class="uc-ctrls"><div class="uc-switch" role="group" aria-label="Sources or applications">'
+    + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
+    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
+    + '<button type="button" class="uc-defs" aria-expanded="' + UC_DEF_OPEN + '" aria-controls="uc-panel">'
+    + '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11M3.3 5.5h1M3.3 8h1M3.3 10.5h1"/></svg>Definitions</button></div>'
+    + '<label class="uc-unit" title="' + U.name + '"><span class="sr-only">Unit</span><select aria-label="Unit">'
+    + Object.entries(UC_UNITS).map(([k, u]) => '<option value="' + k + '"' + (k === UC_UNIT ? ' selected' : '') + '>' + u.label + '</option>').join('') + '</select>'
+    + '<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></label></div>'
+    + '<div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + ucFeText()
+    + '<p><b>Unit</b> ' + U.name + ': ' + U.note + '. Change it with the menu above.</p></div></div></div>'
     + '<div class="uc-body"><div class="uc-left">'
     + '<aside class="uc-panel' + (UC_DEF_OPEN ? ' is-open' : '') + '" id="uc-panel" aria-hidden="' + !UC_DEF_OPEN + '">'
     + '<div class="uc-ph"><span>' + (src ? 'Sources' : 'Applications') + '</span><button type="button" class="uc-px" aria-label="Close">×</button></div>'
     + '<ul class="uc-hl">' + defs + '</ul><p class="uc-hn">World avg: all countries in the game added up.</p></aside>'
     + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">final energy used</span></div>'
-    + (per ? '<div class="uc-stat"><span class="uc-big">' + fmtPer(per) + '</span><span class="uc-sub">per person · World avg ' + fmtPer(wper) + '</span></div>' : '') + '</div>'
+    + (per ? '<div class="uc-stat"><span class="uc-big">' + U.per(per) + '</span><span class="uc-sub">per person · World avg ' + U.per(wper) + '</span></div>' : '') + '</div>'
     + '<div class="uc-flow" id="uc-flow"></div>'
     + (info.onlyElectricity ? '<p class="uc-note">Only electricity use is reported to the UN here: fuels such as petrol and gas are missing.</p>'
       : gap.length ? '<p class="uc-note">' + gap.map(i => UC_SECTORS[i].k).join(', ') + ' not reported to the UN</p>' : '')
-    + '</div><div class="uc-right">'
-    + '<div class="uc-sw"><div class="uc-switch" role="group" aria-label="Sources or applications">'
-    + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
-    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
-    + '<button type="button" class="uc-defs" aria-expanded="' + UC_DEF_OPEN + '" aria-controls="uc-panel">'
-    + '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11M3.3 5.5h1M3.3 8h1M3.3 10.5h1"/></svg>Definitions</button></div>'
-    + tiles
+    + '</div><div class="uc-right">' + tiles
     + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ')</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
   ucFlowDraw(); ucPanelFit();
@@ -2654,14 +2718,18 @@ function ucRender() {
   if (UC_RO) { UC_RO.disconnect(); UC_RO.observe(document.getElementById('uc-flow')); }
   if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; }
   const ys = Object.keys(info.years).sort(), cv = document.getElementById('uc-canvas');
+  const sets = secs.map((s, i) => ({ label: s.k, _c: s.c, _i: i, data: ys.map(yy => gapHere.includes(i) ? null : +(info.years[yy][UC_MODE][i] * cf).toFixed(4)),
+    borderColor: s.c, backgroundColor: s.c + '22', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointBorderColor: '#fff', pointBorderWidth: 1.5,
+    pointBackgroundColor: s.c, fill: false, cubicInterpolationMode: 'monotone' })).filter((ds, i) => !(d[i] <= 0 && ds.data.every(v => !v)));
   if (window.Chart && cv) UC_CHART = new Chart(cv, {
-    type: 'line',
-    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, _c: s.c, data: ys.map(yy => gapHere.includes(i) ? null : info.years[yy][UC_MODE][i] * cf), borderColor: s.c, backgroundColor: s.c,
-      borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, tension: .25 })) },
-    options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucFmt(c.parsed.y / 3.6 * (cu === 'EJ' ? 1000 : 1)) } } },
-      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 6, color: '#888', font: { size: 10 } } },
-                y: { beginAtZero: true, grid: { color: '#f0f0ec' }, ticks: { maxTicksLimit: 5, color: '#888', font: { size: 10 } } } } }
+    type: 'line', data: { labels: ys, datasets: sets }, plugins: [UC_END_LABELS],
+    options: { responsive: true, maintainAspectRatio: false, animation: false,
+      layout: { padding: { right: ucEndRoom(sets), top: 6 } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucSig(c.parsed.y) + ' ' + cu } } },
+      scales: {
+        x: { grid: { display: false }, border: { color: '#e4e3df' }, ticks: { color: '#9a9a96', font: { size: 11 }, maxTicksLimit: 7, autoSkip: true, maxRotation: 0 } },
+        y: { grid: { color: '#efeeea' }, border: { display: false }, ticks: { color: '#9a9a96', font: { size: 11 }, padding: 6, maxTicksLimit: 6 }, beginAtZero: true } } }
   });
 }
 if (UC_ON()) document.addEventListener('DOMContentLoaded', () => {
