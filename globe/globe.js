@@ -2439,10 +2439,11 @@ if (EV_ON()) document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================================
-//  WHO USES THE ENERGY (test page: window.USE_CARD): a card under the charts with the country's final energy use by
-//  sector (UN Energy Statistics, data/usage.json, scripts/build_usage.py): industry, transport, homes, services & other,
-//  feedstocks. Each sector's share sits against the world's (a tick), and a chart shows each sector over time. A switch
-//  shows the same split for electricity alone. Daily, Archive and Explore (single countries).
+//  FINAL ENERGY USE (test page: window.USE_CARD): a card under the charts with the country's final energy use (UN
+//  Energy Statistics, data/usage.json, scripts/build_usage.py), two ways that add up to the same total. Sources: oil,
+//  natural gas, coal, electricity, biomass, heat. Applications: industry, transport, homes, services, feedstocks.
+//  Country vs world bars, a tile per part (the world's share beside it), and each part over time; pointing at a part
+//  picks out its line. Daily, Archive and Explore (single countries).
 // ============================================================
 const UC_ON = () => globeOn() && !!window.USE_CARD;
 const UC_SECTORS = [
@@ -2457,7 +2458,21 @@ const UC_SECTORS = [
   { k: 'Feedstocks', c: '#9a7b5f', tip: 'Fuels used as a raw material, not burnt: plastics, fertiliser, asphalt, lubricants',
     ic: '<path d="M9.5 3.5h5M10.5 3.5v6L5.3 18a2 2 0 0 0 1.7 3h10a2 2 0 0 0 1.7-3l-5.2-8.5v-6"/><path d="M7.4 15h9.2"/>' }
 ];
-let UC_DATA = null, UC_MODE = 'e', UC_CHART = null, UC_LOADING = null;
+const UC_SOURCES = [
+  { k: 'Oil', c: '#c0654a', tip: 'Petrol, diesel, jet fuel, heating oil and LPG, and oil used to make plastics and asphalt',
+    ic: '<path d="M12 3.5c3 4 5.5 7 5.5 10.2a5.5 5.5 0 0 1-11 0C6.5 10.5 9 7.5 12 3.5z"/><path d="M9.3 14.5a2.8 2.8 0 0 0 2.2 2.4"/>' },
+  { k: 'Natural gas', c: '#e8925a', tip: 'Gas burnt in homes, factories and vehicles, and gas used to make fertiliser and chemicals',
+    ic: '<path d="M12 3c.8 3.4 5 5.6 5 10a5 5 0 0 1-10 0c0-2.4 1.2-4 2.5-5 .2 1.6 1 2.6 2 3 .3-2.6 0-5.4.5-8z"/>' },
+  { k: 'Coal', c: '#4a4a4a', tip: 'Coal, coke and peat, mostly in steel, cement and other heavy industry',
+    ic: '<path d="M3.5 17.5l2.8-5.2 4 .9 2.2-4.2 4.2 1.6 3.8 6.9-3 2.5H6.5z"/><path d="M10.3 13.2l2.2 3.8M16.7 10.6l-1.2 5.9"/>' },
+  { k: 'Electricity', c: '#3d6fd8', tip: 'Electricity as it reaches the people and machines using it, whatever made it',
+    ic: '<path d="M13 3L5.5 13.5H11L10 21l8-11h-5.5z"/>' },
+  { k: 'Biomass', c: '#a0724a', tip: 'Firewood, charcoal, crop waste, biofuels, biogas and waste',
+    ic: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="M5 19c3-4 6-7 10-9"/>' },
+  { k: 'Heat', c: '#8e5bb8', tip: 'Heat delivered through district-heating pipes, and solar or geothermal heat used directly',
+    ic: '<path d="M8 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M12 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M16 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2"/><rect x="4.5" y="15.5" width="15" height="4.5" rx="1"/>' }
+];
+let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null;
 function ucLoad() {
   if (UC_DATA) return Promise.resolve(UC_DATA);
   if (!UC_LOADING) UC_LOADING = fetch('data/usage.json').then(r => r.json()).then(raw => {
@@ -2493,12 +2508,12 @@ function ucRender() {
     card.addEventListener('mouseover', e => { const t = e.target.closest('[data-si]'); pick(t ? +t.dataset.si : null); });
     card.addEventListener('mouseleave', () => pick(null));
   }
-  const el = UC_MODE === 'el', y = String(info.latestYear), d = info.years[y][UC_MODE];
-  const secs = UC_SECTORS.slice(0, d.length), total = d.reduce((a, b) => a + b, 0);
+  const src = UC_MODE === 's', y = String(info.latestYear), d = info.years[y][UC_MODE];
+  const secs = (src ? UC_SOURCES : UC_SECTORS).slice(0, d.length), total = d.reduce((a, b) => a + b, 0);
   const wy = UC_DATA.world[y] || UC_DATA.world[Object.keys(UC_DATA.world).sort().pop()];
   const w = wy[UC_MODE], wt = w.reduce((a, b) => a + b, 0);
   const pop = ucPop(target.name), per = pop ? total * 1e6 / pop : 0, wper = ucWorldPop() ? wt * 1e6 / ucWorldPop() : 0;
-  const gap = info.notReported || [];
+  const gap = src ? [] : (info.notReported || []);
   const sh = d.map(v => total ? v / total : 0), ws = w.map(v => wt ? v / wt : 0);
   const top = sh.indexOf(Math.max(...sh));
   const fmtPer = v => (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' MWh';
@@ -2512,16 +2527,16 @@ function ucRender() {
       + '<span class="uc-nm">' + s.k + '</span>'
       + '<span class="uc-wd">' + (nr ? 'not reported' : 'World ' + ucPct(ws[i]) + (Math.abs(diff) >= 3 ? ' <b class="' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲' : '▼') + '</b>' : '')) + '</span></div>';
   }).join('');
-  card.innerHTML = '<div class="uc-head"><span class="stat-label">' + (el ? 'Who uses the electricity' : 'Who uses the energy') + ' — ' + y + '</span>'
-    + '<div class="uc-switch" role="group" aria-label="Energy or electricity">'
-    + '<button type="button" data-uc="e" aria-pressed="' + !el + '">All energy</button>'
-    + '<button type="button" data-uc="el" aria-pressed="' + el + '">Electricity</button></div></div>'
+  card.innerHTML = '<div class="uc-head"><span class="stat-label">Final energy use — ' + y + '</span>'
+    + '<div class="uc-switch" role="group" aria-label="Sources or applications">'
+    + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
+    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div></div>'
     + '<div class="uc-body"><div class="uc-left">'
-    + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">' + (el ? 'electricity used' : 'final energy used') + '</span></div>'
+    + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">final energy used</span></div>'
     + (per ? '<div class="uc-stat"><span class="uc-big">' + fmtPer(per) + '</span><span class="uc-sub">per person · World ' + fmtPer(wper) + '</span></div>' : '') + '</div>'
     + '<div class="uc-bars"><span class="uc-bl">' + escHtml(target.name) + '</span>' + bar(sh, 'is-c') + '<span class="uc-bl">World</span>' + bar(ws, 'is-w') + '</div>'
-    + '<div class="uc-tiles" style="--n:' + secs.length + '">' + tiles + '</div></div>'
-    + '<div class="uc-right"><p class="chart-label">' + (el ? 'Electricity' : 'Final energy') + ' use by sector (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
+    + '<div class="uc-tiles" style="--n:' + secs.length + ';--pn:' + (secs.length > 5 ? 3 : secs.length) + '">' + tiles + '</div></div>'
+    + '<div class="uc-right"><p class="chart-label">Final energy by ' + (src ? 'source' : 'application') + ' (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
   if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; }
   const ys = Object.keys(info.years).sort(), cv = document.getElementById('uc-canvas');

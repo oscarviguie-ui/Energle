@@ -1150,7 +1150,7 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .uc-stats { gap: 20px; }
   .uc-big { font-size: 1.25rem; }
-  .uc-tiles { gap: 5px; }
+  .uc-tiles { gap: 5px; grid-template-columns: repeat(var(--pn), minmax(0, 1fr)); }
   .uc-tile { padding: 8px 2px 7px; border-radius: 6px; }
   .uc-ic { width: 32px; height: 32px; margin-bottom: 2px; }
   .uc-ic svg { width: 20px !important; height: 20px !important; }
