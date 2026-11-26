@@ -2776,7 +2776,7 @@ function ucRender() {
     + '</div><div class="uc-right">' + tiles
     + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ') — ' + Object.keys(info.years).sort()[0] + '–' + y + '</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
-  ucFlowDraw(); ucPanelFit();
+  ucFlowDraw(); ucPanelFit(); if (typeof ucShadeMark === 'function') ucShadeMark();
   if (!UC_RO && window.ResizeObserver) { UC_RO = new ResizeObserver(() => ucFlowDraw()); }
   if (UC_RO) { UC_RO.disconnect(); UC_RO.observe(document.getElementById('uc-flow')); }
   if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; }
@@ -2990,4 +2990,66 @@ if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoade
   });
   const watch = () => { const app = document.getElementById('app') || document.body; mo.observe(app, { childList: true, subtree: true, characterData: true }); };
   watch();
+});
+
+// ============================================================
+//  FINAL ENERGY ON THE MAP (test page, Explore): a click on a tile of the final energy card colours the globe by that part's
+//  share of each country's final energy (Electricity: how electrified; Biomass: who cooks with wood; District heat: where
+//  pipes heat cities...), with the same key as a source. A second click, or the key's ×, stops it.
+// ============================================================
+let UC_SHADE = null;   // { kind: 's' | 'e', i }
+function ucShares(kind, i) {
+  if (!UC_DATA) return [];
+  return Object.entries(UC_DATA.by).map(([name, v]) => {
+    if (kind === 's' && v.onlyElectricity) return null;
+    const d = v.years[String(v.latestYear)][kind], t = d.reduce((a, b) => a + b, 0);
+    return t > 0 && v.iso3 ? [v.iso3, d[i] / t] : null;
+  }).filter(Boolean);
+}
+function ucShadeMap(kind, i) {
+  const off = !kind || (UC_SHADE && UC_SHADE.kind === kind && UC_SHADE.i === i);
+  if (off) { UC_SHADE = null; if (typeof globeShade === 'function') globeShade(null); ucShadeMark(); return; }
+  if (!GLOBE || !GLOBE.getLayer('energle-shade')) return;
+  const part = (kind === 's' ? UC_SOURCES : UC_SECTORS)[i], sh = ucShares(kind, i);
+  if (GLOBE_SHADE && !String(GLOBE_SHADE).startsWith('fe:')) { try { lockedSource = null; _globeFocus(null); } catch (e) {} }
+  UC_SHADE = { kind, i }; GLOBE_SHADE = 'fe:' + part.k;
+  const max = Math.max(0.1, Math.ceil(Math.max(...sh.map(x => x[1])) * 10) / 10), val = ['match', ['get', 'iso3'], ...sh.flat(), 0];
+  GLOBE.setPaintProperty('energle-shade', 'fill-color', ['interpolate', ['linear'], val, 0, '#f6efe0', max, part.c]);
+  GLOBE.setPaintProperty('energle-shade', 'fill-opacity', ['case', ['>', val, 0.005], 0.9, 0]);
+  GLOBE.setLayoutProperty('energle-shade', 'visibility', 'visible');
+  GLOBE.setPaintProperty('energle-reg-fill', 'fill-opacity', 0); GLOBE.setPaintProperty('energle-sel-fill', 'fill-opacity', 0);
+  const key = document.getElementById('gl-shade'), mh = document.getElementById('gl-maphint');
+  if (mh) mh.hidden = true;
+  if (key) {
+    key.innerHTML = '<span class="gl-shade-name"><span class="gl-shade-sw" style="background:' + part.c + '"></span>' + escHtml(part.k) + '</span>'
+      + '<span class="gl-shade-txt">share of each country’s final energy · ' + sh.filter(x => x[1] > 0.005).length + ' countries</span>'
+      + '<span class="gl-shade-scale"><small>0%</small><span class="gl-shade-bar" style="background:linear-gradient(90deg,#f6efe0,' + part.c + ')"></span><small>' + Math.round(max * 100) + '%</small></span>'
+      + '<button type="button" class="gl-shade-x" aria-label="Stop colouring the map">×</button>';
+    key.querySelector('.gl-shade-x').addEventListener('click', () => ucShadeMap(null));
+    key.hidden = false;
+  }
+  ucShadeMark();
+}
+function ucShadeMark() {   // the tile that colours the map stays marked
+  document.querySelectorAll('#use-card .uc-tile').forEach(t => {
+    const on = !!UC_SHADE && (UC_MODE === 's' ? 's' : 'e') === UC_SHADE.kind && +t.dataset.si === UC_SHADE.i;
+    t.classList.toggle('is-map', on);
+  });
+}
+if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
+  document.body.classList.add('ex-test');
+  document.addEventListener('click', e => {
+    const t = e.target.closest('#use-card .uc-tile'); if (!t || !document.body.classList.contains('at-globe')) return;
+    ucShadeMap(UC_MODE === 's' ? 's' : 'e', +t.dataset.si);
+  });
+  // a source chosen under the charts takes over the map: the final energy colouring lets go
+  const _gs = window.globeShade;
+  if (typeof _gs === 'function') window.globeShade = function (src) { if (src || !String(GLOBE_SHADE || '').startsWith('fe:')) { UC_SHADE = null; ucShadeMark(); } return _gs.apply(this, arguments); };
+  // the panel is redrawn for each country: the final energy colouring stays (it is not a legend chip)
+  const _rl = window.globeShadeRelock;
+  if (typeof _rl === 'function') window.globeShadeRelock = function () { if (String(GLOBE_SHADE || '').startsWith('fe:')) return; return _rl.apply(this, arguments); };
+  // the map's tools (Globe/List, search, groups) span exactly the map, whatever width the cards take
+  const fitTools = () => { const w = document.querySelector('.gl-wrap'); if (w && w.offsetWidth) document.body.style.setProperty('--ex-map-w', w.offsetWidth + 'px'); };
+  if (window.ResizeObserver) { const ro = new ResizeObserver(fitTools); const watch = () => { const w = document.querySelector('.gl-wrap'); if (w) ro.observe(w); else setTimeout(watch, 500); }; watch(); }
+  window.addEventListener('resize', fitTools);
 });
