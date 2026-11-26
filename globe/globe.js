@@ -2477,21 +2477,21 @@ const UC_SRC_ORDER = [0, 1, 2, 4, 3, 5];   // fuels used on site, then electrici
 const ucFeText = () => '<p class="uc-fe-def"><b>Final energy</b> Energy as it reaches users (fuel in the tank, gas in the boiler, power at the socket, heat from the pipe), after what is lost making electricity, heat and petrol, and what the energy industry uses itself.</p>';
 // Electricity, from generation to use (UN electricity balance): why the card's electricity is below the generation above.
 function ucElecBridge(info) {
+  // trade is shown net, as on the electricity cards: generated + net imports = what the country has to use (Ember's "demand")
   const e = info && info.elec; if (!e || !(e.gen > 0)) return '';
-  const supply = e.gen + e.imp, tw = v => v / supply * 100;
+  const net = e.imp - e.exp, supply = e.gen + Math.max(net, 0), tw = v => v / supply * 100;
   const parts = [
     ['Consumed by users', e.final, '#3d6fd8'],
     ['Grid losses', e.losses, '#b9b9b3'],
     ['Power plants’ own use', e.plants, '#8f8f88'],
     ['Rest of the energy industry', e.industry + e.heat, '#6c6c65'],
-    ['Exported', e.exp, '#e3a06c'],
+    ['Net exports', Math.max(-net, 0), '#e3a06c'],
     ['Unaccounted', e.rest > 0 ? e.rest : 0, 'repeating-linear-gradient(135deg,#d8d8d2 0 3px,#f4f4f0 3px 6px)'],
   ].filter(x => x[1] > supply * 0.002);
   const pct = v => ucPct(v / supply);
-  const ci = ALL_DATA[target.name], cy = ci && ci.latestYear, cg = ci && ci.years[cy] && ci.years[cy].Total;
-  return '<div class="uc-eb"><p class="uc-eb-in"><b class="uc-eb-t">Electricity</b><span>' + e.y + ' (UN): generated <strong>' + ucFmt(e.gen) + '</strong></span>' + (e.imp > supply * 0.002 ? '<span>+ imported <strong>' + ucFmt(e.imp) + '</strong></span>' : '')
-    + (cg && String(cy) !== String(e.y) ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' in ' + cy + ' (Ember)</span>'
-      : cg ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' (Ember)</span>' : '') + '</p>'
+  return '<div class="uc-eb"><p class="uc-eb-in"><b class="uc-eb-t">Electricity</b>'
+    + '<span>' + e.y + ' (UN): generated <strong>' + ucFmt(e.gen) + '</strong></span>'
+    + (net > supply * 0.002 ? '<span>+ net imports <strong>' + ucFmt(net) + '</strong></span>' : '') + '</p>'
     + '<div class="uc-eb-bar">' + parts.map(x => '<span style="width:' + tw(x[1]).toFixed(2) + '%;background:' + x[2] + '" title="' + x[0] + ': ' + ucFmt(x[1]) + ' (' + pct(x[1]) + ')"></span>').join('') + '</div>'
     + '<ul class="uc-eb-k">' + parts.map(x => '<li><i style="background:' + x[2] + '"></i>' + x[0] + ' <strong>' + ucFmt(x[1]) + '</strong> <em>' + pct(x[1]) + '</em></li>').join('') + '</ul>'
     + (e.rest < -supply * 0.02 ? '<p class="uc-eb-n">Users are reported to consume ' + ucFmt(-e.rest) + ' more than the balance accounts for.</p>' : '')
