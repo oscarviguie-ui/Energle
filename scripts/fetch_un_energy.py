@@ -39,6 +39,20 @@ for tr in SECTORS:   # one query per sector keeps each response a manageable siz
         d[c] = round(d.get(c, 0) + v, 1); n += 1
     print(tr, n, 'values', file=sys.stderr)
 
+# electricity balance, from generation to use: gross production, imports, exports, energy industry own use, losses,
+# electricity turned into heat (electric boilers, heat pumps), final consumption
+ELEC_TR = ['018', '03', '04', '09', '101', '0889E', '0889H', '12']
+elec = {}
+raw = get(BASE + '/data/DF_UNDATA_ENERGY/A..7000.' + '+'.join(ELEC_TR) + '?startPeriod=' + str(START), 'application/vnd.sdmx.data+csv;version=1.0.0')
+for r in csv.DictReader(io.StringIO(raw.decode('utf-8'))):
+    try:
+        v = float(r['OBS_VALUE']) * float(r.get('CONVERSION_FACTOR') or 'nan')
+    except ValueError:
+        continue
+    if v == v:
+        elec.setdefault(r['REF_AREA'], {}).setdefault(r['TIME_PERIOD'], {})[r['TRANSACTION']] = round(v, 1)
+print('electricity balance:', len(elec), 'areas', file=sys.stderr)
+
 os.makedirs('data/build', exist_ok=True)
-json.dump({'areas': areas, 'data': data}, open('data/build/un_energy.json', 'w'), separators=(',', ':'))
+json.dump({'areas': areas, 'data': data, 'elec': elec}, open('data/build/un_energy.json', 'w'), separators=(',', ':'))
 print(len(data), 'areas', file=sys.stderr)
