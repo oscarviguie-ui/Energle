@@ -333,7 +333,7 @@ function globeTabs() {
   const bar = document.getElementById('gl-tabs'), cards = [...document.querySelectorAll('#clue-cards .ic-card')]; if (!bar) return;
   const names = cards.map(c => { const t = ((c.querySelector('.ic-title') || {}).textContent || 'Clue card').split('·')[0].trim(); return GLOBE_TAB_NAMES[t] || t; });
   GLOBE_TAB = GLOBE_TAB_NAME === 'Profile' ? 0 : names.indexOf(GLOBE_TAB_NAME) + 1;     // a card the panel lacks: back to Profile
-  bar.innerHTML = '<button type="button" class="gl-tab" role="tab" data-t="0">Profile</button>'
+  bar.innerHTML = '<button type="button" class="gl-tab" role="tab" data-t="0">' + (window.ENERGLE_TEST ? 'Electricity Mix' : 'Profile') + '</button>'
     + (cards.length ? '<span class="gl-tabs-sep" aria-hidden="true"></span>' : '') + names.map((n, i) => '<button type="button" class="gl-tab gl-tab--card" role="tab" data-t="' + (i + 1) + '">' + n + '</button>').join('');
   if (!bar.dataset.bound) { bar.dataset.bound = '1'; bar.addEventListener('click', e => { const b = e.target.closest('.gl-tab'); if (b) globeTab(+b.dataset.t); }); }
   globeStackFit();
@@ -3218,4 +3218,39 @@ function feDemoStart(root, mapSvg) {
   // the caption keeps the height of the longest step, so the window doesn't jump
   let hc = 0; steps.forEach(st => { cap.textContent = st.cap; hc = Math.max(hc, cap.offsetHeight); }); cap.style.minHeight = hc + 'px';
   show(0); play();
+}
+
+// ============================================================
+//  EXPLORE (test, laptops): ONE HEIGHT FOR THE MAP'S ROW. The row was as tall as the panel, so the map grew and shrank
+//  with every tab (a clue card is half the profile's height) and every country. Now the row takes the tallest
+//  electricity profile seen at this window width and keeps it: tabs and countries change, the map and the final energy
+//  card below don't move. The profile's charts and the clue cards stretch to fill the row.
+// ============================================================
+let EX_ROW = { w: 0, h: 0 };
+function exRowLock() {
+  const side = document.getElementById('gl-side'); if (!side) return;
+  const on = exWide() && !document.body.classList.contains('ex-bigmap') && !document.body.classList.contains('gl-stack');
+  document.body.classList.toggle('ex-rowlock', on);
+  if (!on) { side.style.removeProperty('min-height'); return; }
+  if (EX_ROW.w !== window.innerWidth) EX_ROW = { w: window.innerWidth, h: 0 };
+  const prof = document.getElementById('gl-pane-profile');
+  if (prof && !prof.hidden && side.querySelector('.gl-p-head')) {      // the profile is showing: the row is at least its height
+    // the world's profile has neither a group's definition nor a country's "Read about …" line (40px with its gap):
+    // count that line, so going on to a country doesn't move anything
+    // (only when the content itself is taller than the row: a panel held at the row's height says nothing new)
+    const cur = side.offsetHeight;
+    if (cur > EX_ROW.h) EX_ROW.h = cur + (side.querySelector('.gl-more-row, .gl-def') ? 0 : 40);
+  }
+  if (EX_ROW.h && side.style.minHeight !== EX_ROW.h + 'px') side.style.minHeight = EX_ROW.h + 'px';
+  // the profile's charts and flow arrive late: whenever the panel's size changes, measure again
+  if (!side.dataset.exRo && typeof ResizeObserver !== 'undefined') { side.dataset.exRo = '1'; new ResizeObserver(() => requestAnimationFrame(exRowLock)).observe(side); }
+}
+if (window.ENERGLE_TEST) {
+  const _gt = window.globeTab;
+  // the profile's charts and flow are drawn a frame or two later: measure again once they are in
+  let exT = 0; const exLockSoon = () => { exRowLock(); requestAnimationFrame(() => requestAnimationFrame(exRowLock)); clearTimeout(exT); exT = setTimeout(exRowLock, 400); };
+  window.globeTab = function (t, first) { const r = _gt.apply(this, arguments); exLockSoon(); return r; };
+  const _gs = window.globeSide;
+  window.globeSide = function () { const r = _gs.apply(this, arguments); exLockSoon(); return r; };
+  window.addEventListener('resize', () => requestAnimationFrame(exRowLock));
 }

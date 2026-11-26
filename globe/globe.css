@@ -1386,3 +1386,29 @@ body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-sh
   body.ex-test.at-globe .gl-def { margin: -2px 0 4px; }
   body.ex-test.at-globe #sec-elec { margin-top: 0; }
 }
+
+/* test: the map's row keeps one height (exRowLock); the panel's pane stretches to it, and a clue card fills it */
+@media (min-width: 1100px) {
+  body.ex-rowlock.at-globe .gl-side { display: flex; flex-direction: column; }
+  body.ex-rowlock.at-globe .gl-side > .gl-pane:not([hidden]), body.ex-rowlock.at-globe .gl-side > #clue-cards:not([hidden]) { flex: 1 1 auto; display: flex; flex-direction: column; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card:not([hidden]) { flex: 1 1 auto; display: flex; flex-direction: column; }
+  /* the visible card sits in #clue-cards > .ic-slot > .ic-cols > .ic-col: each level passes the height down */
+  body.ex-rowlock.at-globe .gl-side #clue-cards :is(.ic-slot, .ic-cols, .ic-col):has(.ic-card:not([hidden])) { flex: 1 1 auto; display: flex; flex-direction: column; align-items: stretch; min-width: 0; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-col:not(:has(> .ic-card:not([hidden]))) { display: none; }
+  /* the card's body takes the extra height; its boxes share it, each with its content centred */
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > :not(.ic-head):not(.ic-src) { flex: 1 1 auto; }
+  /* power trade: the rows share the height (up to a point), the bars a little thicker; no trade: the note fills it */
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .et-body { display: flex; flex-direction: column; justify-content: center; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .et-body .nb-row:not(.nb-tots) { flex: 1 1 0; height: auto; min-height: 22px; max-height: 90px; align-items: stretch; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .et-body .nb-row:not(.nb-tots) > * { display: flex; align-items: center; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .et-body .nb-bar { height: 44%; min-height: 12px; max-height: 30px; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .et-body .et-none { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
+  /* fuel trade: the flow is drawn to any height (its SVG stretches), so it takes all of it */
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .ft-wrap { display: flex; flex-direction: column; }
+  html:not(.ft-boe) body.ex-rowlock.at-globe .gl-side #clue-cards .ft-view--usd, html.ft-boe body.ex-rowlock.at-globe .gl-side #clue-cards .ft-view--boe { flex: 1 1 auto; display: flex; flex-direction: column; gap: inherit; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ft-stage { flex: 1 1 auto; aspect-ratio: auto; min-height: 220px; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .ug-grid, body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .nv-grid,
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .pp-grid { align-content: stretch; }
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .ug-grid > *, body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .nv-grid > *,
+  body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .pp-grid > * { display: flex; flex-direction: column; justify-content: center; }
+}
