@@ -1351,9 +1351,20 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 /* Explore: tiles colour the map */
 body.at-globe.ex-test #use-card .uc-tile { cursor: pointer; }
 body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-shadow: 0 0 0 2px var(--c) inset; }
-/* the page's two sections, electricity and final energy: one heading each, same style, a rule beneath */
-.sec-h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 0 2px 8px; border-bottom: 2px solid #1a1a1a; }
-.sec-t { font-size: .92rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #1a1a1a; }
-.sec-d { font-size: .8rem; color: #8a8a85; font-weight: 400; letter-spacing: 0; text-transform: none; }
+/* the page's two sections, electricity and final energy: one slim heading each, a rule running to its right */
+.sec-h { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; padding: 0; border: 0; }
+.sec-t { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #1a1a1a; line-height: 1.2; white-space: nowrap; }
+.sec-d { font-size: .76rem; color: #8a8a85; font-weight: 400; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.sec-line { flex: 1 1 40px; min-width: 24px; height: 0; border-top: 2px solid #1a1a1a; }
 .uc-title { gap: 8px; }
-#sec-elec { margin-bottom: 2px; }
+#sec-elec { margin: -8px 0 -10px; min-height: 16px; }          /* sits in the gap that was already above the cards */
+#use-card .sec-h { min-height: 30px; }
+@media (max-width: 600px) {
+  .sec-d { display: none; }
+  #sec-elec { margin: -6px 0 -8px; }
+  #use-card .uc-ctrls { flex: 0 1 auto; flex-wrap: nowrap; gap: 6px; }
+  #use-card .uc-defs-t { display: none; }
+  #use-card .uc-defs { padding: 6px 9px; }
+  #use-card .uc-head { display: flex; }
+  #use-card .uc-head .uc-unit { margin-left: auto; grid-column: auto; grid-row: auto; }
+}

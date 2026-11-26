@@ -2785,12 +2785,12 @@ function ucRender() {
   const [cu, cf] = U.axis(big);
   // the section's heading (same as the electricity section's), with the card's controls; the card itself below it
   card.innerHTML = '<div class="uc-head sec-h">'
-    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="sec-t">Final energy — ' + y + '</span>' + chev + '<span class="sec-d">what reaches users</span></button>'
+    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="sec-t">Final energy — ' + y + '</span>' + chev + '<span class="sec-d">what reaches users</span></button><span class="sec-line" aria-hidden="true"></span>'
     + '<div class="uc-ctrls"><div class="uc-switch" role="group" aria-label="Sources or applications">'
     + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
     + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
-    + '<button type="button" class="uc-defs" aria-expanded="' + UC_DEF_OPEN + '" aria-controls="uc-panel">'
-    + '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11M3.3 5.5h1M3.3 8h1M3.3 10.5h1"/></svg>Definitions</button></div>'
+    + '<button type="button" class="uc-defs" aria-expanded="' + UC_DEF_OPEN + '" aria-controls="uc-panel" aria-label="Definitions">'
+    + '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M6 2.5v11M3.3 5.5h1M3.3 8h1M3.3 10.5h1"/></svg><span class="uc-defs-t">Definitions</span></button></div>'
     + '<label class="uc-unit" title="' + U.name + '"><span class="sr-only">Unit</span><select aria-label="Unit">'
     + Object.entries(UC_UNITS).map(([k, u]) => '<option value="' + k + '"' + (k === UC_UNIT ? ' selected' : '') + '>' + u.label + '</option>').join('') + '</select>'
     + '<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></label></div>'
@@ -2988,7 +2988,7 @@ function markDates() {
     let h = document.getElementById('sec-elec');
     if (!h || h.nextElementSibling !== bc) {
       if (h) h.remove();
-      bc.insertAdjacentHTML('beforebegin', '<div class="sec-h" id="sec-elec"><span class="sec-t">Electricity — ' + ref + '</span><span class="sec-d">generated, traded and mixed</span></div>');
+      bc.insertAdjacentHTML('beforebegin', '<div class="sec-h" id="sec-elec"><span class="sec-t">Electricity — ' + ref + '</span><span class="sec-d">generated, traded and mixed</span><span class="sec-line" aria-hidden="true"></span></div>');
     } else if (h.dataset.y !== ref) {
       h.querySelector('.sec-t').textContent = 'Electricity — ' + ref;
     }
