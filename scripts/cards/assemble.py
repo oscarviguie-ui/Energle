@@ -130,7 +130,10 @@ def build(raw, game, log=print):
         e, u, b, en = data['eia'].get(iso, {}), data['usgs'].get(iso, {}), data['baci'].get(iso, {}), data['entsoe'].get(iso)
         fb = data['factbook'].get(iso, {})
         wv = lambda k: (w.get(k) or [None])[0]
-        wy = lambda *ks: max([w[k][1] for k in ks if w.get(k) and len(w[k]) > 1 and w[k][1]] or [None])   # latest year among indicators
+        def span(ys):   # years of a card's figures: '2025', or '2022–2025' when they differ
+            ys = sorted({int(y) for y in ys if y})
+            return None if not ys else str(ys[0]) if ys[0] == ys[-1] else '%d–%d' % (ys[0], ys[-1])
+        wys = lambda *ks: [w[k][1] for k in ks if w.get(k) and len(w[k]) > 1 and w[k][1]]
         C, cards, missing = {'europe': cont.get(iso) == 'Europe'}, [], {}
 
         # ---- Renewables Potential ----
@@ -171,9 +174,9 @@ def build(raw, game, log=print):
                 C['coalYears'] = sig(min(years['coal'], 999), 2)
             ry = [x.get('year') for x in [RES[f].get(iso) or {} for f in ('oil', 'gas')] + [e.get('coal') or {}, fb.get('coal') or {}] if x.get('year')]
             ry = [int(str(y)[:4]) for y in ry if str(y)[:4].isdigit()]
-            uy = max(ry + [wy('rent_oil', 'rent_gas', 'rent_coal', 'rent_min') or 0]) or None
+            uy = span(ry + wys('rent_oil', 'rent_gas', 'rent_coal', 'rent_min'))
             if uy:
-                C.setdefault('dates', {})['under'] = uy               # latest reserves or GDP-share year
+                C.setdefault('dates', {})['under'] = uy               # years of the reserves and GDP shares
             cards.append('under')
         else:
             missing['under'] = [k for k, bad in (('eia+factbook', not (data['eia'] or data['factbook'])), ('rents', all(v is None for v in rents.values()))) if bad]
@@ -251,9 +254,9 @@ def build(raw, game, log=print):
                       'cuts': cuts, 'cold': int(round(pw['cold'])), 'hot': int(round(pw['hot'])), 'coldM': pw['coldM'], 'hotM': pw['hotM'],
                       'hdd': int(pw['hdd']), 'cdd': int(pw['cdd']), 'urban': int(round(wv('urban'))), 'gdp': int(round(wv('gdp'), -2)),
                       'industry': int(round(wv('industry')))})
-            py = wy('access_urban', 'access_rural', 'access', 'cook', 'urban', 'gdp', 'industry')
+            py = span(wys('access_urban', 'access_rural', 'access', 'cook', 'urban', 'gdp', 'industry'))
             if py:
-                C.setdefault('dates', {})['people'] = py              # latest World Bank year among the card's figures
+                C.setdefault('dates', {})['people'] = py              # years of the card's World Bank figures
             cards.append('people')
         else:
             missing['people'] = [k for k, v in need.items() if v is None]
