@@ -1270,3 +1270,40 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .cd-bang { margin-left: 1px; letter-spacing: 0; font-weight: 800; color: #9b3b36; }
 .uc-ast { color: #c0392b; font-weight: 700; margin-left: 2px; }
 .uc-eb-d { font-size: .72rem !important; color: #777 !important; }
+/* What's new: the final energy update's picture (the world's flow, drawn in) */
+.nx-fe { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.nx-fe-cap { font-size: .66rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #999; }
+.nx-fe-flow { position: relative; width: 100%; height: 260px; }
+.nx-fe-flow > .uf-svg { position: absolute; inset: 0; }
+.nx-fe-flow .uf-l { opacity: 0; transition: opacity .6s ease; }
+.nx-fe-flow.is-in .uf-l { opacity: .45; }
+.nx-fe-flow.is-in .uf-l:nth-child(1) { transition-delay: 0.05s; }
+.nx-fe-flow.is-in .uf-l:nth-child(2) { transition-delay: 0.10s; }
+.nx-fe-flow.is-in .uf-l:nth-child(3) { transition-delay: 0.15s; }
+.nx-fe-flow.is-in .uf-l:nth-child(4) { transition-delay: 0.20s; }
+.nx-fe-flow.is-in .uf-l:nth-child(5) { transition-delay: 0.25s; }
+.nx-fe-flow.is-in .uf-l:nth-child(6) { transition-delay: 0.30s; }
+.nx-fe-flow.is-in .uf-l:nth-child(7) { transition-delay: 0.35s; }
+.nx-fe-flow.is-in .uf-l:nth-child(8) { transition-delay: 0.40s; }
+.nx-fe-flow.is-in .uf-l:nth-child(9) { transition-delay: 0.45s; }
+.nx-fe-flow.is-in .uf-l:nth-child(10) { transition-delay: 0.50s; }
+.nx-fe-flow.is-in .uf-l:nth-child(11) { transition-delay: 0.55s; }
+.nx-fe-flow.is-in .uf-l:nth-child(12) { transition-delay: 0.60s; }
+.nx-fe-flow.is-in .uf-l:nth-child(13) { transition-delay: 0.65s; }
+.nx-fe-flow.is-in .uf-l:nth-child(14) { transition-delay: 0.70s; }
+.nx-fe-flow.is-in .uf-l:nth-child(15) { transition-delay: 0.75s; }
+.nx-fe-flow.is-in .uf-l:nth-child(16) { transition-delay: 0.80s; }
+.nx-fe-flow.is-in .uf-l:nth-child(17) { transition-delay: 0.85s; }
+.nx-fe-flow.is-in .uf-l:nth-child(18) { transition-delay: 0.90s; }
+.nx-fe-flow.is-in .uf-l:nth-child(19) { transition-delay: 0.95s; }
+.nx-fe-flow.is-in .uf-l:nth-child(20) { transition-delay: 1.00s; }
+.nx-fe-flow.is-in .uf-l:nth-child(21) { transition-delay: 1.05s; }
+.nx-fe-flow.is-in .uf-l:nth-child(22) { transition-delay: 1.10s; }
+.nx-fe-flow.is-in .uf-l:nth-child(23) { transition-delay: 1.15s; }
+.nx-fe-flow.is-in .uf-l:nth-child(24) { transition-delay: 1.20s; }
+.nx-fe-flow.is-in .uf-l:nth-child(25) { transition-delay: 1.25s; }
+.nx-fe-flow.is-in .uf-l:nth-child(26) { transition-delay: 1.30s; }
+.nx-fe-flow.is-in .uf-l:nth-child(27) { transition-delay: 1.35s; }
+.nx-fe-flow.is-in .uf-l:nth-child(28) { transition-delay: 1.40s; }
+.nx-fe-flow.is-in .uf-l:nth-child(29) { transition-delay: 1.45s; }
+.nx-fe-flow.is-in .uf-l:nth-child(30) { transition-delay: 1.50s; }

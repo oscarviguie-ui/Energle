@@ -1067,6 +1067,10 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 // What's new: the Clue Shop from round 1 (while window.SHOP_FROM_START is set)
 const SHOP_ROUND1_UPDATE = ['23 Nov', 'Clue Shop from round 1',
   'The Clue Shop now opens before your first guess: trade a guess for a clue card whenever you like, even to start. Your last guess can never be spent, so you always get a final try.'];
+const FE_UPDATE = ['26 Nov', 'Where energy goes',
+  'A new card under the charts follows a country’s energy to the people using it: what it uses (oil, gas, coal, biomass, electricity, district heat) and what for (industry, transport, homes, services, raw materials). '
+  + 'See how electrified a country is, who still cooks with wood, where pipes heat whole cities. Pick your unit, open Definitions for what each group covers, and click the title for how this differs from electricity generation. '
+  + 'Every card now shows the year of its data: a year in red with a ! is not the year of the electricity data.'];
 const EXPLORE_UPDATE = ['13 Nov', 'Explore: the world on a map',
   'Practice is now Explore. Click any country for its full profile and clue cards. Add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders, clue cards included. Click a source under the charts to colour the map by it. And practise on any group. In the daily, the Map button opens a globe to pick your guesses on.'];
 let NX_SVG = null;
@@ -1187,15 +1191,19 @@ function showNoticeWide() {
   if (document.getElementById('notice-modal')) return;
   try { localStorage.setItem(NOTICE_KEY, '1'); localStorage.setItem(NEWS_SEEN_KEY, newsId()); } catch (e) {}
   const sd = document.getElementById('sub-date'); if (sd) { sd.classList.remove('has-news'); const ic = sd.querySelector('.sd-ico'); if (ic) ic.remove(); }
-  const [d0, t0, x0] = UPDATES[0], open = practiceUnlocked(), shopNews = t0 === SHOP_ROUND1_UPDATE[1];
+  const [d0, t0, x0] = UPDATES[0], open = practiceUnlocked(), shopNews = t0 === SHOP_ROUND1_UPDATE[1], feNews = t0 === FE_UPDATE[1];
   // the featured update: the Clue Shop (its own picture) or Explore (the map demo)
   const cell = c => '<span class="battery-cell ' + c + '"></span>';
-  const feature = shopNews
+  const feature = feNews
+    ? '<div class="nx-fe" id="nx-fe" aria-hidden="true"><span class="nx-fe-cap">The world’s final energy: sources → applications</span><div class="nx-fe-flow"></div></div>'
+    : shopNews
     ? '<div class="nx-shop" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="nx-shop-sign" style="--awn:#f5c842;color:#1a1a1a"')
       + '<span class="nx-shop-bat"><span class="battery si-bat"><span class="battery-body">' + cell('si-card') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + '</span><span class="battery-cap"></span></span><em>a card before your first guess</em></span>'
       + '<span class="si-tiles">' + SHOP_CARDS.map(c => '<span class="si-tile"><span class="si-art">' + SHOP_ART[c.k] + '</span><span class="si-name">' + c.name + '</span></span>').join('') + '</span></div>'
     : nxDemoHTML();
-  const ctas = shopNews
+  const ctas = feNews
+    ? (document.getElementById('use-card') ? '<button type="button" class="nx-cta" id="nx-fe-go">See it for this country →</button>' : '')
+    : shopNews
     ? (MODE !== 'practice' && !gameOver ? '<button type="button" class="nx-cta" id="nx-shop">Open the Clue Shop →</button>' : '') + '<button type="button" class="nx-tour" id="nx-shop-how">How it works</button>'
     : (open ? '<button type="button" class="nx-cta" id="nx-cta">Open Explore →</button>' : '') + '<button type="button" class="nx-tour" id="nx-tour">Step by step</button>';
   const modal = document.createElement('div'); modal.id = 'notice-modal';
@@ -1203,10 +1211,10 @@ function showNoticeWide() {
     + '<div class="nt-box nt-box--log nt-wide" role="dialog" aria-modal="true" aria-labelledby="nt-title">'
     + '<div class="nx-top"><div><span class="nt-eyebrow">What’s new</span><h2 class="nt-title" id="nt-title">Latest updates</h2></div>'
     + '<button type="button" class="gl-x nx-close" aria-label="Close">×</button></div>'
-    + '<section class="nx-feature' + (shopNews ? ' is-shop' : '') + '">' + feature
+    + '<section class="nx-feature' + (shopNews ? ' is-shop' : '') + (feNews ? ' is-fe' : '') + '">' + feature
     + '<div class="nx-text"><span class="nx-new">New · ' + d0 + '</span><h3>' + t0 + '</h3><p>' + x0 + '</p>'
     + '<div class="nx-ctas">' + ctas + '</div>'
-    + (open || shopNews ? '' : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
+    + (open || shopNews || feNews ? '' : '<p class="nx-lock">🔒 Explore opens once you’ve finished today’s puzzle.</p>') + '</div></section>'
     + '<div class="nx-earlier"><span class="nt-eyebrow nx-sub">Earlier updates</span><ol class="nt-log nx-log">'
     + UPDATES.slice(1).map(([d, t, x]) => '<li title="' + escHtml(x.replace(/<[^>]+>/g, '')) + '"><span class="nt-date">' + d + '</span><span class="nt-item"><strong>' + t + '</strong><span class="nx-x">' + x + '</span></span></li>').join('') + '</ol></div>'
     + '<div class="nx-foot"><div class="nt-soon"><span class="nt-eyebrow">Coming soon</span><div class="nx-soon-row">'
@@ -1223,7 +1231,15 @@ function showNoticeWide() {
   document.getElementById('nt-ok').addEventListener('click', close);
   const cta = document.getElementById('nx-cta'); if (cta) cta.addEventListener('click', () => { close(); switchMode('practice'); });
   document.addEventListener('keydown', onKey);
-  if (!shopNews) demo = nxDemoStart(modal.querySelector('.nx-feature'));
+  if (!shopNews && !feNews) demo = nxDemoStart(modal.querySelector('.nx-feature'));
+  if (feNews) ucLoad().then(() => {   // the picture: every country's flow added up
+    const box = modal.querySelector('.nx-fe-flow'); if (!box) return;
+    const m = [0, 1, 2, 3, 4].map(() => [0, 0, 0, 0, 0, 0]);
+    Object.values(UC_DATA.by).forEach(v => (v.flow || []).forEach((r, i) => r.forEach((x, j) => { m[i][j] += x || 0; })));
+    box.innerHTML = ucFlowSVG(m, Math.max(300, Math.round(box.clientWidth)), Math.max(230, Math.round(box.clientHeight)));
+    box.classList.add('is-in');
+  }).catch(() => {});
+  const fg = document.getElementById('nx-fe-go'); if (fg) fg.addEventListener('click', () => { close(); const c = document.getElementById('use-card'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   const tl = document.getElementById('nx-tour'); if (tl) tl.addEventListener('click', () => { close(); showExploreTour(true); });
   const so = document.getElementById('nx-shop'); if (so) so.addEventListener('click', () => { close(); const b = document.getElementById('shop-btn'); if (b) b.click(); });
   const sh = document.getElementById('nx-shop-how'); if (sh) sh.addEventListener('click', () => { close(); showShopIntro(); });
@@ -1283,6 +1299,7 @@ function showExploreTour(fromNews) {
 if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   if (typeof UPDATES !== 'undefined' && !UPDATES.some(u => u[1] === EXPLORE_UPDATE[1])) UPDATES.unshift(EXPLORE_UPDATE);
   if (typeof UPDATES !== 'undefined' && window.SHOP_FROM_START && !UPDATES.some(u => u[1] === SHOP_ROUND1_UPDATE[1])) UPDATES.unshift(SHOP_ROUND1_UPDATE);
+  if (typeof UPDATES !== 'undefined' && window.USE_CARD && !UPDATES.some(u => u[1] === FE_UPDATE[1])) UPDATES.unshift(FE_UPDATE);   // draft, test page
   window.showNotice = showNoticeWide;
   const _maybe = maybeShowNotice;
   window.maybeShowNotice = function () {
@@ -2604,7 +2621,28 @@ function ucPick(kind, i) {   // light up one source or application: its bands in
     UC_CHART.data.datasets.forEach(d => { const on = i == null || !mine || i === d._i; d.borderColor = on ? d._c : d._c + '2e'; d.borderWidth = mine && i === d._i ? 2.8 : 2; });
     UC_CHART.update('none'); }
 }
-let UC_RO = null;
+let UC_RO = null, UC_TIP_ON = false;
+// the chart's tooltip: the main chart's box (year, total, then each line with its value and share), in the card's unit
+function ucTooltip(context) {
+  const model = context.tooltip, ch = context.chart;
+  if (model.opacity === 0) { UC_TIP_ON = false; hideTooltip(); return; }
+  UC_TIP_ON = true;
+  const unit = ch.$unit || '', fmt = v => ucSig(v) + ' ' + unit, i = model.dataPoints[0].dataIndex;
+  const total = ch.data.datasets.reduce((t, d) => t + (d.data[i] || 0), 0);
+  const row = (c, l, v, b) => { const p = total > 0 ? v / total * 100 : 0;
+    return '<div class="tt-row' + (b ? ' tt-row--b' : '') + '"><span class="tt-sw" style="background:' + c + '"></span><span class="tt-l">' + l + '</span>'
+      + '<span class="tt-v">' + fmt(v) + '</span><span class="tt-p">' + (p < 10 ? p.toFixed(1) : Math.round(p)) + '%</span></div>'; };
+  let html = '<div class="tt-h">' + model.title[0] + '</div>' + row('#1a1a1a', 'Final energy used', total, true) + '<div class="tt-sep"></div><div>';
+  model.dataPoints.filter(dp => (dp.parsed.y || 0) > 0).sort((a, b) => b.parsed.y - a.parsed.y)
+    .forEach(dp => { html += row(dp.dataset._c, dp.dataset.label, dp.parsed.y, false); });
+  showTooltip(html + '</div>', ch.canvas, model.caretX, model.caretY);
+}
+// the game hides its tooltip whenever the mouse leaves the main charts: not while it is on this card's chart
+document.addEventListener('DOMContentLoaded', () => {
+  const _hide = window.hideTooltip; if (typeof _hide !== 'function') return;
+  window.hideTooltip = function () { if (UC_TIP_ON) return; return _hide.apply(this, arguments); };
+  document.addEventListener('mousemove', e => { if (UC_TIP_ON && !e.target.closest('#uc-canvas')) { UC_TIP_ON = false; _hide(); } });
+});
 function ucPanelFit() {   // the panel covers the left column; if its list is taller (small phones), the column grows
   const left = document.querySelector('#use-card .uc-left'), pn = document.getElementById('uc-panel'); if (!left || !pn) return;
   left.style.minHeight = '';
@@ -2746,15 +2784,17 @@ function ucRender() {
     borderColor: s.c, backgroundColor: s.c + '22', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, pointBorderColor: '#fff', pointBorderWidth: 1.5,
     pointBackgroundColor: s.c, fill: false, cubicInterpolationMode: 'monotone' })).filter((ds, i) => !(d[i] <= 0 && ds.data.every(v => !v)));
   if (window.Chart && cv) UC_CHART = new Chart(cv, {
-    type: 'line', data: { labels: ys, datasets: sets }, plugins: [UC_END_LABELS],
+    type: 'line', data: { labels: ys, datasets: sets }, plugins: [UC_END_LABELS, HOVER_GUIDE],
     options: { responsive: true, maintainAspectRatio: false, animation: false,
+      ...(IS_TOUCH ? { events: [] } : {}),                   // phones: taps, as on the main chart
       layout: { padding: { right: ucEndRoom(sets), top: 6 } },
       interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucSig(c.parsed.y) + ' ' + cu } } },
+      plugins: { legend: { display: false }, tooltip: { enabled: false, external: ucTooltip } },
       scales: {
         x: { grid: { display: false }, border: { color: '#e4e3df' }, ticks: { color: '#9a9a96', font: { size: 11 }, maxTicksLimit: 7, autoSkip: true, maxRotation: 0 } },
         y: { grid: { color: '#efeeea' }, border: { display: false }, ticks: { color: '#9a9a96', font: { size: 11 }, padding: 6, maxTicksLimit: 6 }, beginAtZero: true } } }
   });
+  if (UC_CHART) { UC_CHART.$unit = cu; try { bindTapTooltip(UC_CHART); } catch (e) {} }
 }
 if (UC_ON()) document.addEventListener('DOMContentLoaded', () => {
   const f = window.renderCharts; if (typeof f !== 'function') return;
