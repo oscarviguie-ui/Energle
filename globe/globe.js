@@ -2474,8 +2474,7 @@ const UC_SOURCES = [
     ic: '<path d="M8 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M12 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M16 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2"/><rect x="4.5" y="15.5" width="15" height="4.5" rx="1"/>' }
 ];
 const UC_SRC_ORDER = [0, 1, 2, 4, 3, 5];   // fuels used on site, then electricity and district heat (made elsewhere)
-const ucFeText = () => '<p><b>What it is</b> Energy as it reaches users: fuel in the tank, gas in the boiler, power at the socket, heat from the pipe.</p>'
-  + '<p><b>Not counted</b> What is lost turning fuels into electricity, heat and petrol, and what the energy industry uses itself.</p>';
+const ucFeText = () => '<p class="uc-fe-def"><b>Final energy</b> Energy as it reaches users (fuel in the tank, gas in the boiler, power at the socket, heat from the pipe), after what is lost making electricity, heat and petrol, and what the energy industry uses itself.</p>';
 // Electricity, from generation to use (UN electricity balance): why the card's electricity is below the generation above.
 function ucElecBridge(info) {
   const e = info && info.elec; if (!e || !(e.gen > 0)) return '';
@@ -2490,10 +2489,9 @@ function ucElecBridge(info) {
   ].filter(x => x[1] > supply * 0.002);
   const pct = v => ucPct(v / supply);
   const ci = ALL_DATA[target.name], cy = ci && ci.latestYear, cg = ci && ci.years[cy] && ci.years[cy].Total;
-  return '<div class="uc-eb"><p class="uc-eb-h"><b>Electricity</b> The cards above show what is generated; this card counts what users consume.</p>'
-    + '<p class="uc-eb-in"><span>' + e.y + ', UN data: generated <strong>' + ucFmt(e.gen) + '</strong></span>' + (e.imp > supply * 0.002 ? '<span>+ imported <strong>' + ucFmt(e.imp) + '</strong></span>' : '')
-    + (cg && String(cy) !== String(e.y) ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' generated in ' + cy + ' (Ember, a newer year)</span>'
-      : cg ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' (Ember counts slightly differently)</span>' : '') + '</p>'
+  return '<div class="uc-eb"><p class="uc-eb-in"><b class="uc-eb-t">Electricity</b><span>' + e.y + ' (UN): generated <strong>' + ucFmt(e.gen) + '</strong></span>' + (e.imp > supply * 0.002 ? '<span>+ imported <strong>' + ucFmt(e.imp) + '</strong></span>' : '')
+    + (cg && String(cy) !== String(e.y) ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' in ' + cy + ' (Ember)</span>'
+      : cg ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' (Ember)</span>' : '') + '</p>'
     + '<div class="uc-eb-bar">' + parts.map(x => '<span style="width:' + tw(x[1]).toFixed(2) + '%;background:' + x[2] + '" title="' + x[0] + ': ' + ucFmt(x[1]) + ' (' + pct(x[1]) + ')"></span>').join('') + '</div>'
     + '<ul class="uc-eb-k">' + parts.map(x => '<li><i style="background:' + x[2] + '"></i>' + x[0] + ' <strong>' + ucFmt(x[1]) + '</strong> <em>' + pct(x[1]) + '</em></li>').join('') + '</ul>'
     + (e.rest < -supply * 0.02 ? '<p class="uc-eb-n">Users are reported to consume ' + ucFmt(-e.rest) + ' more than the balance accounts for.</p>' : '')
@@ -2723,8 +2721,7 @@ function ucRender() {
     + '<label class="uc-unit" title="' + U.name + '"><span class="sr-only">Unit</span><select aria-label="Unit">'
     + Object.entries(UC_UNITS).map(([k, u]) => '<option value="' + k + '"' + (k === UC_UNIT ? ' selected' : '') + '>' + u.label + '</option>').join('') + '</select>'
     + '<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></label></div>'
-    + '<div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + ucFeText()
-    + '<p><b>Unit</b> ' + U.name + ': ' + U.note + '. Change it with the menu above.</p>' + ucElecBridge(info) + '</div></div></div>'
+    + '<div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + ucFeText() + ucElecBridge(info) + '</div></div></div>'
     + '<div class="uc-body"><div class="uc-left">'
     + '<aside class="uc-panel' + (UC_DEF_OPEN ? ' is-open' : '') + '" id="uc-panel" aria-hidden="' + !UC_DEF_OPEN + '">'
     + '<div class="uc-ph"><span>' + (src ? 'Sources' : 'Applications') + '</span><button type="button" class="uc-px" aria-label="Close">×</button></div>'
@@ -2897,3 +2894,49 @@ function deviceLinkInPrompt() {
     input.value = n; btn.click();                         // the name is now this device's: the prompt takes it as usual
   }));
 }
+
+// ============================================================
+//  CARD DATES (test page). Every year in a card's title is bold; a year that is not the year of the electricity data
+//  (Ember, the cards at the top) turns matte dark red with a "!", so a card from another year is never mistaken for the
+//  same moment. Applied to whatever the game draws (base cards, clue cards, final energy), whenever it draws it.
+// ============================================================
+const DATE_SEL = '.chart-label, .stat-label, .ic-title, .uc-eb-in, .uc-eb-cmp';
+function markDates() {
+  const app = document.getElementById('app'); if (!app || typeof target === 'undefined' || !target) return;
+  const info = ALL_DATA && ALL_DATA[target.name], ref = info && String(info.latestYear);
+  app.querySelectorAll(DATE_SEL).forEach(el => {
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.cd-yr') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const hits = []; let n;
+    while ((n = w.nextNode())) if (/\b(19[89]\d|20[0-4]\d)\b/.test(n.textContent)) hits.push(n);
+    hits.forEach(t => {
+      const frag = document.createDocumentFragment(); let last = 0;
+      t.textContent.replace(/\b(19[89]\d|20[0-4]\d)\b/g, (y, _, i) => {
+        frag.appendChild(document.createTextNode(t.textContent.slice(last, i)));
+        const off = ref && y !== ref, b = document.createElement('b');
+        b.className = 'cd-yr' + (off ? ' is-off' : ''); b.textContent = y;
+        if (off) { b.title = 'Not the same year as the electricity data (' + ref + ')'; b.insertAdjacentHTML('beforeend', '<span class="cd-bang" aria-hidden="true">!</span>'); }
+        frag.appendChild(b); last = i + y.length; return y;
+      });
+      frag.appendChild(document.createTextNode(t.textContent.slice(last)));
+      t.replaceWith(frag);
+    });
+  });
+  // a year already marked may need its colour changed when the country changes
+  app.querySelectorAll('.cd-yr').forEach(b => {
+    const y = b.firstChild && b.firstChild.textContent, off = ref && y !== ref;
+    if (b.classList.contains('is-off') !== !!off) {
+      b.classList.toggle('is-off', !!off); const bang = b.querySelector('.cd-bang');
+      if (off && !bang) { b.title = 'Not the same year as the electricity data (' + ref + ')'; b.insertAdjacentHTML('beforeend', '<span class="cd-bang" aria-hidden="true">!</span>'); }
+      if (!off && bang) { bang.remove(); b.removeAttribute('title'); }
+    }
+  });
+}
+if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
+  let queued = false;
+  const mo = new MutationObserver(() => {
+    if (queued) return; queued = true;
+    requestAnimationFrame(() => { queued = false; mo.disconnect(); try { markDates(); } catch (e) {} watch(); });
+  });
+  const watch = () => { const app = document.getElementById('app') || document.body; mo.observe(app, { childList: true, subtree: true, characterData: true }); };
+  watch();
+});
