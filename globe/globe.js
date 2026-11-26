@@ -2440,39 +2440,46 @@ if (EV_ON()) document.addEventListener('DOMContentLoaded', () => {
 
 // ============================================================
 //  FINAL ENERGY USE (test page: window.USE_CARD): a card under the charts with the country's final energy use (UN
-//  Energy Statistics, data/usage.json, scripts/build_usage.py), two ways that add up to the same total. Sources: oil,
-//  natural gas, coal, electricity, biomass, heat. Applications: industry, transport, homes, services, feedstocks.
+//  Energy Statistics, data/usage.json, scripts/build_usage.py), two ways that add up to the same total. Sources: fuels used
+//  on site (oil, natural gas, coal, biomass) and what is made elsewhere (electricity, district heat). Applications:
+//  industry, transport, homes, services, feedstocks. A flow links the two; ? buttons define final energy and each group.
 //  Country vs world bars, a tile per part (the world's share beside it), and each part over time; pointing at a part
 //  picks out its line. Daily, Archive and Explore (single countries).
 // ============================================================
 const UC_ON = () => globeOn() && !!window.USE_CARD;
 const UC_SECTORS = [
-  { k: 'Industry', c: '#5b6b82', tip: 'Factories, mines and construction',
+  { k: 'Industry', c: '#5b6b82', tip: 'Factories (steel, chemicals, cement, food, paper…), mines and construction',
     ic: '<path d="M3 20V11l5 3v-3l5 3v-3l5 3V5h3v15z"/><path d="M7 17h2M12 17h2M16.5 17h1.5"/>' },
-  { k: 'Transport', c: '#d98a2b', tip: 'Road, rail, domestic flights and shipping, pipelines. International flights and shipping are not counted',
+  { k: 'Transport', c: '#d98a2b', tip: 'Cars, trucks and buses, trains, domestic flights and shipping, pipelines. International flights and shipping are not counted',
     ic: '<path d="M4 15l1.6-4.6A2 2 0 0 1 7.5 9h9a2 2 0 0 1 1.9 1.4L20 15v3h-2M4 15v3h2M4 15h16"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/>' },
-  { k: 'Homes', c: '#c0567a', tip: 'Heating, cooking, cooling and appliances in households',
+  { k: 'Homes', c: '#c0567a', tip: 'Heating, hot water, cooking, cooling, lighting and appliances in households',
     ic: '<path d="M3.5 11.5L12 5l8.5 6.5"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/>' },
-  { k: 'Services', c: '#3f95a8', tip: 'Offices, shops, schools and hospitals, plus farming, fishing and anything unspecified',
+  { k: 'Services', c: '#3f95a8', tip: 'Offices, shops, schools, hospitals and public services, plus farming, forestry, fishing and use not assigned to a sector',
     ic: '<rect x="5" y="4" width="14" height="16" rx="1.2"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M11 20v-3.5h2V20"/>' },
-  { k: 'Feedstocks', c: '#9a7b5f', tip: 'Fuels used as a raw material, not burnt: plastics, fertiliser, asphalt, lubricants',
+  { k: 'Feedstocks', c: '#9a7b5f', tip: 'Oil, gas and coal used as a raw material instead of being burnt: plastics, fertiliser, asphalt, lubricants',
     ic: '<path d="M9.5 3.5h5M10.5 3.5v6L5.3 18a2 2 0 0 0 1.7 3h10a2 2 0 0 0 1.7-3l-5.2-8.5v-6"/><path d="M7.4 15h9.2"/>' }
 ];
 const UC_SOURCES = [
-  { k: 'Oil', c: '#c0654a', tip: 'Petrol, diesel, jet fuel, heating oil and LPG, and oil used to make plastics and asphalt',
+  { k: 'Oil', c: '#c0654a', g: 'f', tip: 'Petrol, diesel, jet fuel, heating oil and LPG, and oil used to make plastics and asphalt',
     ic: '<path d="M12 3.5c3 4 5.5 7 5.5 10.2a5.5 5.5 0 0 1-11 0C6.5 10.5 9 7.5 12 3.5z"/><path d="M9.3 14.5a2.8 2.8 0 0 0 2.2 2.4"/>' },
-  { k: 'Natural gas', c: '#e8925a', tip: 'Gas burnt in homes, factories and vehicles, and gas used to make fertiliser and chemicals',
+  { k: 'Natural gas', c: '#e8925a', g: 'f', tip: 'Gas burnt in boilers, stoves, factories and vehicles, and gas used to make fertiliser and chemicals',
     ic: '<path d="M12 3c.8 3.4 5 5.6 5 10a5 5 0 0 1-10 0c0-2.4 1.2-4 2.5-5 .2 1.6 1 2.6 2 3 .3-2.6 0-5.4.5-8z"/>' },
-  { k: 'Coal', c: '#4a4a4a', tip: 'Coal, coke and peat, mostly in steel, cement and other heavy industry',
+  { k: 'Coal', c: '#4a4a4a', g: 'f', tip: 'Coal, coke and peat burnt on site, mostly in steel, cement and other heavy industry',
     ic: '<path d="M3.5 17.5l2.8-5.2 4 .9 2.2-4.2 4.2 1.6 3.8 6.9-3 2.5H6.5z"/><path d="M10.3 13.2l2.2 3.8M16.7 10.6l-1.2 5.9"/>' },
-  { k: 'Electricity', c: '#3d6fd8', tip: 'Electricity as it reaches the people and machines using it, whatever made it',
+  { k: 'Electricity', c: '#3d6fd8', g: 'd', tip: 'Made in power plants from the electricity mix shown in the game, and delivered by the grid',
     ic: '<path d="M13 3L5.5 13.5H11L10 21l8-11h-5.5z"/>' },
-  { k: 'Biomass', c: '#a0724a', tip: 'Firewood, charcoal, crop waste, biofuels, biogas and waste',
+  { k: 'Biomass', c: '#a0724a', g: 'f', tip: 'Firewood, charcoal, crop waste, biofuels, biogas and waste, plus the small amount of solar and geothermal heat used directly (solar water heaters, hot springs)',
     ic: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="M5 19c3-4 6-7 10-9"/>' },
-  { k: 'Heat', c: '#8e5bb8', tip: 'Heat delivered through district-heating pipes, and solar or geothermal heat used directly',
+  { k: 'District heat', c: '#8e5bb8', g: 'd', tip: 'Made in central plants (from gas, coal, biomass, waste or geothermal) and piped to buildings and factories',
     ic: '<path d="M8 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M12 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2M16 3.5c-1.4 1.8 1.4 3.4 0 5.3s0 3.2 0 3.2"/><rect x="4.5" y="15.5" width="15" height="4.5" rx="1"/>' }
 ];
-let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null;
+const UC_SRC_ORDER = [0, 1, 2, 4, 3, 5];   // fuels used on site, then electricity and district heat (made elsewhere)
+const UC_HELP = {
+  fe: '<b>Final energy</b> is what reaches the people and machines using it: fuel in a car’s tank, gas in a boiler, electricity from the socket, heat from a district-heating pipe. '
+    + 'It leaves out what is lost making electricity and refining fuels, and what the energy industry uses itself, so it is smaller than a country’s total energy supply. '
+    + 'Electricity here is what is consumed: less than the generation in the cards above, which also covers grid losses, power plants’ own use and exports.',
+};
+let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null, UC_HELP_ON = null;
 function ucLoad() {
   if (UC_DATA) return Promise.resolve(UC_DATA);
   if (!UC_LOADING) UC_LOADING = fetch('data/usage.json').then(r => r.json()).then(raw => {
@@ -2496,19 +2503,24 @@ function ucWorldPop() {   // people in all the countries the card covers
 function ucIcon(sec) { return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + sec.ic + '</svg>'; }
 // The flow: sources on the left, applications on the right, each band as wide as the TWh going from one to the other.
 function ucFlowSVG(m, W) {
-  const H = W < 420 ? 250 : 290, NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 82 : 104, RW = W < 420 ? 92 : 118;
+  const H = W < 420 ? 250 : 290, NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 92 : 116, RW = W < 420 ? 92 : 118;
   const x0 = LW, x1 = W - RW - NW;
   const sv = UC_SOURCES.map((_, j) => m.reduce((t, r) => t + r[j], 0)), av = m.map(r => r.reduce((t, v) => t + v, 0));
   const tot = sv.reduce((t, v) => t + v, 0) || 1;
-  const place = vals => {            // node heights (a sliver for any used part), gaps between used parts only
-    const used = vals.filter(v => v > 0).length, room = H - GAP * Math.max(0, used - 1);
+  const place = (vals, order, brk) => {   // node heights (a sliver for any used part); a wider gap before index brk
+    const ord = order || vals.map((_, i) => i), used = ord.filter(i => vals[i] > 0);
+    const extra = brk != null && used.some(i => i === brk) && used[0] !== brk ? GAP * 2.5 : 0;
+    const room = H - GAP * Math.max(0, used.length - 1) - extra;
     const hs = vals.map(v => v > 0 ? Math.max(2, v / tot * room) : 0), k = room / (hs.reduce((t, h) => t + h, 0) || 1);
-    let y = 0; return hs.map(h => { const n = { y, h: h * k }; if (h > 0) y += h * k + GAP; return n; });
+    const out = vals.map(() => ({ y: 0, h: 0 })); let y = 0;
+    ord.forEach(i => { if (!(vals[i] > 0)) return; if (i === brk && y > 0) y += extra; out[i] = { y, h: hs[i] * k }; y += hs[i] * k + GAP; });
+    return out;
   };
-  const S = place(sv), A = place(av), sOff = S.map(n => n.y), aOff = A.map(n => n.y);
+  const firstMade = UC_SRC_ORDER.find(j => UC_SOURCES[j].g === 'd' && sv[j] > 0);
+  const S = place(sv, UC_SRC_ORDER, firstMade), A = place(av), sOff = S.map(n => n.y), aOff = A.map(n => n.y);
   const pct = v => ucPct(v / tot), xm = (x0 + NW + x1) / 2;
   let links = '';
-  UC_SOURCES.forEach((src, j) => m.forEach((row, i) => {
+  UC_SRC_ORDER.forEach(j => { const src = UC_SOURCES[j]; m.forEach((row, i) => {
     const v = row[j]; if (!(v > 0)) return;
     const hs = sv[j] ? v / sv[j] * S[j].h : 0, ha = av[i] ? v / av[i] * A[i].h : 0;
     const ya = sOff[j], yb = aOff[i]; sOff[j] += hs; aOff[i] += ha;
@@ -2516,9 +2528,9 @@ function ucFlowSVG(m, W) {
     links += '<path class="uf-l" data-s="' + j + '" data-a="' + i + '" fill="' + src.c + '" d="M' + L + ',' + ya.toFixed(1) + 'C' + xm + ',' + ya.toFixed(1) + ' ' + xm + ',' + yb.toFixed(1) + ' ' + R + ',' + yb.toFixed(1)
       + 'L' + R + ',' + (yb + ha).toFixed(1) + 'C' + xm + ',' + (yb + ha).toFixed(1) + ' ' + xm + ',' + (ya + hs).toFixed(1) + ' ' + L + ',' + (ya + hs).toFixed(1) + 'Z">'
       + '<title>' + src.k + ' → ' + UC_SECTORS[i].k + ': ' + ucFmt(v) + ' (' + ucPct(v / sv[j]) + ' of ' + src.k.toLowerCase() + ', ' + ucPct(v / av[i]) + ' of ' + UC_SECTORS[i].k.toLowerCase() + ')</title></path>';
-  }));
+  }); });
   const labels = (nodes, vals, list, side) => {     // labels beside the nodes, nudged apart so none overlap
-    const items = nodes.map((n, i) => ({ i, c: n.y + n.h / 2, n, v: vals[i] })).filter(o => o.v > 0);
+    const items = nodes.map((n, i) => ({ i, c: n.y + n.h / 2, n, v: vals[i] })).filter(o => o.v > 0).sort((a, b) => a.c - b.c);
     const MIN = 15; for (let k = 1; k < items.length; k++) items[k].c = Math.max(items[k].c, items[k - 1].c + MIN);
     const over = items.length ? items[items.length - 1].c - (H - 6) : 0;
     if (over > 0) { items[items.length - 1].c -= over; for (let k = items.length - 2; k >= 0; k--) items[k].c = Math.min(items[k].c, items[k + 1].c - MIN); }
@@ -2558,7 +2570,11 @@ function ucRender() {
   if (!card) {
     legend.insertAdjacentHTML('afterend', '<section id="use-card" aria-label="Final energy use"></section>');
     card = document.getElementById('use-card');
-    card.addEventListener('click', e => { const b = e.target.closest('[data-uc]'); if (b && b.dataset.uc !== UC_MODE) { UC_MODE = b.dataset.uc; ucRender(); } });
+    card.addEventListener('click', e => {
+      const q = e.target.closest('[data-help]');
+      if (q) { UC_HELP_ON = UC_HELP_ON === q.dataset.help ? null : q.dataset.help; ucRender(); return; }
+      const b = e.target.closest('[data-uc]'); if (b && b.dataset.uc !== UC_MODE) { UC_MODE = b.dataset.uc; ucRender(); }
+    });
     card.addEventListener('mouseover', e => {
       const t = e.target.closest('[data-si],[data-l],[data-r],.uf-l');
       if (!t) return ucPick(null);
@@ -2578,27 +2594,42 @@ function ucRender() {
   const sh = d.map(v => total ? v / total : 0), ws = w.map(v => wt ? v / wt : 0);
   const top = sh.indexOf(Math.max(...sh));
   const fmtPer = v => (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' MWh';
-  const tiles = secs.map((s, i) => {
-    const nr = gapHere.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
+  const tile = i => {
+    const s = secs[i], nr = gapHere.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
     return '<div class="uc-tile' + (i === top ? ' is-top' : '') + '" data-si="' + i + '" style="--c:' + s.c + '" title="' + s.tip + '">'
       + '<span class="uc-ic">' + ucIcon(s) + '</span>'
       + '<span class="uc-pc">' + (nr ? '—' : ucPct(sh[i])) + '</span>'
       + '<span class="uc-nm">' + s.k + '</span>'
-      + '<span class="uc-wd">' + (nr ? 'not reported' : 'World ' + ucPct(ws[i]) + (Math.abs(diff) >= 3 ? ' <b class="' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲' : '▼') + '</b>' : '')) + '</span></div>';
-  }).join('');
-  card.innerHTML = '<div class="uc-head"><span class="stat-label">Final energy use — ' + y + '</span></div>'
+      + '<span class="uc-wd">' + (nr ? 'not reported' : '<span>World avg</span> <span>' + ucPct(ws[i]) + (Math.abs(diff) >= 3 ? ' <b class="' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲' : '▼') + '</b>' : '') + '</span>') + '</span></div>';
+  };
+  // sources: fuels used on site, then what is made elsewhere and delivered; applications: one row
+  const grp = (cap, idx, cls) => '<div class="uc-tg ' + cls + '" style="--n:' + idx.length + '"><span class="uc-tgl">' + cap + '</span><div class="uc-tiles">' + idx.map(tile).join('') + '</div></div>';
+  const tiles = src
+    ? '<div class="uc-tgs">' + grp('Fuels used on site', UC_SRC_ORDER.filter(j => UC_SOURCES[j].g === 'f'), 'is-f') + grp('Made elsewhere', UC_SRC_ORDER.filter(j => UC_SOURCES[j].g === 'd'), 'is-d') + '</div>'
+    : '<div class="uc-tgs"><div class="uc-tg" style="--n:' + secs.length + '"><div class="uc-tiles">' + secs.map((_, i) => tile(i)).join('') + '</div></div></div>';
+  const help = k => {
+    if (k === 'fe') return UC_HELP.fe;
+    const list = k === 's' ? UC_SRC_ORDER.map(j => UC_SOURCES[j]) : UC_SECTORS;
+    return (k === 's' ? '<b>Sources</b>: what is used. Oil, gas, coal and biomass are burnt (or used) where they are needed; electricity and district heat are made elsewhere from other sources and delivered.'
+                      : '<b>Applications</b>: what the energy is used for.')
+      + '<ul class="uc-hl">' + list.map(x => '<li><span class="uc-hi" style="--c:' + x.c + '">' + ucIcon(x) + '</span><span><b>' + x.k + '</b> ' + x.tip + '</span></li>').join('') + '</ul>'
+      + '<p class="uc-hn">“World avg” is the share for the world as a whole (all countries in the game added up).</p>';
+  };
+  const qb = k => '<button type="button" class="uc-q" data-help="' + k + '" aria-expanded="' + (UC_HELP_ON === k) + '" aria-label="What does this mean?">?</button>';
+  const mk = UC_HELP_ON === 'fe' ? 'fe' : (UC_HELP_ON ? UC_MODE : null);
+  card.innerHTML = '<div class="uc-head"><span class="stat-label">Final energy use — ' + y + '</span>' + qb('fe') + '</div>'
+    + (mk ? '<div class="uc-help">' + help(mk) + '</div>' : '')
     + '<div class="uc-body"><div class="uc-left">'
     + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">final energy used</span></div>'
-    + (per ? '<div class="uc-stat"><span class="uc-big">' + fmtPer(per) + '</span><span class="uc-sub">per person · World ' + fmtPer(wper) + '</span></div>' : '') + '</div>'
-    + '<div class="uf-cols"><span>Sources</span><span>Applications</span></div>'
+    + (per ? '<div class="uc-stat"><span class="uc-big">' + fmtPer(per) + '</span><span class="uc-sub">per person · World avg ' + fmtPer(wper) + '</span></div>' : '') + '</div>'
     + '<div class="uc-flow" id="uc-flow"></div>'
     + (info.onlyElectricity ? '<p class="uc-note">Only electricity use is reported to the UN here: fuels such as petrol and gas are missing.</p>'
       : gap.length ? '<p class="uc-note">' + gap.map(i => UC_SECTORS[i].k).join(', ') + ' not reported to the UN</p>' : '')
     + '</div><div class="uc-right">'
-    + '<div class="uc-switch" role="group" aria-label="Sources or applications">'
+    + '<div class="uc-sw"><div class="uc-switch" role="group" aria-label="Sources or applications">'
     + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
-    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
-    + '<div class="uc-tiles" style="--n:' + secs.length + ';--pn:' + (secs.length > 5 ? 3 : secs.length) + '">' + tiles + '</div>'
+    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>' + qb('g') + '</div>'
+    + tiles
     + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
   ucFlowDraw();

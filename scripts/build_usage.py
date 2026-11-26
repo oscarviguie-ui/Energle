@@ -2,7 +2,8 @@
 
 For each country and year, TWh by sector, two ways:
   e : applications, what the energy is used for  [industry, transport, homes, services & other, feedstocks]
-  s : sources, what is used                       [oil, natural gas, coal, electricity, biomass & waste, heat]
+  s : sources, what is used                       [oil, natural gas, coal, electricity, biomass, district heat]
+      (biomass: wood, charcoal, crop waste, biofuels, biogas, waste, and solar or geothermal heat used directly)
   Both add up to the same total: feedstocks count under the fuel they are made of.
   flow: for the latest year, TWh from each source to each application (rows: applications, columns: sources).
   - industry  = manufacturing, construction, mining (UN 121)
@@ -26,10 +27,12 @@ AGG = {'0100': ('0110', '0121', '0129'), '0200': ('0210', '0220')}
 SKIP = {'5212', '5222', '5232', '8000T', '7000G', '7000H', '7000N', '7000O', '7000S', '7000T', '7000W', 'EC', 'GR', 'WF', '9101'}
 GROUPS = [['121'], ['122'], ['1231'], ['1235', '1232', '1234'], ['11']]
 ALL_TR = [t for g in GROUPS for t in g]
-# final energy by what is used: oil, natural gas, coal, electricity, biomass & waste, heat (district heat, solar and geothermal heat)
+# final energy by what is used. Fuels used on site: oil, natural gas, coal, biomass (with waste, and the small amount of
+# solar and geothermal heat used directly). Made elsewhere and delivered: electricity, district heat.
 def source_of(c):
     if c == '7000': return 3
-    if c in ('8000', 'DG', 'DS'): return 5
+    if c == '8000': return 5
+    if c in ('DG', 'DS'): return 4
     if c == '3000': return 1
     if c[:1] == '4' or c == '2000': return 0
     if c[:1] in ('0', '1'): return 2                     # coal, coal products and gases made from coal, peat

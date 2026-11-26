@@ -1111,20 +1111,30 @@ body.cp-locked .at-tools, body.cp-locked .gl-maphint, body.cp-locked .gl-x, body
 body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smoke, body.view-energy .co2-figure, body.view-energy .co2-box { display: none !important; }
 .ev-note { margin: 6px 0 0; font-size: .74rem; color: #8a6a1c; }
 
-/* ---- Who uses the energy (test page): a card under the charts */
-#use-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: 1rem 1.1rem .8rem; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.uc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+/* ---- Final energy use (test page): a card under the charts */
+#use-card { container-type: inline-size; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: 1rem 1.1rem .8rem; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.uc-head { display: flex; align-items: center; gap: 8px; }
+.uc-q { flex: none; width: 18px; height: 18px; padding: 0; border: 1px solid #c9c9c4; border-radius: 50%; background: #fff; color: #777; font: inherit; font-size: .7rem; font-weight: 700; line-height: 1; cursor: pointer; }
+.uc-q:hover, .uc-q[aria-expanded="true"] { border-color: #1a1a1a; color: #1a1a1a; }
+.uc-q[aria-expanded="true"] { background: #1a1a1a; color: #fff; }
+.uc-help { padding: 10px 12px; border-radius: 6px; background: #f6f5f1; font-size: .8rem; line-height: 1.5; color: #444; }
+.uc-help b { color: #1a1a1a; }
+.uc-hl { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px 18px; }
+.uc-hl li { display: flex; gap: 8px; align-items: flex-start; }
+.uc-hi { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: var(--c); background: color-mix(in srgb, var(--c) 14%, #fff); }
+.uc-hi svg { width: 15px !important; height: 15px !important; }
+.uc-hn { margin: 8px 0 0; font-size: .74rem; color: #777; }
+.uc-sw { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .uc-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: #ecebe6; }
 .uc-switch button { padding: 4px 12px; border: 0; border-radius: 999px; background: none; color: #555; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
 .uc-switch button[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
 .uc-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: stretch; }
-.uc-left { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.uc-left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .uc-stats { display: flex; gap: 28px; flex-wrap: wrap; }
 .uc-stat { display: flex; flex-direction: column; gap: 2px; }
 .uc-big { font-size: 1.45rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: #1a1a1a; }
 .uc-sub { font-size: .74rem; color: #888; }
 /* the flow: sources -> applications */
-.uf-cols { display: flex; justify-content: space-between; font-size: .66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #aaa; margin-bottom: -8px; }
 .uc-flow { position: relative; width: 100%; min-width: 0; }
 .uf-svg { display: block; max-width: 100%; overflow: visible; }
 .uf-l { opacity: .42; transition: opacity .15s; cursor: default; }
@@ -1134,41 +1144,50 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uf-t { font-size: 11.5px; fill: #555; }
 .uf-t .uf-n { font-weight: 600; fill: #333; }
 .uf-t .uf-p { font-weight: 700; fill: #1a1a1a; font-variant-numeric: tabular-nums; }
-.uf-t.is-hi .uf-n { fill: #000; }
 .uc-note { margin: -4px 0 0; font-size: .72rem; color: #8a6a1c; }
+/* tiles, in groups */
+.uc-tgs { display: flex; gap: 12px; }
+.uc-tg { flex: var(--n) 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.uc-tgl { font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #aaa; white-space: nowrap; }
 .uc-tiles { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; }
-.uc-tile { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 10px 4px 9px; border: 1px solid #ececea; border-radius: 8px; background: #fff; transition: border-color .15s, background .15s; cursor: default; }
+.uc-tile { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 10px 3px 9px; border: 1px solid #ececea; border-radius: 8px; background: #fff; transition: border-color .15s, background .15s; cursor: default; min-width: 0; }
 .uc-tile:hover { border-color: var(--c); }
 .uc-tile.is-top { background: color-mix(in srgb, var(--c) 9%, #fff); border-color: color-mix(in srgb, var(--c) 45%, #fff); }
 .uc-ic { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 4px; border-radius: 50%; color: var(--c); background: color-mix(in srgb, var(--c) 13%, #fff); }
 .uc-ic svg { width: 24px !important; height: 24px !important; flex: none; }
 .uc-pc { font-size: 1.15rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: #1a1a1a; }
-.uc-nm { font-size: .74rem; font-weight: 600; color: #444; }
-.uc-wd { font-size: .68rem; color: #999; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.uc-wd b { font-size: .58rem; margin-left: 2px; }
+.uc-nm { font-size: .74rem; font-weight: 600; color: #444; line-height: 1.2; }
+.uc-wd { font-size: .66rem; line-height: 1.25; color: #999; font-variant-numeric: tabular-nums; }
+.uc-wd > span { white-space: nowrap; }
+.uc-wd b { font-size: .56rem; margin-left: 1px; }
 .uc-wd b.up { color: #2f8a52; } .uc-wd b.dn { color: #b4533a; }
 .uc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.uc-right .uc-switch { align-self: flex-end; }
 .uc-right .chart-label { margin: 2px 0 -6px; }
 .uc-chart { position: relative; flex: 1; min-height: 150px; }
 .uc-src { margin: 0; text-align: right; }
-@media (max-width: 600px) {
-  #use-card { padding: .9rem .9rem .7rem; }
+/* the card adapts to its own width: Explore's panel and phones get one column, the flow full width */
+@container (max-width: 980px) {
   .uc-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-  .uc-stats { gap: 20px; }
-  .uc-big { font-size: 1.25rem; }
-  .uc-tiles { gap: 5px; grid-template-columns: repeat(var(--pn), minmax(0, 1fr)); }
+  .uc-sw { justify-content: flex-start; }
+  .uc-chart { flex: none; height: 190px; }
+}
+@container (max-width: 560px) {
+  .uc-tgs { flex-direction: column; gap: 10px; }
+  .uc-tg.is-f .uc-tiles, .uc-tg.is-d .uc-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .uc-tiles { gap: 5px; }
   .uc-tile { padding: 8px 2px 7px; border-radius: 6px; }
   .uc-ic { width: 32px; height: 32px; margin-bottom: 2px; }
   .uc-ic svg { width: 20px !important; height: 20px !important; }
-  .uc-wd b { display: none; }
   .uc-pc { font-size: .98rem; }
   .uc-nm { font-size: .62rem; }
-  .uc-wd { font-size: .58rem; }
-  .uc-chart { min-height: 170px; flex: none; height: 170px; }
-  .uc-right .uc-switch { align-self: flex-start; }
+  .uc-wd { font-size: .56rem; }
+  .uc-wd b { display: none; }
+  .uc-big { font-size: 1.25rem; }
+  .uc-stats { gap: 20px; }
   .uf-t { font-size: 10.5px; }
+  .uc-chart { height: 170px; }
 }
+@media (max-width: 600px) { #use-card { padding: .9rem .9rem .7rem; } }
 .rn-held { display: block; margin-top: 4px; font-size: .72rem; color: #b45309; }
 /* ---- Play on another device (test page) */
 .dv-box .rn-body { display: flex; flex-direction: column; }
@@ -1184,12 +1203,3 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .rn-links .rn-link { align-self: auto; }
 .dv-in-prompt { display: block; margin: 10px auto 0; }
 #device-modal { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px; }
-/* the card adapts to its own width (Explore's panel is narrower than the daily) */
-#use-card { container-type: inline-size; }
-@container (max-width: 860px) {
-  .uc-tiles { grid-template-columns: repeat(var(--pn), minmax(0, 1fr)); }
-  .uc-body { gap: 20px; }
-}
-@container (max-width: 560px) {
-  .uc-body { grid-template-columns: minmax(0, 1fr); }
-}
