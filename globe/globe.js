@@ -2783,8 +2783,9 @@ function ucRender() {
   const chev = '<svg class="uc-chev" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   const big = Math.max(...Object.values(info.years).map(v => v[UC_MODE].reduce((a, b) => Math.max(a, b), 0)));
   const [cu, cf] = U.axis(big);
-  card.innerHTML = '<div class="uc-head">'
-    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="chart-label">Final energy use — ' + y + '</span>' + chev + '</button>'
+  // the section's heading (same as the electricity section's), with the card's controls; the card itself below it
+  card.innerHTML = '<div class="uc-head sec-h">'
+    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="sec-t">Final energy — ' + y + '</span>' + chev + '<span class="sec-d">what reaches users</span></button>'
     + '<div class="uc-ctrls"><div class="uc-switch" role="group" aria-label="Sources or applications">'
     + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
     + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
@@ -2793,7 +2794,7 @@ function ucRender() {
     + '<label class="uc-unit" title="' + U.name + '"><span class="sr-only">Unit</span><select aria-label="Unit">'
     + Object.entries(UC_UNITS).map(([k, u]) => '<option value="' + k + '"' + (k === UC_UNIT ? ' selected' : '') + '>' + u.label + '</option>').join('') + '</select>'
     + '<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></label></div>'
-    + '<div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + ucFeText() + ucElecBridge(info) + '</div></div></div>'
+    + '<div class="uc-box"><div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + ucFeText() + ucElecBridge(info) + '</div></div></div>'
     + '<div class="uc-body"><div class="uc-left">'
     + '<aside class="uc-panel' + (UC_DEF_OPEN ? ' is-open' : '') + '" id="uc-panel" aria-hidden="' + !UC_DEF_OPEN + '">'
     + '<div class="uc-ph"><span>' + (src ? 'Sources' : 'Applications') + '</span><button type="button" class="uc-px" aria-label="Close">×</button></div>'
@@ -2807,7 +2808,7 @@ function ucRender() {
       : gap.length ? '<p class="uc-note">' + gap.map(i => UC_SECTORS[i].k).join(', ') + ' not reported to the UN</p>' : '')
     + '</div><div class="uc-right">' + tiles
     + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ') — ' + Object.keys(info.years).sort()[0] + '–' + y + '</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
-    + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
+    + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p></div>';
   if (typeof ucPlace === 'function') ucPlace();
   ucFlowDraw(); ucPanelFit(); if (typeof ucShadeMark === 'function') ucShadeMark();
   if (!UC_RO && window.ResizeObserver) { UC_RO = new ResizeObserver(() => ucFlowDraw()); }
@@ -2975,12 +2976,24 @@ function deviceLinkInPrompt() {
 //  (Ember, the cards at the top) turns matte dark red with a "!", so a card from another year is never mistaken for the
 //  same moment. Applied to whatever the game draws (base cards, clue cards, final energy), whenever it draws it.
 // ============================================================
-const DATE_SEL = '.chart-label, .stat-label, .ic-title, .uc-eb-in, .uc-eb-cmp';
+const DATE_SEL = '.chart-label, .stat-label, .ic-title, .uc-eb-in, .uc-eb-cmp, .sec-t';
 const YR = '(?:19[89]\\d|20[0-4]\\d)';
 const RE_RANGE_OR_YEAR = new RegExp('\\b(' + YR + ')(?:\\s*[–-]\\s*(' + YR + '))?\\b|long-term avg', 'g');   // a climate average is a date too
 function markDates() {
   const app = document.getElementById('app'); if (!app || typeof target === 'undefined' || !target) return;
   const info = ALL_DATA && ALL_DATA[target.name], ref = info && String(info.latestYear);
+  // two sections, each with a heading: electricity (the cards from Ember) and final energy (its own card)
+  const bc = document.getElementById('balance-card');
+  if (bc && ref) {
+    let h = document.getElementById('sec-elec');
+    if (!h || h.nextElementSibling !== bc) {
+      if (h) h.remove();
+      bc.insertAdjacentHTML('beforebegin', '<div class="sec-h" id="sec-elec"><span class="sec-t">Electricity — ' + ref + '</span><span class="sec-d">generated, traded and mixed</span></div>');
+    } else if (h.dataset.y !== ref) {
+      h.querySelector('.sec-t').textContent = 'Electricity — ' + ref;
+    }
+    document.getElementById('sec-elec').dataset.y = ref;
+  }
   // every card carries its year: the stat card's labels, the chart over time its range ("2000–2025")
   if (info && ref) {
     const first = Object.keys(info.years).sort()[0];

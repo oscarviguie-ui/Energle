@@ -1112,7 +1112,8 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .ev-note { margin: 6px 0 0; font-size: .74rem; color: #8a6a1c; }
 
 /* ---- Final energy use (test page): a card under the charts */
-#use-card { container-type: inline-size; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: .9rem 1.1rem .7rem; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+#use-card { container-type: inline-size; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; min-width: 0; margin-top: 14px; }
+.uc-box { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: .9rem 1.1rem .7rem; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .uc-head { display: flex; align-items: center; gap: 10px 8px; flex-wrap: wrap; }
 .uc-title { margin-right: auto; }
 .uc-ctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1123,8 +1124,9 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-unit .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* the title opens the definition of final energy */
 .uc-title { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; font: inherit; color: #888; cursor: pointer; }
-.uc-title .chart-label { margin: 0; transition: color .15s; }   /* same style as every other card title */
-.uc-title:hover .chart-label, .uc-title[aria-expanded="true"] .chart-label { color: #1a1a1a; }
+.uc-title .sec-t { transition: opacity .15s; }
+.uc-title:hover .sec-t { opacity: .75; }
+.uc-title { color: #1a1a1a; }
 .uc-chev { transition: transform .3s ease; }
 .uc-title[aria-expanded="true"] .uc-chev { transform: rotate(180deg); color: #1a1a1a; }
 .uc-fe { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: -12px; transition: grid-template-rows .35s ease, opacity .3s ease, margin-top .35s ease; }
@@ -1231,7 +1233,7 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-switch button { padding: 4px 10px; }
   .uc-defs { padding: 5px 9px; }
 }
-@media (max-width: 600px) { #use-card { padding: .9rem .9rem .7rem; } }
+@media (max-width: 600px) { .uc-box { padding: .9rem .9rem .7rem; } }
 .rn-held { display: block; margin-top: 4px; font-size: .72rem; color: #b45309; }
 /* ---- Play on another device (test page) */
 .dv-box .rn-body { display: flex; flex-direction: column; }
@@ -1349,3 +1351,9 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 /* Explore: tiles colour the map */
 body.at-globe.ex-test #use-card .uc-tile { cursor: pointer; }
 body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-shadow: 0 0 0 2px var(--c) inset; }
+/* the page's two sections, electricity and final energy: one heading each, same style, a rule beneath */
+.sec-h { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; padding: 0 2px 8px; border-bottom: 2px solid #1a1a1a; }
+.sec-t { font-size: .92rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #1a1a1a; }
+.sec-d { font-size: .8rem; color: #8a8a85; font-weight: 400; letter-spacing: 0; text-transform: none; }
+.uc-title { gap: 8px; }
+#sec-elec { margin-bottom: 2px; }
