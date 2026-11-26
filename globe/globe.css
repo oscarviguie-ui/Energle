@@ -1122,9 +1122,9 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-unit svg { position: absolute; right: 10px; pointer-events: none; color: #666; }
 .uc-unit .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 /* the title opens the definition of final energy */
-.uc-title { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; font: inherit; color: #888; cursor: pointer; }
-.uc-title .stat-label { margin: 0; border-bottom: 1px dotted #c4c4bf; transition: color .15s, border-color .15s; }
-.uc-title:hover .stat-label, .uc-title[aria-expanded="true"] .stat-label { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+.uc-title { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: none; font: inherit; color: #888; cursor: pointer; }
+.uc-title .chart-label { margin: 0; transition: color .15s; }   /* same style as every other card title */
+.uc-title:hover .chart-label, .uc-title[aria-expanded="true"] .chart-label { color: #1a1a1a; }
 .uc-chev { transition: transform .3s ease; }
 .uc-title[aria-expanded="true"] .uc-chev { transform: rotate(180deg); color: #1a1a1a; }
 .uc-fe { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: -12px; transition: grid-template-rows .35s ease, opacity .3s ease, margin-top .35s ease; }

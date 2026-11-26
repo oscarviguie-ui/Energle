@@ -2711,7 +2711,7 @@ function ucRender() {
   const big = Math.max(...Object.values(info.years).map(v => v[UC_MODE].reduce((a, b) => Math.max(a, b), 0)));
   const [cu, cf] = U.axis(big);
   card.innerHTML = '<div class="uc-head">'
-    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="stat-label">Final energy use — ' + y + '</span>' + chev + '</button>'
+    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="chart-label">Final energy use (' + y + ')</span>' + chev + '</button>'
     + '<div class="uc-ctrls"><div class="uc-switch" role="group" aria-label="Sources or applications">'
     + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
     + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
