@@ -1196,7 +1196,10 @@ function showNoticeWide() {
   // the featured update: the Clue Shop (its own picture) or Explore (the map demo)
   const cell = c => '<span class="battery-cell ' + c + '"></span>';
   const feature = feNews
-    ? '<div class="nx-fe" id="nx-fe" aria-hidden="true"><span class="nx-fe-cap">All the world’s final energy · electricity is 21%</span><div class="nx-fe-flow"></div></div>'
+    ? '<div class="nx-demo fe-demo" id="fe-demo"><div class="nx-stage fe-stage"><div class="fe-vis" id="fe-vis" aria-hidden="true"></div>'
+      + '<button type="button" class="nx-arr nx-prev" aria-label="Previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>'
+      + '<button type="button" class="nx-arr nx-next" aria-label="Next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button></div>'
+      + '<div class="fe-foot"><p class="fe-cap" id="fe-cap" aria-live="polite"></p><div class="fe-dots" id="fe-dots" role="tablist" aria-label="Demo steps"></div></div></div>'
     : shopNews
     ? '<div class="nx-shop" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="nx-shop-sign" style="--awn:#f5c842;color:#1a1a1a"')
       + '<span class="nx-shop-bat"><span class="battery si-bat"><span class="battery-body">' + cell('si-card') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + '</span><span class="battery-cap"></span></span><em>a card before your first guess</em></span>'
@@ -1233,13 +1236,7 @@ function showNoticeWide() {
   const cta = document.getElementById('nx-cta'); if (cta) cta.addEventListener('click', () => { close(); switchMode('practice'); });
   document.addEventListener('keydown', onKey);
   if (!shopNews && !feNews) demo = nxDemoStart(modal.querySelector('.nx-feature'));
-  if (feNews) ucLoad().then(() => {   // the picture: every country's flow added up
-    const box = modal.querySelector('.nx-fe-flow'); if (!box) return;
-    const m = [0, 1, 2, 3, 4].map(() => [0, 0, 0, 0, 0, 0]);
-    Object.values(UC_DATA.by).forEach(v => (v.flow || []).forEach((r, i) => r.forEach((x, j) => { m[i][j] += x || 0; })));
-    box.innerHTML = ucFlowSVG(m, Math.max(300, Math.round(box.clientWidth)), Math.max(230, Math.round(box.clientHeight)));
-    box.classList.add('is-in');
-  }).catch(() => {});
+  if (feNews) Promise.all([ucLoad(), nxMapSVG()]).then(([, svg]) => feDemoStart(modal.querySelector('#fe-demo'), svg)).catch(() => {});
   const fg = document.getElementById('nx-fe-go'); if (fg) fg.addEventListener('click', () => { close(); const c = document.getElementById('use-card'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   const tl = document.getElementById('nx-tour'); if (tl) tl.addEventListener('click', () => { close(); showExploreTour(true); });
   const so = document.getElementById('nx-shop'); if (so) so.addEventListener('click', () => { close(); const b = document.getElementById('shop-btn'); if (b) b.click(); });
@@ -2592,7 +2589,7 @@ function ucWorldPop() {   // people in all the countries the card covers
 function ucIcon(sec) { return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + sec.ic + '</svg>'; }
 // The flow: sources on the left, applications on the right, each band as wide as the TWh going from one to the other.
 function ucFlowSVG(m, W, Hbox) {
-  const H = Math.max(W < 420 ? 230 : 250, Math.min(460, Hbox || (W < 420 ? 250 : 290))), NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 108 : 116, RW = W < 420 ? 92 : 118;
+  const H = Math.max(W < 420 ? 230 : 250, Math.min(460, Hbox || (W < 420 ? 250 : 290))), NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 104 : 116, RW = W < 420 ? 104 : 118;
   const x0 = LW, x1 = W - RW - NW;
   const sv = UC_SOURCES.map((_, j) => m.reduce((t, r) => t + r[j], 0)), av = m.map(r => r.reduce((t, v) => t + v, 0));
   const tot = sv.reduce((t, v) => t + v, 0) || 1;
@@ -3144,3 +3141,81 @@ if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoade
   // leaving Explore or coming back: the card goes where that page wants it
   new MutationObserver(() => { try { ucPlace(); } catch (e) {} }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 });
+
+// ============================================================
+//  WHAT'S NEW: THE FINAL ENERGY DEMO. Five steps drawn from the data itself (the arrows, the dots, a swipe or the keyboard;
+//  it moves on by itself unless the mouse is over it): the world's flow; a country against the world (Iceland); a change
+//  over time (China); the map coloured by a tile (Explore); groups added up (Explore).
+// ============================================================
+function feDemoStart(root, mapSvg) {
+  if (!root || !UC_DATA) return;
+  const vis = root.querySelector('#fe-vis'), cap = root.querySelector('#fe-cap'), dots = root.querySelector('#fe-dots');
+  const by = UC_DATA.by, latestS = v => v.years[String(v.latestYear)].s, pct = x => Math.round(x * 100) + '%';
+  const share = v => { const s = latestS(v), t = s.reduce((a, b) => a + b, 0); return s.map(x => t ? x / t : 0); };
+  // the world: every country's flow added up
+  const W = [0, 1, 2, 3, 4].map(() => [0, 0, 0, 0, 0, 0]);
+  Object.values(by).forEach(v => (v.flow || []).forEach((r, i) => r.forEach((x, j) => { W[i][j] += x || 0; })));
+  const wS = [0, 1, 2, 3, 4, 5].map(j => W.reduce((a, r) => a + r[j], 0)), wT = wS.reduce((a, b) => a + b, 0), wSh = wS.map(x => x / wT);
+  const ice = by['Iceland'], iSh = ice ? share(ice) : null;
+  const ch = by['China'];
+  const tile = (src, v, w) => '<div class="uc-tile fe-tile" style="--c:' + src.c + '"><span class="uc-ic">' + ucIcon(src) + '</span><span class="uc-pc">' + ucPct(v) + '</span>'
+    + '<span class="uc-nm">' + src.k + '</span><span class="uc-wd"><span>World avg</span> <span>' + ucPct(w) + '</span></span></div>';
+  // China over time: every source, coal and electricity picked out
+  const chinaSVG = (Wd, Hd) => {
+    const ys = Object.keys(ch.years).sort(), x0 = 34, x1 = Wd - 86, y0 = 10, y1 = Hd - 22;
+    const max = Math.max(...ys.flatMap(y => ch.years[y].s)), X = i => x0 + (x1 - x0) * i / (ys.length - 1), Y = v => y1 - (y1 - y0) * v / max;
+    const line = (j, w, o) => '<polyline fill="none" stroke="' + UC_SOURCES[j].c + '" stroke-width="' + w + '" opacity="' + o + '" stroke-linejoin="round" points="' + ys.map((y, i) => X(i).toFixed(1) + ',' + Y(ch.years[y].s[j]).toFixed(1)).join(' ') + '"/>';
+    const last = j => Y(ch.years[ys[ys.length - 1]].s[j]);
+    let ticks = ''; for (let k = 0; k <= 4; k++) { const v = max * k / 4, yy = Y(v); ticks += '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + yy + '" y2="' + yy + '" stroke="#efeeea"/><text x="' + (x0 - 6) + '" y="' + (yy + 3) + '" text-anchor="end" class="fe-ax">' + ucNum(v / 1000, v ? 1 : 0) + '</text>'; }
+    const yl = [0, Math.floor((ys.length - 1) / 2), ys.length - 1].map(i => '<text x="' + X(i) + '" y="' + (Hd - 6) + '" text-anchor="middle" class="fe-ax">' + ys[i] + '</text>').join('');
+    return '<svg viewBox="0 0 ' + Wd + ' ' + Hd + '" width="' + Wd + '" height="' + Hd + '" class="fe-chart">' + ticks + yl
+      + [0, 1, 4, 5].map(j => line(j, 1.6, .35)).join('') + line(2, 2.8, 1) + line(3, 2.8, 1)
+      + '<text x="' + (x1 + 6) + '" y="' + (last(3) + 4) + '" class="fe-lb" fill="' + UC_SOURCES[3].c + '">Electricity</text>'
+      + '<text x="' + (x1 + 6) + '" y="' + (last(2) + 4) + '" class="fe-lb" fill="' + UC_SOURCES[2].c + '">Coal</text>'
+      + '<text x="' + x0 + '" y="' + (y0 - 1) + '" class="fe-ax" text-anchor="start">PWh</text></svg>';
+  };
+  const cross = ch && Object.keys(ch.years).sort().find(y => ch.years[y].s[3] > ch.years[y].s[2]);
+  // groups: World, Europe, Africa, Asia as 100% bars by source
+  const grp = ['all', 'europe', 'africa', 'asiaonly', 'opec'].map(rid => { try { const a = globeAggregate(rid), inf = ucInfo({ name: a.name }); return inf && { name: rid === 'all' ? 'World' : a.name, sh: share(inf) }; } catch (e) { return null; } }).filter(Boolean);
+  const grpHTML = () => '<div class="fe-grp">' + grp.map(g => '<div class="fe-grow"><span class="fe-gn">' + escHtml(g.name) + '</span><span class="fe-gbar">'
+    + UC_SRC_ORDER.map(j => g.sh[j] > 0.004 ? '<span style="flex:' + g.sh[j].toFixed(4) + ' 0 0;background:' + UC_SOURCES[j].c + '" title="' + UC_SOURCES[j].k + ' ' + pct(g.sh[j]) + '">' + (g.sh[j] >= 0.09 ? pct(g.sh[j]) : '') + '</span>' : '').join('') + '</span></div>').join('')
+    + '<div class="fe-gkey">' + UC_SRC_ORDER.map(j => '<span><i style="background:' + UC_SOURCES[j].c + '"></i>' + UC_SOURCES[j].k + '</span>').join('') + '</div></div>';
+  const af = grp.find(g => g.name === 'Africa'), eu = grp.find(g => g.name === 'Europe');
+  const steps = [
+    { cap: 'All of it, not just electricity: the world’s final energy, from what it uses to what it is for. Electricity is ' + pct(wSh[3]) + ' of it.',
+      draw: (w, h) => ucFlowSVG(W, w, h) },
+    iSh && { cap: 'Every country against the world. Iceland runs ' + pct(iSh[3]) + ' on electricity, and ' + pct(iSh[5]) + ' of its energy is geothermal heat piped into buildings.',
+      draw: () => '<div class="fe-tiles">' + UC_SRC_ORDER.map(j => tile(UC_SOURCES[j], iSh[j], wSh[j])).join('') + '</div>' },
+    ch && { cap: 'Every year since 2000. In China, electricity overtook coal' + (cross ? ' in ' + cross : '') + ': ' + pct(share({ years: ch.years, latestYear: 2000 })[3]) + ' of final energy in 2000, ' + pct(share(ch)[3]) + ' in ' + ch.latestYear + '.',
+      draw: (w, h) => chinaSVG(w, h) },
+    mapSvg && { cap: 'In Explore, a click on any tile colours the map. Here: electricity’s share of each country’s final energy.',
+      draw: () => mapSvg, after: box => {
+        const m = new Map(Object.values(by).filter(v => v.iso3 && !v.onlyElectricity).map(v => [v.iso3, share(v)[3]])), mx = Math.max(...m.values());
+        box.querySelectorAll('path[data-i]').forEach(p => { const v = m.get(p.dataset.i); if (v != null) p.style.fill = nxMix(UC_SOURCES[3].c, Math.min(1, v / mx)); });
+      } },
+    grp.length > 1 && { cap: 'Add up any region, bloc or trait. Biomass is ' + (af ? pct(af.sh[4]) : '') + ' of Africa’s final energy, ' + (eu ? pct(eu.sh[4]) : '') + ' of Europe’s; district heat ' + (eu ? pct(eu.sh[5]) : '') + ' of Europe’s.',
+      draw: () => grpHTML() },
+  ].filter(Boolean);
+  let i = 0, timer = null;
+  dots.innerHTML = steps.map((st, k) => '<button type="button" class="fe-dot" role="tab" aria-label="Step ' + (k + 1) + '" data-k="' + k + '"></button>').join('');
+  const show = k => {
+    i = k; const st = steps[k], w = Math.round(vis.clientWidth) || 560, h = Math.round(vis.clientHeight) || 250;
+    vis.classList.remove('is-in'); vis.innerHTML = st.draw(w, h); if (st.after) st.after(vis);
+    requestAnimationFrame(() => vis.classList.add('is-in'));
+    cap.textContent = st.cap;
+    dots.querySelectorAll('.fe-dot').forEach((d, j) => d.setAttribute('aria-selected', String(j === k)));
+  };
+  const play = () => { clearInterval(timer); if (!REDUCED_MOTION) timer = setInterval(() => { if (!document.body.contains(root)) return clearInterval(timer); show((i + 1) % steps.length); }, 5200); };
+  const go = d => { show((i + d + steps.length) % steps.length); play(); };
+  dots.addEventListener('click', e => { const d = e.target.closest('.fe-dot'); if (d) { show(+d.dataset.k); play(); } });
+  root.querySelector('.nx-prev').addEventListener('click', () => go(-1));
+  root.querySelector('.nx-next').addEventListener('click', () => go(1));
+  let sx = null;
+  root.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+  root.addEventListener('touchend', e => { if (sx == null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1); }, { passive: true });
+  root.addEventListener('mouseenter', () => clearInterval(timer)); root.addEventListener('mouseleave', play);
+  document.addEventListener('keydown', function onK(e) { if (!document.body.contains(root)) return document.removeEventListener('keydown', onK); if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1); });
+  // the caption keeps the height of the longest step, so the window doesn't jump
+  let hc = 0; steps.forEach(st => { cap.textContent = st.cap; hc = Math.max(hc, cap.offsetHeight); }); cap.style.minHeight = hc + 'px';
+  show(0); play();
+}
