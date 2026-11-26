@@ -1123,13 +1123,19 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-stat { display: flex; flex-direction: column; gap: 2px; }
 .uc-big { font-size: 1.45rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: #1a1a1a; }
 .uc-sub { font-size: .74rem; color: #888; }
-.uc-bars { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 6px 10px; }
-.uc-bl { font-size: .74rem; font-weight: 600; color: #555; white-space: nowrap; max-width: 7.5rem; overflow: hidden; text-overflow: ellipsis; }
-.uc-bar { display: flex; gap: 2px; border-radius: 4px; overflow: hidden; }
-.uc-bar.is-c { height: 18px; }
-.uc-bar.is-w { height: 8px; opacity: .55; }
-.uc-bar span { min-width: 2px; transition: filter .15s; }
-.uc-bar span:hover { filter: brightness(1.12); }
+/* the flow: sources -> applications */
+.uf-cols { display: flex; justify-content: space-between; font-size: .66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #aaa; margin-bottom: -8px; }
+.uc-flow { position: relative; width: 100%; min-width: 0; }
+.uf-svg { display: block; max-width: 100%; overflow: visible; }
+.uf-l { opacity: .42; transition: opacity .15s; cursor: default; }
+.uf-l:hover { opacity: .8; }
+#use-card.uf-on .uf-l { opacity: .1; }
+#use-card.uf-on .uf-l.is-hi { opacity: .82; }
+.uf-t { font-size: 11.5px; fill: #555; }
+.uf-t .uf-n { font-weight: 600; fill: #333; }
+.uf-t .uf-p { font-weight: 700; fill: #1a1a1a; font-variant-numeric: tabular-nums; }
+.uf-t.is-hi .uf-n { fill: #000; }
+.uc-note { margin: -4px 0 0; font-size: .72rem; color: #8a6a1c; }
 .uc-tiles { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 8px; }
 .uc-tile { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; padding: 10px 4px 9px; border: 1px solid #ececea; border-radius: 8px; background: #fff; transition: border-color .15s, background .15s; cursor: default; }
 .uc-tile:hover { border-color: var(--c); }
@@ -1141,9 +1147,10 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-wd { font-size: .68rem; color: #999; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .uc-wd b { font-size: .58rem; margin-left: 2px; }
 .uc-wd b.up { color: #2f8a52; } .uc-wd b.dn { color: #b4533a; }
-.uc-right { display: flex; flex-direction: column; min-width: 0; }
-.uc-right .chart-label { margin-bottom: .4rem; }
-.uc-chart { position: relative; flex: 1; min-height: 200px; }
+.uc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.uc-right .uc-switch { align-self: flex-end; }
+.uc-right .chart-label { margin: 2px 0 -6px; }
+.uc-chart { position: relative; flex: 1; min-height: 150px; }
 .uc-src { margin: 0; text-align: right; }
 @media (max-width: 600px) {
   #use-card { padding: .9rem .9rem .7rem; }
@@ -1158,7 +1165,9 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-pc { font-size: .98rem; }
   .uc-nm { font-size: .62rem; }
   .uc-wd { font-size: .58rem; }
-  .uc-chart { min-height: 180px; }
+  .uc-chart { min-height: 170px; flex: none; height: 170px; }
+  .uc-right .uc-switch { align-self: flex-start; }
+  .uf-t { font-size: 10.5px; }
 }
 .rn-held { display: block; margin-top: 4px; font-size: .72rem; color: #b45309; }
 /* ---- Play on another device (test page) */
@@ -1175,3 +1184,12 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .rn-links .rn-link { align-self: auto; }
 .dv-in-prompt { display: block; margin: 10px auto 0; }
 #device-modal { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px; }
+/* the card adapts to its own width (Explore's panel is narrower than the daily) */
+#use-card { container-type: inline-size; }
+@container (max-width: 860px) {
+  .uc-tiles { grid-template-columns: repeat(var(--pn), minmax(0, 1fr)); }
+  .uc-body { gap: 20px; }
+}
+@container (max-width: 560px) {
+  .uc-body { grid-template-columns: minmax(0, 1fr); }
+}

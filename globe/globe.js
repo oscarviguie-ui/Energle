@@ -2494,55 +2494,121 @@ function ucWorldPop() {   // people in all the countries the card covers
   return UC_WORLD_POP;
 }
 function ucIcon(sec) { return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + sec.ic + '</svg>'; }
+// The flow: sources on the left, applications on the right, each band as wide as the TWh going from one to the other.
+function ucFlowSVG(m, W) {
+  const H = W < 420 ? 250 : 290, NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 82 : 104, RW = W < 420 ? 92 : 118;
+  const x0 = LW, x1 = W - RW - NW;
+  const sv = UC_SOURCES.map((_, j) => m.reduce((t, r) => t + r[j], 0)), av = m.map(r => r.reduce((t, v) => t + v, 0));
+  const tot = sv.reduce((t, v) => t + v, 0) || 1;
+  const place = vals => {            // node heights (a sliver for any used part), gaps between used parts only
+    const used = vals.filter(v => v > 0).length, room = H - GAP * Math.max(0, used - 1);
+    const hs = vals.map(v => v > 0 ? Math.max(2, v / tot * room) : 0), k = room / (hs.reduce((t, h) => t + h, 0) || 1);
+    let y = 0; return hs.map(h => { const n = { y, h: h * k }; if (h > 0) y += h * k + GAP; return n; });
+  };
+  const S = place(sv), A = place(av), sOff = S.map(n => n.y), aOff = A.map(n => n.y);
+  const pct = v => ucPct(v / tot), xm = (x0 + NW + x1) / 2;
+  let links = '';
+  UC_SOURCES.forEach((src, j) => m.forEach((row, i) => {
+    const v = row[j]; if (!(v > 0)) return;
+    const hs = sv[j] ? v / sv[j] * S[j].h : 0, ha = av[i] ? v / av[i] * A[i].h : 0;
+    const ya = sOff[j], yb = aOff[i]; sOff[j] += hs; aOff[i] += ha;
+    const L = x0 + NW, R = x1;
+    links += '<path class="uf-l" data-s="' + j + '" data-a="' + i + '" fill="' + src.c + '" d="M' + L + ',' + ya.toFixed(1) + 'C' + xm + ',' + ya.toFixed(1) + ' ' + xm + ',' + yb.toFixed(1) + ' ' + R + ',' + yb.toFixed(1)
+      + 'L' + R + ',' + (yb + ha).toFixed(1) + 'C' + xm + ',' + (yb + ha).toFixed(1) + ' ' + xm + ',' + (ya + hs).toFixed(1) + ' ' + L + ',' + (ya + hs).toFixed(1) + 'Z">'
+      + '<title>' + src.k + ' → ' + UC_SECTORS[i].k + ': ' + ucFmt(v) + ' (' + ucPct(v / sv[j]) + ' of ' + src.k.toLowerCase() + ', ' + ucPct(v / av[i]) + ' of ' + UC_SECTORS[i].k.toLowerCase() + ')</title></path>';
+  }));
+  const labels = (nodes, vals, list, side) => {     // labels beside the nodes, nudged apart so none overlap
+    const items = nodes.map((n, i) => ({ i, c: n.y + n.h / 2, n, v: vals[i] })).filter(o => o.v > 0);
+    const MIN = 15; for (let k = 1; k < items.length; k++) items[k].c = Math.max(items[k].c, items[k - 1].c + MIN);
+    const over = items.length ? items[items.length - 1].c - (H - 6) : 0;
+    if (over > 0) { items[items.length - 1].c -= over; for (let k = items.length - 2; k >= 0; k--) items[k].c = Math.min(items[k].c, items[k + 1].c - MIN); }
+    return items.map(o => {
+      const x = side === 'l' ? x0 - 7 : x1 + NW + 7, anchor = side === 'l' ? 'end' : 'start';
+      return '<text class="uf-t" x="' + x + '" y="' + (o.c + 4).toFixed(1) + '" text-anchor="' + anchor + '" data-' + side + '="' + o.i + '">'
+        + (side === 'l' ? '<tspan class="uf-n">' + list[o.i].k + '</tspan> <tspan class="uf-p">' + pct(o.v) + '</tspan>'
+                        : '<tspan class="uf-p">' + pct(o.v) + '</tspan> <tspan class="uf-n">' + list[o.i].k + '</tspan>') + '</text>';
+    }).join('');
+  };
+  const nodes = (ns, vals, list, x, side) => ns.map((n, i) => vals[i] > 0
+    ? '<rect class="uf-node" data-' + side + '="' + i + '" x="' + x + '" y="' + n.y.toFixed(1) + '" width="' + NW + '" height="' + Math.max(1, n.h).toFixed(1) + '" rx="2" fill="' + list[i].c + '"><title>' + list[i].k + ': ' + ucFmt(vals[i]) + '</title></rect>' : '').join('');
+  return '<svg class="uf-svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="Where each source of final energy goes">'
+    + '<g class="uf-links">' + links + '</g>' + nodes(S, sv, UC_SOURCES, x0, 'l') + nodes(A, av, UC_SECTORS, x1, 'r')
+    + labels(S, sv, UC_SOURCES, 'l') + labels(A, av, UC_SECTORS, 'r') + '</svg>';
+}
+function ucFlowDraw() {
+  const box = document.getElementById('uc-flow'), info = target && UC_DATA && UC_DATA.by[target.name];
+  if (!box || !info || !info.flow) return;
+  const W = Math.round(box.clientWidth); if (!W || W === +box.dataset.w) return;
+  box.dataset.w = W; box.innerHTML = ucFlowSVG(info.flow, W);
+}
+function ucPick(kind, i) {   // light up one source or application: its bands in the flow, its line in the chart
+  const card = document.getElementById('use-card'); if (!card) return;
+  card.classList.toggle('uf-on', i != null);
+  card.querySelectorAll('.uf-l').forEach(p => p.classList.toggle('is-hi', i != null && p.dataset[kind] === String(i)));
+  card.querySelectorAll('[data-l],[data-r]').forEach(n => n.classList.toggle('is-hi', i != null && ((kind === 's' && n.dataset.l === String(i)) || (kind === 'a' && n.dataset.r === String(i)))));
+  const mine = (UC_MODE === 's') === (kind === 's');
+  if (UC_CHART) { UC_CHART.data.datasets.forEach((d, j) => { d.borderColor = i == null || !mine || i === j ? d._c : d._c + '30'; d.borderWidth = mine && i === j ? 3 : 2; }); UC_CHART.update('none'); }
+}
+let UC_RO = null;
 function ucRender() {
   const legend = document.getElementById('legend-shared');
   let card = document.getElementById('use-card');
   const info = target && UC_DATA && UC_DATA.by[target.name];
   if (!legend || !info) { if (card) card.remove(); if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; } return; }
   if (!card) {
-    legend.insertAdjacentHTML('afterend', '<section id="use-card" aria-label="How the energy is used"></section>');
+    legend.insertAdjacentHTML('afterend', '<section id="use-card" aria-label="Final energy use"></section>');
     card = document.getElementById('use-card');
     card.addEventListener('click', e => { const b = e.target.closest('[data-uc]'); if (b && b.dataset.uc !== UC_MODE) { UC_MODE = b.dataset.uc; ucRender(); } });
-    // pointing at a sector picks out its line in the chart
-    const pick = i => { if (!UC_CHART) return; UC_CHART.data.datasets.forEach((d, j) => { d.borderColor = i == null || i === j ? d._c : d._c + '30'; d.borderWidth = i === j ? 3 : 2; }); UC_CHART.update('none'); };
-    card.addEventListener('mouseover', e => { const t = e.target.closest('[data-si]'); pick(t ? +t.dataset.si : null); });
-    card.addEventListener('mouseleave', () => pick(null));
+    card.addEventListener('mouseover', e => {
+      const t = e.target.closest('[data-si],[data-l],[data-r],.uf-l');
+      if (!t) return ucPick(null);
+      if (t.dataset.si != null) return ucPick(UC_MODE === 's' ? 's' : 'a', +t.dataset.si);
+      if (t.dataset.l != null) return ucPick('s', +t.dataset.l);
+      if (t.dataset.r != null) return ucPick('a', +t.dataset.r);
+      ucPick('s', +t.dataset.s);
+    });
+    card.addEventListener('mouseleave', () => ucPick(null));
   }
   const src = UC_MODE === 's', y = String(info.latestYear), d = info.years[y][UC_MODE];
   const secs = (src ? UC_SOURCES : UC_SECTORS).slice(0, d.length), total = d.reduce((a, b) => a + b, 0);
   const wy = UC_DATA.world[y] || UC_DATA.world[Object.keys(UC_DATA.world).sort().pop()];
   const w = wy[UC_MODE], wt = w.reduce((a, b) => a + b, 0);
   const pop = ucPop(target.name), per = pop ? total * 1e6 / pop : 0, wper = ucWorldPop() ? wt * 1e6 / ucWorldPop() : 0;
-  const gap = src ? [] : (info.notReported || []);
+  const gap = info.notReported || [], gapHere = src ? [] : gap;
   const sh = d.map(v => total ? v / total : 0), ws = w.map(v => wt ? v / wt : 0);
   const top = sh.indexOf(Math.max(...sh));
   const fmtPer = v => (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' MWh';
-  const bar = (arr, cls) => '<div class="uc-bar ' + cls + '">' + secs.map((s, i) => arr[i] > 0
-    ? '<span data-si="' + i + '" style="flex:' + arr[i].toFixed(4) + ' 0 0;background:' + s.c + '" title="' + s.k + ': ' + ucPct(arr[i]) + '"></span>' : '').join('') + '</div>';
   const tiles = secs.map((s, i) => {
-    const nr = gap.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
+    const nr = gapHere.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
     return '<div class="uc-tile' + (i === top ? ' is-top' : '') + '" data-si="' + i + '" style="--c:' + s.c + '" title="' + s.tip + '">'
       + '<span class="uc-ic">' + ucIcon(s) + '</span>'
       + '<span class="uc-pc">' + (nr ? '—' : ucPct(sh[i])) + '</span>'
       + '<span class="uc-nm">' + s.k + '</span>'
       + '<span class="uc-wd">' + (nr ? 'not reported' : 'World ' + ucPct(ws[i]) + (Math.abs(diff) >= 3 ? ' <b class="' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲' : '▼') + '</b>' : '')) + '</span></div>';
   }).join('');
-  card.innerHTML = '<div class="uc-head"><span class="stat-label">Final energy use — ' + y + '</span>'
-    + '<div class="uc-switch" role="group" aria-label="Sources or applications">'
-    + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
-    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div></div>'
+  card.innerHTML = '<div class="uc-head"><span class="stat-label">Final energy use — ' + y + '</span></div>'
     + '<div class="uc-body"><div class="uc-left">'
     + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">final energy used</span></div>'
     + (per ? '<div class="uc-stat"><span class="uc-big">' + fmtPer(per) + '</span><span class="uc-sub">per person · World ' + fmtPer(wper) + '</span></div>' : '') + '</div>'
-    + '<div class="uc-bars"><span class="uc-bl">' + escHtml(target.name) + '</span>' + bar(sh, 'is-c') + '<span class="uc-bl">World</span>' + bar(ws, 'is-w') + '</div>'
-    + '<div class="uc-tiles" style="--n:' + secs.length + ';--pn:' + (secs.length > 5 ? 3 : secs.length) + '">' + tiles + '</div></div>'
-    + '<div class="uc-right"><p class="chart-label">Final energy by ' + (src ? 'source' : 'application') + ' (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
+    + '<div class="uf-cols"><span>Sources</span><span>Applications</span></div>'
+    + '<div class="uc-flow" id="uc-flow"></div>'
+    + (info.onlyElectricity ? '<p class="uc-note">Only electricity use is reported to the UN here: fuels such as petrol and gas are missing.</p>'
+      : gap.length ? '<p class="uc-note">' + gap.map(i => UC_SECTORS[i].k).join(', ') + ' not reported to the UN</p>' : '')
+    + '</div><div class="uc-right">'
+    + '<div class="uc-switch" role="group" aria-label="Sources or applications">'
+    + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
+    + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
+    + '<div class="uc-tiles" style="--n:' + secs.length + ';--pn:' + (secs.length > 5 ? 3 : secs.length) + '">' + tiles + '</div>'
+    + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
+  ucFlowDraw();
+  if (!UC_RO && window.ResizeObserver) { UC_RO = new ResizeObserver(() => ucFlowDraw()); }
+  if (UC_RO) { UC_RO.disconnect(); UC_RO.observe(document.getElementById('uc-flow')); }
   if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; }
   const ys = Object.keys(info.years).sort(), cv = document.getElementById('uc-canvas');
   if (window.Chart && cv) UC_CHART = new Chart(cv, {
     type: 'line',
-    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, _c: s.c, data: ys.map(yy => gap.includes(i) ? null : info.years[yy][UC_MODE][i]), borderColor: s.c, backgroundColor: s.c,
+    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, _c: s.c, data: ys.map(yy => gapHere.includes(i) ? null : info.years[yy][UC_MODE][i]), borderColor: s.c, backgroundColor: s.c,
       borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, tension: .25 })) },
     options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucFmt(c.parsed.y) } } },

@@ -4,6 +4,7 @@ For each country and year, TWh by sector, two ways:
   e : applications, what the energy is used for  [industry, transport, homes, services & other, feedstocks]
   s : sources, what is used                       [oil, natural gas, coal, electricity, biomass & waste, heat]
   Both add up to the same total: feedstocks count under the fuel they are made of.
+  flow: for the latest year, TWh from each source to each application (rows: applications, columns: sources).
   - industry  = manufacturing, construction, mining (UN 121)
   - transport = road, rail, domestic flights and shipping, pipelines (122; international bunkers are not counted)
   - homes     = households (1231)
@@ -11,7 +12,8 @@ For each country and year, TWh by sector, two ways:
   - feedstocks = fuels used as raw material, not burnt: plastics, fertiliser, asphalt, lubricants (non-energy use, 11)
 Sub-item codes that the UN also reports as their own total are counted once (hard coal, brown coal, "of which" biofuels).
 latestYear is the last year with a full report (at least two of industry, transport and homes, and no sudden drop against
-the year before). notReported lists a main sector a country leaves out (Puerto Rico: transport; Timor-Leste: industry).
+the year before, and no source that mattered the year before gone to zero). onlyElectricity marks a country that reports
+only its electricity use (Puerto Rico). notReported lists a main sector a country leaves out (Puerto Rico: transport; Timor-Leste: industry).
 """
 import json, sys
 try:
@@ -46,6 +48,20 @@ def by_source(trs):
                 out[i] += v / 3600
     return [round(x, 2) for x in out]
 
+def flow(trs):
+    """TWh from each source to each application: rows = applications (GROUPS), columns = sources."""
+    m = [[0.0] * 6 for _ in GROUPS]
+    for a, g in enumerate(GROUPS):
+        for t in g:
+            cs = trs.get(t, {})
+            for c, v in cs.items():
+                if c in SKIP or (c in AGG and any(x in cs for x in AGG[c])):
+                    continue
+                i = source_of(c)
+                if i is not None:
+                    m[a][i] += v / 3600
+    return [[round(x, 2) for x in row] for row in m]
+
 def twh(cs):
     t = 0.0
     for c, v in cs.items():
@@ -77,14 +93,19 @@ for name, info in E.items():
         if sum(e) > 0:
             years[y] = {'e': e, 's': by_source(tr)}
     ys = sorted(years)
-    def ok(j, need):   # enough sectors reported, and no sudden drop against the year before
+    def ok(j, need):   # enough sectors reported, no sudden drop against the year before, and no source gone missing
         d = years[ys[j]]['e']; prev = years[ys[j - 1]]['e'] if j else None
-        return sum(d[i] > 0 for i in range(3)) >= need and (not prev or sum(d) >= 0.75 * sum(prev))
+        s_, ps = years[ys[j]]['s'], years[ys[j - 1]]['s'] if j else None
+        lost = ps and any(ps[i] > 0.02 * sum(ps) and s_[i] <= 0 for i in range(6))
+        return sum(d[i] > 0 for i in range(3)) >= need and (not prev or sum(d) >= 0.75 * sum(prev)) and not lost
     latest = next((ys[j] for j in range(len(ys) - 1, -1, -1) if ok(j, 3)), None) \
         or next((ys[j] for j in range(len(ys) - 1, -1, -1) if ok(j, 2)), None)   # complete years first
     if not latest:
         missing.append(name); continue
-    out[name] = {'iso3': info['iso3'], 'latestYear': int(latest), 'years': {y: v for y, v in years.items() if y <= latest}}
+    out[name] = {'iso3': info['iso3'], 'latestYear': int(latest), 'years': {y: v for y, v in years.items() if y <= latest},
+                 'flow': flow(U[k][latest])}   # latest year: application x source
+    if sum(years[latest]['s'][i] for i in (0, 1, 2, 4, 5)) <= 0:
+        out[name]['onlyElectricity'] = True                     # fuels not reported, only electricity (Puerto Rico)
     gap = [i for i in range(3) if years[latest]['e'][i] <= 0]   # a main sector the country does not report
     if gap:
         out[name]['notReported'] = gap
