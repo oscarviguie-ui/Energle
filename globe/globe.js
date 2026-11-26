@@ -2477,7 +2477,8 @@ const UC_SRC_ORDER = [0, 1, 2, 4, 3, 5];   // fuels used on site, then electrici
 const UC_HELP = {
   fe: '<b>Final energy</b> is what reaches the people and machines using it: fuel in a car’s tank, gas in a boiler, electricity from the socket, heat from a district-heating pipe. '
     + 'It leaves out what is lost making electricity and refining fuels, and what the energy industry uses itself, so it is smaller than a country’s total energy supply. '
-    + 'Electricity here is what is consumed: less than the generation in the cards above, which also covers grid losses, power plants’ own use and exports.',
+    + 'Electricity here is what is consumed: less than the generation in the cards above, which also covers grid losses, power plants’ own use and exports.'
+    + '<br><b>Units</b>: joules, the unit energy statistics use for every fuel. 1 EJ (exajoule) = 1,000 PJ (petajoules) ≈ 278 TWh; 1 GJ ≈ 29 litres of petrol.',
 };
 let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null, UC_HELP_ON = null;
 function ucLoad() {
@@ -2489,7 +2490,12 @@ function ucLoad() {
   });
   return UC_LOADING;
 }
-const ucFmt = v => !v ? '0 TWh' : v >= 1000 ? (v / 1000).toFixed(v >= 10000 ? 1 : 2) + ' PWh' : (v >= 100 ? Math.round(v) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + ' TWh';
+// Final energy is shown in joules (the unit energy statistics use for every fuel), not in TWh like the electricity cards.
+// The data stays in TWh: 1 TWh = 3.6 PJ, 1 EJ = 1,000 PJ, 1 MWh = 3.6 GJ.
+const ucPJ = twh => twh * 3.6;
+const ucNum = (v, d) => v.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+const ucFmt = twh => { const pj = ucPJ(twh || 0); if (!pj) return '0 PJ';
+  return pj >= 1000 ? ucNum(pj / 1000, pj >= 10000 ? 1 : 2) + ' EJ' : ucNum(pj, pj >= 100 ? 0 : pj >= 10 ? 1 : 2) + ' PJ'; };
 const ucPct = s => s > 0 && s < 0.01 ? '<1%' : Math.round(s * 100) + '%';
 function ucPop(name) {   // people, from the electricity data (demand ÷ demand per person)
   const i = ALL_DATA[name]; if (!i || !i.latestDpc) return 0;
@@ -2593,7 +2599,9 @@ function ucRender() {
   const gap = info.notReported || [], gapHere = src ? [] : gap;
   const sh = d.map(v => total ? v / total : 0), ws = w.map(v => wt ? v / wt : 0);
   const top = sh.indexOf(Math.max(...sh));
-  const fmtPer = v => (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' MWh';
+  const big = Math.max(...Object.values(info.years).map(v => v[UC_MODE].reduce((a, b) => Math.max(a, b), 0)));
+  const cu = ucPJ(big) >= 1000 ? 'EJ' : 'PJ', cf = cu === 'EJ' ? 3.6 / 1000 : 3.6;   // the chart's unit: EJ for big countries
+  const fmtPer = mwh => { const gj = mwh * 3.6; return ucNum(gj, gj >= 10 ? 0 : 1) + ' GJ'; };
   const tile = i => {
     const s = secs[i], nr = gapHere.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
     return '<div class="uc-tile' + (i === top ? ' is-top' : '') + '" data-si="' + i + '" style="--c:' + s.c + '" title="' + s.tip + '">'
@@ -2630,7 +2638,7 @@ function ucRender() {
     + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
     + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>' + qb('g') + '</div>'
     + tiles
-    + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
+    + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ')</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
   ucFlowDraw();
   if (!UC_RO && window.ResizeObserver) { UC_RO = new ResizeObserver(() => ucFlowDraw()); }
@@ -2639,10 +2647,10 @@ function ucRender() {
   const ys = Object.keys(info.years).sort(), cv = document.getElementById('uc-canvas');
   if (window.Chart && cv) UC_CHART = new Chart(cv, {
     type: 'line',
-    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, _c: s.c, data: ys.map(yy => gapHere.includes(i) ? null : info.years[yy][UC_MODE][i]), borderColor: s.c, backgroundColor: s.c,
+    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, _c: s.c, data: ys.map(yy => gapHere.includes(i) ? null : info.years[yy][UC_MODE][i] * cf), borderColor: s.c, backgroundColor: s.c,
       borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, tension: .25 })) },
     options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucFmt(c.parsed.y) } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucFmt(c.parsed.y / 3.6 * (cu === 'EJ' ? 1000 : 1)) } } },
       scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 6, color: '#888', font: { size: 10 } } },
                 y: { beginAtZero: true, grid: { color: '#f0f0ec' }, ticks: { maxTicksLimit: 5, color: '#888', font: { size: 10 } } } } }
   });
