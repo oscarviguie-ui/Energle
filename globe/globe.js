@@ -2231,8 +2231,10 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
         + (NAME_CLAIM === 'other' ? '<span class="rn-held">Another device holds this name: your next result will ask you for a new one.</span>' : ''));
       who.querySelector('.rn-link').addEventListener('click', showRenameModal);
       if (window.ENERGLE_TEST) {
-        who.querySelector('.rn-link').insertAdjacentHTML('afterend', '<button type="button" class="rn-link dv-link">Use on another device</button>');
-        who.querySelector('.dv-link').addEventListener('click', () => showDeviceModal());
+        const rn = who.querySelector('.rn-link'), row = document.createElement('span'); row.className = 'rn-links';
+        rn.replaceWith(row); row.appendChild(rn);                       // both links on one row, under the name
+        row.insertAdjacentHTML('beforeend', '<button type="button" class="rn-link dv-link">Use on another device</button>');
+        row.querySelector('.dv-link').addEventListener('click', () => showDeviceModal());
       }
     }
     return r;
