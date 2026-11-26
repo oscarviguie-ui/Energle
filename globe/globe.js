@@ -2712,7 +2712,7 @@ function ucRender() {
   const big = Math.max(...Object.values(info.years).map(v => v[UC_MODE].reduce((a, b) => Math.max(a, b), 0)));
   const [cu, cf] = U.axis(big);
   card.innerHTML = '<div class="uc-head">'
-    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="chart-label">Final energy use (' + y + ')</span>' + chev + '</button>'
+    + '<button type="button" class="uc-title" aria-expanded="' + UC_FE_OPEN + '" aria-controls="uc-fe"><span class="chart-label">Final energy use — ' + y + '</span>' + chev + '</button>'
     + '<div class="uc-ctrls"><div class="uc-switch" role="group" aria-label="Sources or applications">'
     + '<button type="button" data-uc="s" aria-pressed="' + src + '">Sources</button>'
     + '<button type="button" data-uc="e" aria-pressed="' + !src + '">Applications</button></div>'
@@ -2734,7 +2734,7 @@ function ucRender() {
     + (info.onlyElectricity ? '<p class="uc-note">Only electricity use is reported to the UN here: fuels such as petrol and gas are missing.</p>'
       : gap.length ? '<p class="uc-note">' + gap.map(i => UC_SECTORS[i].k).join(', ') + ' not reported to the UN</p>' : '')
     + '</div><div class="uc-right">' + tiles
-    + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ')</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
+    + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ') — ' + Object.keys(info.years).sort()[0] + '–' + y + '</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
   ucFlowDraw(); ucPanelFit();
   if (!UC_RO && window.ResizeObserver) { UC_RO = new ResizeObserver(() => ucFlowDraw()); }
@@ -2901,34 +2901,43 @@ function deviceLinkInPrompt() {
 //  same moment. Applied to whatever the game draws (base cards, clue cards, final energy), whenever it draws it.
 // ============================================================
 const DATE_SEL = '.chart-label, .stat-label, .ic-title, .uc-eb-in, .uc-eb-cmp';
+const YR = '(?:19[89]\\d|20[0-4]\\d)';
+const RE_RANGE_OR_YEAR = new RegExp('\\b(' + YR + ')(?:\\s*[–-]\\s*(' + YR + '))?\\b|long-term avg', 'g');   // a climate average is a date too
 function markDates() {
   const app = document.getElementById('app'); if (!app || typeof target === 'undefined' || !target) return;
   const info = ALL_DATA && ALL_DATA[target.name], ref = info && String(info.latestYear);
+  // every card carries its year: the stat card's labels, the chart over time its range ("2000–2025")
+  if (info && ref) {
+    const first = Object.keys(info.years).sort()[0];
+    const addYr = (el, txt) => { if (el && !/\b(19|20)\d\d\b/.test(el.textContent)) el.appendChild(document.createTextNode(' — ' + txt)); };
+    app.querySelectorAll('#balance-card .bc-stat > .stat-label').forEach(el => addYr(el, ref));
+    addYr(document.getElementById('line-label'), first + '–' + ref);
+  }
   app.querySelectorAll(DATE_SEL).forEach(el => {
+    // no brackets round a year: "Electricity mix (2025)" -> "Electricity mix — 2025"
+    const tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let tn;
+    while ((tn = tw.nextNode())) if (/\(\s*(19|20)\d\d\s*\)/.test(tn.textContent)) tn.textContent = tn.textContent.replace(/\s*\(\s*((?:19|20)\d\d)\s*\)/g, ' — $1');
     const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('.cd-yr') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
     const hits = []; let n;
-    while ((n = w.nextNode())) if (/\b(19[89]\d|20[0-4]\d)\b/.test(n.textContent)) hits.push(n);
+    while ((n = w.nextNode())) { RE_RANGE_OR_YEAR.lastIndex = 0; if (RE_RANGE_OR_YEAR.test(n.textContent)) hits.push(n); }
     hits.forEach(t => {
-      const frag = document.createDocumentFragment(); let last = 0;
-      t.textContent.replace(/\b(19[89]\d|20[0-4]\d)\b/g, (y, _, i) => {
-        frag.appendChild(document.createTextNode(t.textContent.slice(last, i)));
-        const off = ref && y !== ref, b = document.createElement('b');
-        b.className = 'cd-yr' + (off ? ' is-off' : ''); b.textContent = y;
-        if (off) { b.title = 'Not the same year as the electricity data (' + ref + ')'; b.insertAdjacentHTML('beforeend', '<span class="cd-bang" aria-hidden="true">!</span>'); }
-        frag.appendChild(b); last = i + y.length; return y;
+      const frag = document.createDocumentFragment(), txt = t.textContent; let last = 0;
+      txt.replace(RE_RANGE_OR_YEAR, (m, y1, y2, i) => {
+        frag.appendChild(document.createTextNode(txt.slice(last, i)));
+        const end = y2 || y1, b = document.createElement('b');   // a range is judged by its last year
+        b.className = 'cd-yr'; if (end) b.dataset.y = end; b.textContent = m;
+        frag.appendChild(b); last = i + m.length; return m;
       });
-      frag.appendChild(document.createTextNode(t.textContent.slice(last)));
+      frag.appendChild(document.createTextNode(txt.slice(last)));
       t.replaceWith(frag);
     });
   });
-  // a year already marked may need its colour changed when the country changes
+  // red with a ! when the year is not the electricity data's year (checked again whenever the country changes)
   app.querySelectorAll('.cd-yr').forEach(b => {
-    const y = b.firstChild && b.firstChild.textContent, off = ref && y !== ref;
-    if (b.classList.contains('is-off') !== !!off) {
-      b.classList.toggle('is-off', !!off); const bang = b.querySelector('.cd-bang');
-      if (off && !bang) { b.title = 'Not the same year as the electricity data (' + ref + ')'; b.insertAdjacentHTML('beforeend', '<span class="cd-bang" aria-hidden="true">!</span>'); }
-      if (!off && bang) { bang.remove(); b.removeAttribute('title'); }
-    }
+    const off = !!(ref && b.dataset.y && b.dataset.y !== ref), bang = b.querySelector('.cd-bang');
+    b.classList.toggle('is-off', off);
+    if (off && !bang) { b.title = 'Not the same year as the electricity data (' + ref + ')'; b.insertAdjacentHTML('beforeend', '<span class="cd-bang" aria-hidden="true">!</span>'); }
+    if (!off && bang) { bang.remove(); b.removeAttribute('title'); }
   });
 }
 if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
