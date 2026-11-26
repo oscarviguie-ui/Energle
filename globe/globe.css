@@ -1112,7 +1112,7 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .ev-note { margin: 6px 0 0; font-size: .74rem; color: #8a6a1c; }
 
 /* ---- Final energy use (test page): a card under the charts */
-#use-card { container-type: inline-size; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: 1rem 1.1rem .8rem; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+#use-card { container-type: inline-size; background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; box-sizing: border-box; padding: .9rem 1.1rem .7rem; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .uc-head { display: flex; align-items: center; gap: 10px 8px; flex-wrap: wrap; }
 .uc-title { margin-right: auto; }
 .uc-ctrls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -1127,7 +1127,7 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-title:hover .stat-label, .uc-title[aria-expanded="true"] .stat-label { color: #1a1a1a; border-bottom-color: #1a1a1a; }
 .uc-chev { transition: transform .3s ease; }
 .uc-title[aria-expanded="true"] .uc-chev { transform: rotate(180deg); color: #1a1a1a; }
-.uc-fe { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: -14px; transition: grid-template-rows .35s ease, opacity .3s ease, margin-top .35s ease; }
+.uc-fe { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: -12px; transition: grid-template-rows .35s ease, opacity .3s ease, margin-top .35s ease; }
 .uc-fe.is-open { grid-template-rows: 1fr; opacity: 1; margin-top: 0; }
 .uc-fe-in { overflow: hidden; min-height: 0; }
 .uc-fe-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 22px; padding: 10px 14px; border-left: 3px solid #1a1a1a; background: #f6f5f1; border-radius: 0 6px 6px 0; }
@@ -1163,14 +1163,15 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-switch { display: inline-flex; padding: 3px; gap: 2px; border-radius: 999px; background: #ecebe6; }
 .uc-switch button { padding: 4px 12px; border: 0; border-radius: 999px; background: none; color: #555; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
 .uc-switch button[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
-.uc-body { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: stretch; }
-.uc-left { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.uc-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
+.uc-left { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .uc-stats { display: flex; justify-content: center; gap: 36px; flex-wrap: wrap; text-align: center; }
 .uc-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .uc-big { font-size: 1.45rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: #1a1a1a; }
 .uc-sub { font-size: .74rem; color: #888; }
 /* the flow: sources -> applications */
-.uc-flow { position: relative; width: 100%; min-width: 0; }
+.uc-flow { position: relative; width: 100%; min-width: 0; flex: 1 1 auto; min-height: 260px; }
+.uc-flow > .uf-svg { position: absolute; inset: 0; }
 .uf-svg { display: block; max-width: 100%; overflow: visible; }
 .uf-l { opacity: .42; transition: opacity .15s; cursor: default; }
 .uf-l:hover { opacity: .8; }
@@ -1196,14 +1197,15 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-wd > span { white-space: nowrap; }
 .uc-wd b { font-size: .56rem; margin-left: 1px; }
 .uc-wd b.up { color: #2f8a52; } .uc-wd b.dn { color: #b4533a; }
-.uc-right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.uc-right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .uc-right .chart-label { margin: 2px 0 -6px; }
-.uc-chart { position: relative; flex: 1; min-height: 240px; }
+.uc-chart { position: relative; flex: 1; min-height: 220px; }
 .uc-src { margin: 0; text-align: right; }
 /* the card adapts to its own width: Explore's panel and phones get one column, the flow full width */
 @container (max-width: 980px) {
   .uc-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .uc-chart { flex: none; height: 250px; min-height: 0; }
+  .uc-flow { flex: none; height: 300px; min-height: 0; }
 }
 @container (max-width: 560px) {
   .uc-tgs { flex-direction: column; gap: 10px; }
@@ -1220,6 +1222,7 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-stats { gap: 20px; }
   .uf-t { font-size: 10.5px; }
   .uc-chart { height: 220px; }
+  .uc-flow { height: 260px; }
   .uc-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 8px; }
   .uc-head .uc-unit { grid-column: 2; grid-row: 1; }
   .uc-head .uc-ctrls { grid-column: 1 / -1; gap: 6px; }

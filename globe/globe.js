@@ -2539,8 +2539,8 @@ function ucWorldPop() {   // people in all the countries the card covers
 }
 function ucIcon(sec) { return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + sec.ic + '</svg>'; }
 // The flow: sources on the left, applications on the right, each band as wide as the TWh going from one to the other.
-function ucFlowSVG(m, W) {
-  const H = W < 420 ? 250 : 290, NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 108 : 116, RW = W < 420 ? 92 : 118;
+function ucFlowSVG(m, W, Hbox) {
+  const H = Math.max(W < 420 ? 230 : 250, Math.min(460, Hbox || (W < 420 ? 250 : 290))), NW = 9, GAP = W < 420 ? 5 : 6, LW = W < 420 ? 108 : 116, RW = W < 420 ? 92 : 118;
   const x0 = LW, x1 = W - RW - NW;
   const sv = UC_SOURCES.map((_, j) => m.reduce((t, r) => t + r[j], 0)), av = m.map(r => r.reduce((t, v) => t + v, 0));
   const tot = sv.reduce((t, v) => t + v, 0) || 1;
@@ -2587,8 +2587,10 @@ function ucFlowSVG(m, W) {
 function ucFlowDraw() {
   const box = document.getElementById('uc-flow'), info = target && UC_DATA && UC_DATA.by[target.name];
   if (!box || !info || !info.flow) return;
-  const W = Math.round(box.clientWidth); if (!W || W === +box.dataset.w) return;
-  box.dataset.w = W; box.innerHTML = ucFlowSVG(info.flow, W);
+  // the flow fills its box: as wide as the column, and as tall as the row the cards beside it make (see the CSS)
+  const W = Math.round(box.clientWidth), H = Math.round(box.clientHeight), key = W + 'x' + H;
+  if (!W || key === box.dataset.k) return;
+  box.dataset.k = key; box.innerHTML = ucFlowSVG(info.flow, W, H);
 }
 function ucPick(kind, i) {   // light up one source or application: its bands in the flow, its line in the chart
   const card = document.getElementById('use-card'); if (!card) return;
