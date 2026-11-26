@@ -2489,8 +2489,11 @@ function ucElecBridge(info) {
     ['Unaccounted', e.rest > 0 ? e.rest : 0, 'repeating-linear-gradient(135deg,#d8d8d2 0 3px,#f4f4f0 3px 6px)'],
   ].filter(x => x[1] > supply * 0.002);
   const pct = v => ucPct(v / supply);
-  return '<div class="uc-eb"><p class="uc-eb-h"><b>Electricity</b> The cards above show what is generated; this card counts what users consume. In ' + e.y + ':</p>'
-    + '<p class="uc-eb-in"><span>Generated <strong>' + ucFmt(e.gen) + '</strong></span>' + (e.imp > supply * 0.002 ? '<span>+ imported <strong>' + ucFmt(e.imp) + '</strong></span>' : '') + '</p>'
+  const ci = ALL_DATA[target.name], cy = ci && ci.latestYear, cg = ci && ci.years[cy] && ci.years[cy].Total;
+  return '<div class="uc-eb"><p class="uc-eb-h"><b>Electricity</b> The cards above show what is generated; this card counts what users consume.</p>'
+    + '<p class="uc-eb-in"><span>' + e.y + ', UN data: generated <strong>' + ucFmt(e.gen) + '</strong></span>' + (e.imp > supply * 0.002 ? '<span>+ imported <strong>' + ucFmt(e.imp) + '</strong></span>' : '')
+    + (cg && String(cy) !== String(e.y) ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' generated in ' + cy + ' (Ember, a newer year)</span>'
+      : cg ? '<span class="uc-eb-cmp">Cards above: ' + ucFmt(cg) + ' (Ember counts slightly differently)</span>' : '') + '</p>'
     + '<div class="uc-eb-bar">' + parts.map(x => '<span style="width:' + tw(x[1]).toFixed(2) + '%;background:' + x[2] + '" title="' + x[0] + ': ' + ucFmt(x[1]) + ' (' + pct(x[1]) + ')"></span>').join('') + '</div>'
     + '<ul class="uc-eb-k">' + parts.map(x => '<li><i style="background:' + x[2] + '"></i>' + x[0] + ' <strong>' + ucFmt(x[1]) + '</strong> <em>' + pct(x[1]) + '</em></li>').join('') + '</ul>'
     + (e.rest < -supply * 0.02 ? '<p class="uc-eb-n">Users are reported to consume ' + ucFmt(-e.rest) + ' more than the balance accounts for.</p>' : '')
@@ -2522,7 +2525,7 @@ const UC_UNITS = {
           axis: big => big / 11.63 >= 1 ? ['Mtoe', 1 / 11.63] : ['ktoe', 1000 / 11.63], note: '1 Mtoe = the energy in a million tonnes of oil ≈ 11.6 TWh' },
   boe:  { label: 'boe/d', name: 'Barrels of oil equivalent a day',
           tot: t => { const d = t * 1e6 / 1.7 / 365; return d >= 1e6 ? ucSig(d / 1e6) + 'M boe/d' : d >= 1e3 ? ucSig(d / 1e3) + 'k boe/d' : ucSig(d) + ' boe/d'; },
-          per: m => ucSig(m / 1.7) + ' boe a year',
+          per: m => ucSig(m / 1.7) + ' boe',
           axis: big => big * 1e6 / 1.7 / 365 >= 1e6 ? ['M boe/d', 1e6 / 1.7 / 365 / 1e6] : ['k boe/d', 1e6 / 1.7 / 365 / 1e3], note: 'the energy in that many barrels of oil, every day, as on the Fuel Trade card' },
 };
 let UC_UNIT = (() => { try { const u = localStorage.getItem('energle_fe_unit'); return UC_UNITS[u] ? u : 'twh'; } catch (e) { return 'twh'; } })();
@@ -2726,8 +2729,10 @@ function ucRender() {
     + '<aside class="uc-panel' + (UC_DEF_OPEN ? ' is-open' : '') + '" id="uc-panel" aria-hidden="' + !UC_DEF_OPEN + '">'
     + '<div class="uc-ph"><span>' + (src ? 'Sources' : 'Applications') + '</span><button type="button" class="uc-px" aria-label="Close">×</button></div>'
     + '<ul class="uc-hl">' + defs + '</ul><p class="uc-hn">World avg: all countries in the game added up.</p></aside>'
-    + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">final energy used</span></div>'
-    + (per ? '<div class="uc-stat"><span class="uc-big">' + U.per(per) + '</span><span class="uc-sub">per person · World avg ' + U.per(wper) + '</span></div>' : '') + '</div>'
+    + '<div class="uc-stats"><div class="bc-stat"><span class="stat-label">Final energy used</span><span class="uc-big">' + ucFmt(total) + '</span>'
+    + '<span class="bc-world bc-world--gen">World Avg: ' + ucFmt(wt / Math.max(1, Object.keys(UC_DATA.by).length)) + '</span></div>'
+    + (per ? '<div class="bc-stat"><span class="stat-label">Per person, each year</span><span class="uc-big">' + U.per(per) + '</span>'
+      + '<span class="bc-world bc-world--dem">World Avg: ' + U.per(wper) + '</span></div>' : '') + '</div>'
     + '<div class="uc-flow" id="uc-flow"></div>'
     + (info.onlyElectricity ? '<p class="uc-note">Only electricity use is reported to the UN here: fuels such as petrol and gas are missing.</p>'
       : gap.length ? '<p class="uc-note">' + gap.map(i => UC_SECTORS[i].k).join(', ') + ' not reported to the UN</p>' : '')

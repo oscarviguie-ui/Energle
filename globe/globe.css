@@ -1165,9 +1165,11 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-switch button[aria-pressed="true"] { background: #1a1a1a; color: #fff; }
 .uc-body { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: stretch; }
 .uc-left { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-.uc-stats { display: flex; justify-content: center; gap: 36px; flex-wrap: wrap; text-align: center; }
+.uc-stats { display: flex; justify-content: center; gap: 12px 44px; flex-wrap: wrap; text-align: center; }
+.uc-stats .bc-stat { gap: 4px; }
+.uc-stats .stat-label { margin: 0; }
 .uc-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.uc-big { font-size: 1.45rem; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: #1a1a1a; }
+.uc-big { font-size: 1.5rem; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; color: #1a1a1a; }
 .uc-sub { font-size: .74rem; color: #888; }
 /* the flow: sources -> applications */
 .uc-flow { position: relative; width: 100%; min-width: 0; flex: 1 1 auto; min-height: 260px; }
@@ -1259,3 +1261,4 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-eb-k strong { color: #1a1a1a; font-weight: 600; font-variant-numeric: tabular-nums; }
 .uc-eb-k em { font-style: normal; color: #999; }
 .uc-eb-n { font-size: .72rem !important; color: #8a6a1c !important; }
+.uc-eb-cmp { margin-left: auto; color: #999; font-size: .72rem; }
