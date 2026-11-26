@@ -1307,15 +1307,29 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .nx-fe-flow.is-in .uf-l:nth-child(28) { transition-delay: 1.40s; }
 .nx-fe-flow.is-in .uf-l:nth-child(29) { transition-delay: 1.45s; }
 .nx-fe-flow.is-in .uf-l:nth-child(30) { transition-delay: 1.50s; }
-/* Explore, laptops (test page): the cards get more room, the map less */
+/* Explore, laptops (test page) */
 @media (min-width: 1100px) {
-  body.ex-test.at-globe .gl-layout { grid-template-columns: minmax(0, 1fr) clamp(640px, 62%, 1000px); }
+  /* default: the map beside the electricity cards and exactly as tall as they are; final energy the full width below */
+  body.ex-test.at-globe:not(.ex-bigmap) .gl-layout { grid-template-rows: auto auto auto; align-items: stretch; row-gap: 14px; }
+  body.ex-test.at-globe:not(.ex-bigmap) .gl-wrap, body.ex-test.at-globe:not(.ex-bigmap) .gl-layout.has-sel .gl-wrap,
+  body.ex-test.gl-stack.at-globe:not(.ex-bigmap) .gl-wrap, body.ex-test.gl-stack.at-globe:not(.ex-bigmap) .gl-layout.has-sel .gl-wrap {
+    grid-column: 1; grid-row: 1; position: relative; top: auto; align-self: stretch; height: auto !important; max-height: none !important; min-height: 420px; }
+  body.ex-test.at-globe:not(.ex-bigmap) .gl-side { grid-column: 2; grid-row: 1; align-self: start; }
+  body.ex-test.at-globe:not(.ex-bigmap) #use-card.uc-wide { grid-column: 1 / -1; grid-row: 2; }
+  body.ex-test.at-globe:not(.ex-bigmap) .gl-layout > footer { grid-column: 1 / -1; grid-row: 3; }
+  /* enlarged: the cards get more room beside a tall map that stays in view, final energy in their column */
+  body.ex-test.ex-bigmap.at-globe .gl-layout { grid-template-columns: minmax(0, 1fr) clamp(640px, 62%, 1000px); }
+  body.ex-test.ex-bigmap.at-globe .gl-wrap, body.ex-test.ex-bigmap.at-globe .gl-layout.has-sel .gl-wrap,
+  body.ex-test.ex-bigmap.gl-stack.at-globe .gl-wrap, body.ex-test.ex-bigmap.gl-stack.at-globe .gl-layout.has-sel .gl-wrap {
+    position: sticky; top: 12px; align-self: start; height: calc(100vh - 110px) !important; max-height: none !important; min-height: 420px; }
+  /* the map's tools span exactly the map */
   body.ex-test.at-globe .at-tools { grid-template-columns: auto minmax(0, 1fr) auto; width: var(--ex-map-w, 40%); max-width: var(--ex-map-w, 40%); }
-  /* the map stays in view while the cards scroll beside it */
-  body.ex-test.at-globe .gl-wrap, body.ex-test.at-globe .gl-layout.has-sel .gl-wrap,
-  body.ex-test.gl-stack.at-globe .gl-wrap, body.ex-test.gl-stack.at-globe .gl-layout.has-sel .gl-wrap {
-    position: sticky; top: 12px; align-self: start; height: min(calc(100vh - 110px), calc(var(--ex-map-w, 500px) * 1.08)); max-height: none; min-height: 380px; }
+  .ex-big { position: absolute; right: 10px; top: 62px; z-index: 3; display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 0; border-radius: 999px;
+    background: #fff; color: #333; font: inherit; font-size: .76rem; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.18); cursor: pointer; }
+  .ex-big:hover { color: #1a1a1a; box-shadow: 0 1px 6px rgba(0,0,0,.26); }
 }
+.ex-big { display: none; }
+@media (min-width: 1100px) { body.ex-test.at-globe .ex-big { display: inline-flex; } }
 /* the final energy card: two columns from 760px; its right column arranges its own tiles */
 @container (min-width: 700px) and (max-width: 980px) {
   .uc-body { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; }

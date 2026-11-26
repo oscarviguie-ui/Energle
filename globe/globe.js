@@ -2552,6 +2552,38 @@ function ucPop(name) {   // people, from the electricity data (demand ÷ demand 
   const i = ALL_DATA[name]; if (!i || !i.latestDpc) return 0;
   const d = i.years[i.latestYear] || {}; return d.Demand ? d.Demand * 1e6 / i.latestDpc : 0;
 }
+// Groups (a continent, a bloc, a trait, the World): the members' final energy added up, like the electricity cards.
+// Each year sums every member (a member whose data stops earlier keeps its latest year, as globeAggregate does). The latest
+// year is the one most members have; its flow sums the members' flows (scaled to that year by application), and the tiles
+// are read off that same flow, so every figure in the card agrees.
+const UC_AGG = {};
+function ucInfo(t) {
+  if (!t || !UC_DATA) return null;
+  if (UC_DATA.by[t.name]) return UC_DATA.by[t.name];
+  const a = ALL_DATA[t.name], rid = a && String(a.iso3 || '').startsWith('R_') ? a.iso3.slice(2) : null;
+  if (!rid || typeof groupOf !== 'function') return null;
+  if (UC_AGG[rid]) return UC_AGG[rid];
+  const mem = COUNTRIES.filter(groupOf(rid).test).map(c => UC_DATA.by[c.name]).filter(Boolean);
+  if (!mem.length) return null;
+  const cnt = {}; mem.forEach(m => { cnt[m.latestYear] = (cnt[m.latestYear] || 0) + 1; });
+  const latest = +Object.entries(cnt).sort((x, y) => y[1] - x[1] || y[0] - x[0])[0][0];
+  const first = Math.min(...mem.map(m => Math.min(...Object.keys(m.years).map(Number))));
+  const years = {};
+  for (let y = first; y <= latest; y++) {
+    const o = { e: [0, 0, 0, 0, 0], s: [0, 0, 0, 0, 0, 0] };
+    mem.forEach(m => { const d = m.years[y] || (y > m.latestYear ? m.years[m.latestYear] : null); if (!d) return;
+      d.e.forEach((v, i) => { o.e[i] += v; }); d.s.forEach((v, i) => { o.s[i] += v; }); });
+    years[y] = o;
+  }
+  const flow = [0, 1, 2, 3, 4].map(() => [0, 0, 0, 0, 0, 0]);
+  mem.forEach(m => { if (!m.flow) return;
+    const ly = m.years[String(m.latestYear)].e, ty = (m.years[latest] || m.years[String(m.latestYear)]).e;
+    m.flow.forEach((row, i) => { const k = ly[i] > 0 ? ty[i] / ly[i] : 0; row.forEach((v, j) => { flow[i][j] += v * k; }); }); });
+  years[latest] = { e: flow.map(r => r.reduce((x, y) => x + y, 0)), s: [0, 1, 2, 3, 4, 5].map(j => flow.reduce((x, r) => x + r[j], 0)) };
+  const eb = { y: latest, gen: 0, imp: 0, exp: 0, plants: 0, industry: 0, heat: 0, losses: 0, final: 0, rest: 0 };
+  mem.forEach(m => { if (m.elec) Object.keys(eb).forEach(k => { if (k !== 'y') eb[k] += m.elec[k] || 0; }); });
+  return (UC_AGG[rid] = { iso3: null, latestYear: latest, years, flow, elec: eb.gen > 0 ? eb : null, group: true, n: mem.length });
+}
 let UC_WORLD_POP = 0;
 function ucWorldPop() {   // people in all the countries the card covers
   if (!UC_WORLD_POP) UC_WORLD_POP = Object.keys(UC_DATA.by).reduce((a, n) => a + ucPop(n), 0);
@@ -2605,7 +2637,7 @@ function ucFlowSVG(m, W, Hbox) {
     + labels(S, sv, UC_SOURCES, 'l') + labels(A, av, UC_SECTORS, 'r') + '</svg>';
 }
 function ucFlowDraw() {
-  const box = document.getElementById('uc-flow'), info = target && UC_DATA && UC_DATA.by[target.name];
+  const box = document.getElementById('uc-flow'), info = ucInfo(target);
   if (!box || !info || !info.flow) return;
   // the flow fills its box: as wide as the column, and as tall as the row the cards beside it make (see the CSS)
   const W = Math.round(box.clientWidth), H = Math.round(box.clientHeight), key = W + 'x' + H;
@@ -2692,7 +2724,7 @@ function ucEndRoom(sets) {
 function ucRender() {
   const legend = document.getElementById('legend-shared');
   let card = document.getElementById('use-card');
-  const info = target && UC_DATA && UC_DATA.by[target.name];
+  const info = ucInfo(target);
   if (!legend || !info) { if (card) card.remove(); if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; } return; }
   if (!card) {
     legend.insertAdjacentHTML('afterend', '<section id="use-card" aria-label="Final energy use"></section>');
@@ -2776,6 +2808,7 @@ function ucRender() {
     + '</div><div class="uc-right">' + tiles
     + '<p class="chart-label">' + (src ? 'Sources' : 'Applications') + ' over time (' + cu + ') — ' + Object.keys(info.years).sort()[0] + '–' + y + '</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
+  if (typeof ucPlace === 'function') ucPlace();
   ucFlowDraw(); ucPanelFit(); if (typeof ucShadeMark === 'function') ucShadeMark();
   if (!UC_RO && window.ResizeObserver) { UC_RO = new ResizeObserver(() => ucFlowDraw()); }
   if (UC_RO) { UC_RO.disconnect(); UC_RO.observe(document.getElementById('uc-flow')); }
@@ -3052,4 +3085,49 @@ if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoade
   const fitTools = () => { const w = document.querySelector('.gl-wrap'); if (w && w.offsetWidth) document.body.style.setProperty('--ex-map-w', w.offsetWidth + 'px'); };
   if (window.ResizeObserver) { const ro = new ResizeObserver(fitTools); const watch = () => { const w = document.querySelector('.gl-wrap'); if (w) ro.observe(w); else setTimeout(watch, 500); }; watch(); }
   window.addEventListener('resize', fitTools);
+});
+
+// ============================================================
+//  EXPLORE LAYOUT (test page, laptops). Default: the map beside the electricity cards, exactly as tall as they are, and
+//  the final energy card the full width underneath, so each rectangle is filled. "Enlarge map": the map grows tall and
+//  stays in view, the cards take the right-hand column and final energy moves there, under the electricity cards.
+// ============================================================
+const EX_BIG_KEY = 'energle_ex_bigmap';
+function exWide() { return document.body.classList.contains('at-globe') && document.body.classList.contains('ex-test') && matchMedia('(min-width: 1100px)').matches; }
+function ucPlace() {
+  const card = document.getElementById('use-card'), lay = document.querySelector('.gl-layout'); if (!card || !lay) return;
+  const below = exWide() && !document.body.classList.contains('ex-bigmap');
+  if (below) {
+    if (card.parentElement !== lay) { const ft = lay.querySelector(':scope > footer'); lay.insertBefore(card, ft || null); }
+    card.classList.add('uc-wide');
+  } else {
+    card.classList.remove('uc-wide');
+    const legend = document.getElementById('legend-shared');
+    if (legend && card.previousElementSibling !== legend) legend.insertAdjacentElement('afterend', card);
+  }
+}
+function exBigMap(on) {
+  document.body.classList.toggle('ex-bigmap', !!on);
+  try { localStorage.setItem(EX_BIG_KEY, on ? '1' : '0'); } catch (e) {}
+  const b = document.getElementById('ex-big');
+  if (b) { b.setAttribute('aria-pressed', String(!!on)); b.querySelector('span').textContent = on ? 'Smaller map' : 'Enlarge map'; }
+  ucPlace();
+  const fit = () => { try { if (GLOBE) GLOBE.resize(); } catch (e) {} try { ucFlowDraw(); } catch (e) {} };
+  requestAnimationFrame(fit); setTimeout(fit, 350);
+}
+if (globeOn() && window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
+  let big = false; try { big = localStorage.getItem(EX_BIG_KEY) === '1'; } catch (e) {}
+  document.body.classList.toggle('ex-bigmap', big);
+  const addBtn = () => {
+    const wrap = document.querySelector('.gl-wrap'); if (!wrap) return setTimeout(addBtn, 400);
+    if (document.getElementById('ex-big')) return;
+    wrap.insertAdjacentHTML('beforeend', '<button type="button" class="ex-big" id="ex-big" aria-pressed="' + big + '">'
+      + '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9.5 2.5h4v4M13.5 2.5L9 7M6.5 13.5h-4v-4M2.5 13.5L7 9"/></svg>'
+      + '<span>' + (big ? 'Smaller map' : 'Enlarge map') + '</span></button>');
+    document.getElementById('ex-big').addEventListener('click', () => exBigMap(!document.body.classList.contains('ex-bigmap')));
+  };
+  addBtn();
+  window.addEventListener('resize', () => { try { ucPlace(); } catch (e) {} });
+  // leaving Explore or coming back: the card goes where that page wants it
+  new MutationObserver(() => { try { ucPlace(); } catch (e) {} }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 });
