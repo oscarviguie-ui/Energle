@@ -1130,11 +1130,11 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .uc-fe { display: grid; grid-template-rows: 0fr; opacity: 0; margin-top: -14px; transition: grid-template-rows .35s ease, opacity .3s ease, margin-top .35s ease; }
 .uc-fe.is-open { grid-template-rows: 1fr; opacity: 1; margin-top: 0; }
 .uc-fe-in { overflow: hidden; min-height: 0; }
-.uc-fe-box { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 22px; padding: 10px 14px; border-left: 3px solid #1a1a1a; background: #f6f5f1; border-radius: 0 6px 6px 0; }
+.uc-fe-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 22px; padding: 10px 14px; border-left: 3px solid #1a1a1a; background: #f6f5f1; border-radius: 0 6px 6px 0; }
 .uc-fe-box p { margin: 0; font-size: .78rem; line-height: 1.45; color: #555; }
 .uc-fe-box b { display: block; margin-bottom: 1px; font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; color: #1a1a1a; }
-@container (max-width: 980px) { .uc-fe-box { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@container (max-width: 560px) { .uc-fe-box { grid-template-columns: minmax(0, 1fr); } }
+@container (max-width: 760px) { .uc-fe-box { grid-template-columns: minmax(0, 1fr); } }
+
 /* the groups' definitions: a panel sliding in from the left over the flow */
 .uc-defs { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border: 1px solid #dcdcd6; border-radius: 999px; background: #fff; color: #555; font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
 .uc-defs:hover { border-color: #1a1a1a; color: #1a1a1a; }
@@ -1242,3 +1242,17 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .rn-links .rn-link { align-self: auto; }
 .dv-in-prompt { display: block; margin: 10px auto 0; }
 #device-modal { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px; }
+/* electricity, from generation to use (inside the definition of final energy) */
+.uc-eb { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding-top: 10px; border-top: 1px solid #e6e5df; }
+.uc-eb p { margin: 0; font-size: .78rem; line-height: 1.45; color: #555; }
+.uc-eb-h b { display: inline; margin-right: 6px; font-size: .66rem; letter-spacing: .05em; text-transform: uppercase; color: #1a1a1a; }
+.uc-eb-in { display: flex; gap: 12px; flex-wrap: wrap; }
+.uc-eb-in strong { color: #1a1a1a; font-variant-numeric: tabular-nums; }
+.uc-eb-bar { display: flex; height: 14px; border-radius: 3px; overflow: hidden; gap: 1px; background: #fff; }
+.uc-eb-bar span { min-width: 2px; }
+.uc-eb-k { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .74rem; color: #555; }
+.uc-eb-k li { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.uc-eb-k i { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.uc-eb-k strong { color: #1a1a1a; font-weight: 600; font-variant-numeric: tabular-nums; }
+.uc-eb-k em { font-style: normal; color: #999; }
+.uc-eb-n { font-size: .72rem !important; color: #8a6a1c !important; }

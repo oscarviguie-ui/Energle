@@ -2475,8 +2475,27 @@ const UC_SOURCES = [
 ];
 const UC_SRC_ORDER = [0, 1, 2, 4, 3, 5];   // fuels used on site, then electricity and district heat (made elsewhere)
 const ucFeText = () => '<p><b>What it is</b> Energy as it reaches users: fuel in the tank, gas in the boiler, power at the socket, heat from the pipe.</p>'
-  + '<p><b>Not counted</b> What is lost turning fuels into electricity, heat and petrol, and what the energy industry uses itself.</p>'
-  + '<p><b>Electricity</b> Only what users consume. It is lower than the generation in the cards above, which also covers grid losses, power plants’ own use and exports.</p>';
+  + '<p><b>Not counted</b> What is lost turning fuels into electricity, heat and petrol, and what the energy industry uses itself.</p>';
+// Electricity, from generation to use (UN electricity balance): why the card's electricity is below the generation above.
+function ucElecBridge(info) {
+  const e = info && info.elec; if (!e || !(e.gen > 0)) return '';
+  const supply = e.gen + e.imp, tw = v => v / supply * 100;
+  const parts = [
+    ['Consumed by users', e.final, '#3d6fd8'],
+    ['Grid losses', e.losses, '#b9b9b3'],
+    ['Power plants’ own use', e.plants, '#8f8f88'],
+    ['Rest of the energy industry', e.industry + e.heat, '#6c6c65'],
+    ['Exported', e.exp, '#e3a06c'],
+    ['Unaccounted', e.rest > 0 ? e.rest : 0, 'repeating-linear-gradient(135deg,#d8d8d2 0 3px,#f4f4f0 3px 6px)'],
+  ].filter(x => x[1] > supply * 0.002);
+  const pct = v => ucPct(v / supply);
+  return '<div class="uc-eb"><p class="uc-eb-h"><b>Electricity</b> The cards above show what is generated; this card counts what users consume. In ' + e.y + ':</p>'
+    + '<p class="uc-eb-in"><span>Generated <strong>' + ucFmt(e.gen) + '</strong></span>' + (e.imp > supply * 0.002 ? '<span>+ imported <strong>' + ucFmt(e.imp) + '</strong></span>' : '') + '</p>'
+    + '<div class="uc-eb-bar">' + parts.map(x => '<span style="width:' + tw(x[1]).toFixed(2) + '%;background:' + x[2] + '" title="' + x[0] + ': ' + ucFmt(x[1]) + ' (' + pct(x[1]) + ')"></span>').join('') + '</div>'
+    + '<ul class="uc-eb-k">' + parts.map(x => '<li><i style="background:' + x[2] + '"></i>' + x[0] + ' <strong>' + ucFmt(x[1]) + '</strong> <em>' + pct(x[1]) + '</em></li>').join('') + '</ul>'
+    + (e.rest < -supply * 0.02 ? '<p class="uc-eb-n">Users are reported to consume ' + ucFmt(-e.rest) + ' more than the balance accounts for.</p>' : '')
+    + '</div>';
+}
 let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null, UC_FE_OPEN = false, UC_DEF_OPEN = false;
 function ucLoad() {
   if (UC_DATA) return Promise.resolve(UC_DATA);
@@ -2700,7 +2719,7 @@ function ucRender() {
     + Object.entries(UC_UNITS).map(([k, u]) => '<option value="' + k + '"' + (k === UC_UNIT ? ' selected' : '') + '>' + u.label + '</option>').join('') + '</select>'
     + '<svg viewBox="0 0 12 12" width="9" height="9" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></label></div>'
     + '<div class="uc-fe' + (UC_FE_OPEN ? ' is-open' : '') + '" id="uc-fe"><div class="uc-fe-in"><div class="uc-fe-box">' + ucFeText()
-    + '<p><b>Unit</b> ' + U.name + ': ' + U.note + '. Change it with the menu above.</p></div></div></div>'
+    + '<p><b>Unit</b> ' + U.name + ': ' + U.note + '. Change it with the menu above.</p>' + ucElecBridge(info) + '</div></div></div>'
     + '<div class="uc-body"><div class="uc-left">'
     + '<aside class="uc-panel' + (UC_DEF_OPEN ? ' is-open' : '') + '" id="uc-panel" aria-hidden="' + !UC_DEF_OPEN + '">'
     + '<div class="uc-ph"><span>' + (src ? 'Sources' : 'Applications') + '</span><button type="button" class="uc-px" aria-label="Close">×</button></div>'

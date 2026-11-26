@@ -6,6 +6,9 @@ For each country and year, TWh by sector, two ways:
       (biomass: wood, charcoal, crop waste, biofuels, biogas, waste, and solar or geothermal heat used directly)
   Both add up to the same total: feedstocks count under the fuel they are made of.
   flow: for the latest year, TWh from each source to each application (rows: applications, columns: sources).
+  elec: electricity from generation to use (UN electricity balance): gen, imp, exp, plants (power plants' own use and
+        pumped storage), industry (rest of the energy industry), heat (electric boilers, heat pumps), losses (grid),
+        final (consumed by users), rest (unaccounted: the statistical difference).
   - industry  = manufacturing, construction, mining (UN 121)
   - transport = road, rail, domestic flights and shipping, pipelines (122; international bunkers are not counted)
   - homes     = households (1231)
@@ -73,7 +76,23 @@ def twh(cs):
         t += v
     return t / 3600
 
-U = json.load(open('data/build/un_energy.json'))['data']
+UN = json.load(open('data/build/un_energy.json'))
+U, UE = UN['data'], UN.get('elec', {})
+
+def elec_bridge(k, year):
+    """Electricity from generation to use, TWh, for one year (that year, or the latest before it with a full balance)."""
+    ys = sorted((y for y in UE.get(k, {}) if y <= year and '12' in UE[k][y] and ('01' in UE[k][y] or '018' in UE[k][y])), reverse=True)
+    if not ys:
+        return None
+    y = ys[0]; t = {a: v / 3600 for a, v in UE[k][y].items()}
+    gen = t.get('01') or t.get('018', 0)
+    plants = t.get('0927', 0) + t.get('0926', 0)
+    other = t.get('09', 0)                       # the rest of the energy industry (09 leaves out 0926 and 0927)
+    b = {'y': int(y), 'gen': gen, 'imp': t.get('03', 0), 'exp': t.get('04', 0), 'plants': plants, 'industry': max(other, 0),
+         'heat': t.get('0889E', 0) + t.get('0889H', 0), 'losses': t.get('101', 0), 'final': t.get('12', 0)}
+    b['rest'] = gen + b['imp'] - b['exp'] - b['plants'] - b['industry'] - b['heat'] - b['losses'] - b['final']   # unaccounted
+    return {a: (round(v, 2) if isinstance(v, float) else v) for a, v in b.items()}
+
 E = json.load(open('data/energle_data.json'))
 by_iso = {}
 for k in U:
@@ -107,6 +126,9 @@ for name, info in E.items():
         missing.append(name); continue
     out[name] = {'iso3': info['iso3'], 'latestYear': int(latest), 'years': {y: v for y, v in years.items() if y <= latest},
                  'flow': flow(U[k][latest])}   # latest year: application x source
+    eb = elec_bridge(k, latest)
+    if eb:
+        out[name]['elec'] = eb                   # electricity: generated -> trade, energy industry, losses -> consumed
     if sum(years[latest]['s'][i] for i in (0, 1, 2, 4, 5)) <= 0:
         out[name]['onlyElectricity'] = True                     # fuels not reported, only electricity (Puerto Rico)
     gap = [i for i in range(3) if years[latest]['e'][i] <= 0]   # a main sector the country does not report
