@@ -1143,3 +1143,4 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-twh { display: none; }
   .uc-chart { height: 170px; }
 }
+.rn-held { display: block; margin-top: 4px; font-size: .72rem; color: #b45309; }

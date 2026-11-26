@@ -2217,7 +2217,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   window.ensureUsername = function () {
     const p = _ens.apply(this, arguments);
     const note = document.querySelector('#username-modal p'); if (note) note.textContent = 'How you appear on the leaderboard. You can change it later in Stats.';
-    if (window.ENERGLE_TEST) nameGuard();
+    nameGuard();
     return p;
   };
   // Stats: a small "Change name" link under the name
@@ -2226,7 +2226,8 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const r = _stats.apply(this, arguments);
     const who = document.querySelector('#stats-modal .sx-who');
     if (who && getUsername() && !who.querySelector('.rn-link')) {
-      who.insertAdjacentHTML('beforeend', '<button type="button" class="rn-link">Change name</button>');
+      who.insertAdjacentHTML('beforeend', '<button type="button" class="rn-link">Change name</button>'
+        + (NAME_CLAIM === 'other' ? '<span class="rn-held">Another device holds this name: your next result will ask you for a new one.</span>' : ''));
       who.querySelector('.rn-link').addEventListener('click', showRenameModal);
     }
     return r;
@@ -2514,7 +2515,7 @@ if (UC_ON()) document.addEventListener('DOMContentLoaded', () => {
 
 
 // ============================================================
-//  FIRST NAME: TAKEN NAMES ARE REFUSED (test page). The name box no longer suggests a real player's name (its old
+//  FIRST NAME: TAKEN NAMES ARE REFUSED. The name box no longer suggests a real player's name (its old
 //  example, "e.g. OscarV", was being typed in as is), and before the name is accepted it is claimed for this device:
 //  a name another player already holds is refused, so nobody's results land under someone else's name. If the check
 //  can't reach the server, the name is accepted as before.
@@ -2540,3 +2541,38 @@ function nameGuard() {
   btn.addEventListener('click', check, true);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') check(e); }, true);
 }
+
+// ============================================================
+//  RESULTS GO OUT WITH THE BROWSER'S KEY. A name belongs to the browser that claimed it first (see nameClaim). Today's
+//  result is sent through the database function submit_score, which checks that this browser holds the name before it
+//  saves anything. If another browser holds it, the player is asked for a new name and the result is saved under that.
+//  Until the database has submit_score, results go out the old way.
+// ============================================================
+async function nameTakenAsk(old) {
+  try { localStorage.removeItem(LS_USERNAME_KEY); } catch (e) {}
+  NAME_CLAIM = null;
+  const p = ensureUsername();
+  const note = document.querySelector('#username-modal p');
+  if (note) note.textContent = 'Someone else already plays as “' + old + '” on another device. Pick a new name to save today’s result. You can change it again later in Stats.';
+  return p;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const _ins = window.sbInsert; if (typeof _ins !== 'function') return;
+  window.sbInsert = async function (row) {
+    let r;
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/submit_score', { method: 'POST', headers: SB_HEADERS,
+        body: JSON.stringify({ p_username: row.username, p_day: row.day, p_guesses: row.guesses, p_won: row.won, p_key: playerKey() }) });
+      if (res.status === 404) return _ins.apply(this, arguments);       // the database doesn't have it yet: the old way
+      if (!res.ok) return false;                                          // tried again on the next visit
+      r = await res.json();
+    } catch (e) { return false; }
+    STREAKS_P = null;
+    if (r === 'ok' || r === 'dup') { NAME_CLAIM = 'mine'; return true; }
+    if (r === 'taken') {
+      const n = await nameTakenAsk(row.username);
+      return n ? window.sbInsert(Object.assign({}, row, { username: n })) : false;
+    }
+    return false;
+  };
+});
