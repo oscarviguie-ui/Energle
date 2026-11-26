@@ -1634,7 +1634,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 //  as the bars move, and the page behind doesn't scroll.
 // ============================================================
 (function () {
-  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'welcome-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'username-modal', 'rename-modal'];
+  const IDS = ['notice-modal', 'tour-modal', 'howto-modal', 'welcome-modal', 'shop-intro', 'feedback-modal', 'stats-modal', 'lb-modal', 'glossary-modal', 'cl-modal', 'shop-modal', 'device-modal', 'username-modal', 'rename-modal'];
   const vv = window.visualViewport;
   const open = () => IDS.map(id => document.getElementById(id)).filter(Boolean);
   function fit() {
@@ -2218,6 +2218,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
     const p = _ens.apply(this, arguments);
     const note = document.querySelector('#username-modal p'); if (note) note.textContent = 'How you appear on the leaderboard. You can change it later in Stats.';
     nameGuard();
+    if (window.ENERGLE_TEST) deviceLinkInPrompt();
     return p;
   };
   // Stats: a small "Change name" link under the name
@@ -2229,6 +2230,10 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
       who.insertAdjacentHTML('beforeend', '<button type="button" class="rn-link">Change name</button>'
         + (NAME_CLAIM === 'other' ? '<span class="rn-held">Another device holds this name: your next result will ask you for a new one.</span>' : ''));
       who.querySelector('.rn-link').addEventListener('click', showRenameModal);
+      if (window.ENERGLE_TEST) {
+        who.querySelector('.rn-link').insertAdjacentHTML('afterend', '<button type="button" class="rn-link dv-link">Use on another device</button>');
+        who.querySelector('.dv-link').addEventListener('click', () => showDeviceModal());
+      }
     }
     return r;
   };
@@ -2576,3 +2581,74 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   };
 });
+
+// ============================================================
+//  ONE NAME, SEVERAL DEVICES (test page). A name belongs to the browser key that claimed it, so to play under the same
+//  name on a phone and a laptop, the second browser takes the first one's key: Stats -> "Use on another device" shows
+//  this browser's code, and the other browser enters the name and that code. The code is checked against the name
+//  (claim_name answers 'mine' only for the key that holds it) before it is adopted. Also offered in the first-name
+//  prompt and when a result comes back with the name taken.
+// ============================================================
+const dvFmt = k => (k || '').toUpperCase().match(/.{1,4}/g).join('-\u200b');   // may break after each dash
+const dvRaw = v => (v || '').toLowerCase().replace(/[^0-9a-f]/g, '');
+function showDeviceModal(onLinked) {
+  if (document.getElementById('device-modal')) return;
+  const name = getUsername(), code = dvFmt(playerKey());
+  const modal = document.createElement('div'); modal.id = 'device-modal';
+  modal.innerHTML = '<div class="st-backdrop"></div>'
+    + '<div class="st-box rn-box dv-box" role="dialog" aria-modal="true" aria-labelledby="dv-title">'
+    + '<div class="st-header"><span class="st-title" id="dv-title">Play on another device</span><button type="button" class="rn-x" aria-label="Close">×</button></div>'
+    + '<div class="rn-body">'
+    + (name && !onLinked ? '<p class="dv-h">This device’s code</p>'
+      + '<p class="rn-note">To play as <b>' + escHtml(name) + '</b> on another device, open Stats there, tap “Use on another device” and enter your name and this code. Keep it private: anyone with it can play as you.</p>'
+      + '<div class="dv-code"><code id="dv-mine">' + code + '</code><button type="button" class="dv-copy">Copy</button></div>'
+      + '<hr class="dv-rule">' : '')
+    + '<p class="dv-h">Have a code from another device?</p>'
+    + '<p class="rn-note">Enter the name you play under there and its code. This device then plays under that name too.</p>'
+    + '<input id="dv-name" class="dv-in" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Your name">'
+    + '<input id="dv-code" class="dv-in" type="text" maxlength="48" autocomplete="off" spellcheck="false" placeholder="Code from your other device">'
+    + '<p class="rn-msg" id="dv-msg" aria-live="polite"></p>'
+    + '<button type="button" class="rn-go" id="dv-go">Use this name here</button></div></div>';
+  document.body.appendChild(modal);
+  const msg = modal.querySelector('#dv-msg'), go = modal.querySelector('#dv-go');
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', onKey);
+  modal.querySelector('.rn-x').addEventListener('click', close);
+  modal.querySelector('.st-backdrop').addEventListener('click', close);
+  const cp = modal.querySelector('.dv-copy');
+  if (cp) cp.addEventListener('click', () => {
+    const t = modal.querySelector('#dv-mine').textContent.replace(/\u200b/g, '');
+    const done = () => { cp.textContent = 'Copied'; setTimeout(() => { cp.textContent = 'Copy'; }, 1500); };
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(done).catch(() => {
+      const r = document.createRange(); r.selectNodeContents(modal.querySelector('#dv-mine')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); });
+  });
+  const say = (t, ok) => { msg.textContent = t; msg.classList.toggle('is-ok', !!ok); };
+  go.addEventListener('click', async () => {
+    const n = modal.querySelector('#dv-name').value.trim(), k = dvRaw(modal.querySelector('#dv-code').value);
+    if (n.length < 2) return say('Enter the name you play under.');
+    if (k.length !== 32) return say('The code has 32 letters and numbers (dashes don’t matter).');
+    if (k === dvRaw(playerKey()) && n === name) return say('That’s already this device.', true);
+    go.disabled = true; say('Checking…', true);
+    let r = null; try { r = await sbRpc('claim_name', { p_name: n, p_key: k }); } catch (e) {}
+    go.disabled = false;
+    if (r === 'other') return say('That code doesn’t match the name “' + n + '”.');
+    if (r !== 'mine') return say('Couldn’t check the code. Try again in a moment.');
+    try { localStorage.setItem(PLAYER_KEY_LS, k); } catch (e) {}
+    NAME_CLAIM = 'mine'; MY_SCORES = null; STREAKS_P = null;
+    close();
+    if (onLinked) return onLinked(n);
+    setUsername(n);
+    try { loadPodium(); } catch (e) {}
+    const st = document.getElementById('stats-modal'); if (st) showStatsModal(false);
+  });
+}
+function deviceLinkInPrompt() {
+  const modal = document.getElementById('username-modal'); if (!modal || modal.querySelector('.dv-link')) return;
+  const btn = modal.querySelector('#username-confirm'); if (!btn) return;
+  btn.insertAdjacentHTML('afterend', '<button type="button" class="rn-link dv-link dv-in-prompt">Already play on another device?</button>');
+  modal.querySelector('.dv-link').addEventListener('click', () => showDeviceModal(n => {
+    const input = modal.querySelector('#username-input'); if (!input) return;
+    input.value = n; btn.click();                         // the name is now this device's: the prompt takes it as usual
+  }));
+}

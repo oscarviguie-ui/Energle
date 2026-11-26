@@ -1144,3 +1144,16 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-chart { height: 170px; }
 }
 .rn-held { display: block; margin-top: 4px; font-size: .72rem; color: #b45309; }
+/* ---- Play on another device (test page) */
+.dv-box .rn-body { display: flex; flex-direction: column; }
+.dv-h { margin: 0 0 .35rem; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #555; }
+.dv-code { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 3px; background: #f7f7f4; }
+.dv-code code { flex: 1; min-width: 0; font-size: .8rem; letter-spacing: .02em; word-break: normal; overflow-wrap: break-word; line-height: 1.5; color: #1a1a1a; }
+.dv-copy { flex: none; padding: 4px 10px; border: 1px solid #1a1a1a; border-radius: 3px; background: #fff; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+.dv-rule { border: 0; border-top: 1px solid #ececea; margin: 1rem 0 .9rem; }
+.dv-in { width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 8px 12px; border: 1px solid #d0d0d0; border-radius: 3px; font: inherit; font-size: .9rem; outline: none; }
+.dv-in:focus { border-color: #1a1a1a; }
+#dv-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; }
+.sx-who .dv-link { margin-left: 10px; }
+.dv-in-prompt { display: block; margin: 10px auto 0; }
+#device-modal { position: fixed; inset: 0; z-index: 10050; display: flex; align-items: center; justify-content: center; padding: 16px; }
