@@ -260,7 +260,7 @@ function globeCountryHTML(c) {
 }
 function globeRegionHTML(r) {
   return '<div class="gl-p-head"><span class="gl-reg-ico" aria-hidden="true">' + GLOBE_ICON + '</span><div><h3>' + r.name + '</h3><span>'
-    + (groupOf(r.region).trait && groupOf(r.region).trait !== 'source' ? '<span class="gl-sub-x">' + groupOf(r.region).rule + ' · </span>' : '') + r.n + ' countries<span class="gl-sub-x"> added together</span> · ' + r.latestYear + '</span></div>'
+    + (groupOf(r.region).trait && groupOf(r.region).trait !== 'source' ? '<span class="gl-sub-x gl-sub-rule">' + groupOf(r.region).rule + ' · </span>' : '') + r.n + ' countries<span class="gl-sub-x"> added together</span> · ' + r.latestYear + '</span></div>'
     + (r.region === 'all'      // the world: every practice group; a group: a round on just its countries
       ? '<button type="button" class="gl-practice" onclick="renderPracticePickerScreen()">Practice<span class="gl-pr-n"> by group</span> →</button>'
       : '<button type="button" class="gl-practice" onclick="startPractice(\'' + r.region + '\')">Practice<span class="gl-pr-n"> these ' + r.n + '</span> →</button>')

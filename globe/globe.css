@@ -1363,3 +1363,26 @@ body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-sh
 }
 .fe-stage .nx-arr { top: 50%; transform: translateY(-50%); }
 .fe-stage .nx-prev { left: 0; } .fe-stage .nx-next { right: 0; }
+
+/* test: the panel's head in two rows on laptops and tablets. Row 1: flag or icon, name over one line of detail, Practice,
+   close. Row 2: the tabs, sharing the panel's full width evenly. A group's rule moves out of the subtitle (its definition
+   says it, just below), and the definition keeps clear of the Electricity heading. */
+@media (min-width: 701px) {
+  body.ex-test.at-globe .gl-side > .gl-p-head { flex-wrap: wrap; row-gap: 10px; column-gap: 10px; }
+  body.ex-test.at-globe .gl-p-head > div:not(.gl-tabs) { flex: 1 1 0; min-width: 0; }
+  body.ex-test.at-globe .gl-p-head h3 { overflow: visible; text-overflow: clip; }
+  body.ex-test.at-globe .gl-p-head > div:not(.gl-tabs) > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.ex-test.at-globe .gl-sub-rule { display: none; }
+  body.ex-test.at-globe .gl-p-head .gl-practice { margin-left: 0; }
+  body.ex-test.at-globe .gl-p-head .gl-x { margin-left: 0; }
+  /* the tabs as one segmented bar: equal parts at any count, so the row is always full */
+  body.ex-test.at-globe .gl-p-head .gl-tabs { order: 3; flex: 1 1 100%; margin: 0; gap: 2px; padding: 3px; border-radius: 999px; background: #f1efe9; }
+  body.ex-test.at-globe .gl-p-head .gl-tabs > :first-child { margin-left: 0; }
+  body.ex-test.at-globe .gl-p-head .gl-tabs-sep { margin: 0 3px; height: 16px; background: #d9d6cd; }
+  body.ex-test.at-globe .gl-p-head .gl-tab { flex: 1 0 auto; min-height: 28px; border: 0; background: transparent; text-align: center; }
+  body.ex-test.at-globe .gl-p-head .gl-tab:hover { background: #fff; }
+  body.ex-test.at-globe .gl-p-head .gl-tab[aria-selected="true"] { background: #1a1a1a; color: #fff; }
+  body.ex-test.at-globe .gl-p-head .gl-tab--card[aria-selected="true"] { background: #f5a623; color: #1a1a1a; }
+  body.ex-test.at-globe .gl-def { margin: -2px 0 4px; }
+  body.ex-test.at-globe #sec-elec { margin-top: 0; }
+}
