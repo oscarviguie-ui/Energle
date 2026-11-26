@@ -1067,10 +1067,11 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
 // What's new: the Clue Shop from round 1 (while window.SHOP_FROM_START is set)
 const SHOP_ROUND1_UPDATE = ['23 Nov', 'Clue Shop from round 1',
   'The Clue Shop now opens before your first guess: trade a guess for a clue card whenever you like, even to start. Your last guess can never be spent, so you always get a final try.'];
-const FE_UPDATE = ['26 Nov', 'Where energy goes',
-  'A new card under the charts follows a country’s energy to the people using it: what it uses (oil, gas, coal, biomass, electricity, district heat) and what for (industry, transport, homes, services, raw materials). '
-  + 'See how electrified a country is, who still cooks with wood, where pipes heat whole cities. Pick your unit, open Definitions for what each group covers, and click the title for how this differs from electricity generation. '
-  + 'Every card now shows the year of its data: a year in red with a ! is not the year of the electricity data.'];
+const FE_UPDATE = ['26 Nov', 'A new layer: final energy',
+  'Until now Energle showed electricity, about a fifth of the energy the world uses. Now it shows all of it. '
+  + 'Final energy follows every fuel to the people using it, from oil in cars and gas in boilers to wood in stoves and power at the socket, and shows what it is for: industry, transport, homes, services, raw materials. '
+  + 'Electricity becomes one source among six, so you can see how electrified a country really is, who still cooks with wood, and where pipes heat whole cities. '
+  + 'Every card now also shows the year of its data: a red year with a ! is not the year of the electricity data.'];
 const EXPLORE_UPDATE = ['13 Nov', 'Explore: the world on a map',
   'Practice is now Explore. Click any country for its full profile and clue cards. Add up a continent, a bloc like the EU or OPEC, or a trait like Green leaders, clue cards included. Click a source under the charts to colour the map by it. And practise on any group. In the daily, the Map button opens a globe to pick your guesses on.'];
 let NX_SVG = null;
@@ -1195,7 +1196,7 @@ function showNoticeWide() {
   // the featured update: the Clue Shop (its own picture) or Explore (the map demo)
   const cell = c => '<span class="battery-cell ' + c + '"></span>';
   const feature = feNews
-    ? '<div class="nx-fe" id="nx-fe" aria-hidden="true"><span class="nx-fe-cap">The world’s final energy: sources → applications</span><div class="nx-fe-flow"></div></div>'
+    ? '<div class="nx-fe" id="nx-fe" aria-hidden="true"><span class="nx-fe-cap">All the world’s final energy · electricity is 21%</span><div class="nx-fe-flow"></div></div>'
     : shopNews
     ? '<div class="nx-shop" aria-hidden="true">' + SHOP_ICON.replace('class="shop-ico"', 'class="nx-shop-sign" style="--awn:#f5c842;color:#1a1a1a"')
       + '<span class="nx-shop-bat"><span class="battery si-bat"><span class="battery-body">' + cell('si-card') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + cell('is-on is-high') + '</span><span class="battery-cap"></span></span><em>a card before your first guess</em></span>'
