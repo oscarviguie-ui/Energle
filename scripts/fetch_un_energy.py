@@ -41,7 +41,7 @@ for tr in SECTORS:   # one query per sector keeps each response a manageable siz
 
 # electricity balance, from generation to use: gross production, imports, exports, energy industry own use, losses,
 # electricity turned into heat (electric boilers, heat pumps), final consumption
-ELEC_TR = ['018', '03', '04', '09', '101', '0889E', '0889H', '12']
+ELEC_TR = ['01', '018', '019', '03', '04', '09', '0926', '0927', '101', '0889E', '0889H', '12']
 elec = {}
 raw = get(BASE + '/data/DF_UNDATA_ENERGY/A..7000.' + '+'.join(ELEC_TR) + '?startPeriod=' + str(START), 'application/vnd.sdmx.data+csv;version=1.0.0')
 for r in csv.DictReader(io.StringIO(raw.decode('utf-8'))):
