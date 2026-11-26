@@ -275,6 +275,9 @@ function cardScope() {
    'hubY', 'hubH', 'hubPos', 'hubLPos', 'tradeAria', 'tradeViews', 'hasVol', 'noVol', 'covTxt', 'neighbours', 'dayPts', 'dayArea', 'avgLine'].forEach(k => { r[k] = v2[k]; });
   r.tradeYear = (e.trade || {}).year || '';
   r.elecYear = (e.elec || {}).year || '';
+  // card dates (test page): the year each card's data is from ('long-term avg' for climate averages)
+  const dt = window.ENERGLE_TEST ? (e.dates || {}) : {}, sep = v => v ? ' · ' + v : '';
+  r.natDate = sep(dt.nature); r.underDate = sep(dt.under); r.peopleDate = sep(dt.people);
   r.noNeighbours = !((e.elec || {}).NB || []).some(n => n[2] + n[3] > 0);
   return r;
 }
