@@ -2489,12 +2489,13 @@ function ucElecBridge(info) {
     ['Unaccounted', e.rest > 0 ? e.rest : 0, 'repeating-linear-gradient(135deg,#d8d8d2 0 3px,#f4f4f0 3px 6px)'],
   ].filter(x => x[1] > supply * 0.002);
   const pct = v => ucPct(v / supply);
-  return '<div class="uc-eb"><p class="uc-eb-in"><b class="uc-eb-t">Electricity</b>'
+  return '<div class="uc-eb"><p class="uc-eb-in"><b class="uc-eb-t">Electricity' + (e.differs ? '<span class="uc-ast" aria-hidden="true">*</span>' : '') + '</b>'
     + '<span>' + e.y + ' (UN): generated <strong>' + ucFmt(e.gen) + '</strong></span>'
     + (net > supply * 0.002 ? '<span>+ net imports <strong>' + ucFmt(net) + '</strong></span>' : '') + '</p>'
     + '<div class="uc-eb-bar">' + parts.map(x => '<span style="width:' + tw(x[1]).toFixed(2) + '%;background:' + x[2] + '" title="' + x[0] + ': ' + ucFmt(x[1]) + ' (' + pct(x[1]) + ')"></span>').join('') + '</div>'
     + '<ul class="uc-eb-k">' + parts.map(x => '<li><i style="background:' + x[2] + '"></i>' + x[0] + ' <strong>' + ucFmt(x[1]) + '</strong> <em>' + pct(x[1]) + '</em></li>').join('') + '</ul>'
     + (e.rest < -supply * 0.02 ? '<p class="uc-eb-n">Users are reported to consume ' + ucFmt(-e.rest) + ' more than the balance accounts for.</p>' : '')
+    + (e.differs ? '<p class="uc-eb-d"><span class="uc-ast">*</span> For ' + e.y + ', the UN’s electricity figures here differ from the electricity data in the cards above (Ember): simply different data, not all sources agree.</p>' : '')
     + '</div>';
 }
 let UC_DATA = null, UC_MODE = 's', UC_CHART = null, UC_LOADING = null, UC_FE_OPEN = false, UC_DEF_OPEN = false;

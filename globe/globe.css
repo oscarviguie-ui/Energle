@@ -1268,3 +1268,5 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
 .cd-yr, .uc-fe-box .cd-yr { display: inline !important; margin: 0 !important; font: inherit; font-weight: 800; letter-spacing: inherit; text-transform: inherit; color: inherit; }
 .cd-yr.is-off, .uc-fe-box .cd-yr.is-off { color: #9b3b36; cursor: help; }
 .cd-bang { margin-left: 1px; letter-spacing: 0; font-weight: 800; color: #9b3b36; }
+.uc-ast { color: #c0392b; font-weight: 700; margin-left: 2px; }
+.uc-eb-d { font-size: .72rem !important; color: #777 !important; }

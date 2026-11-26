@@ -128,6 +128,13 @@ for name, info in E.items():
                  'flow': flow(U[k][latest])}   # latest year: application x source
     eb = elec_bridge(k, latest)
     if eb:
+        # the UN and Ember (the game's electricity data) disagree for the same year: generation off by over 10%, or net
+        # trade off by over 5% of generation (Moldova without Transnistria, Iraq, Bhutan...). The card says so.
+        em = (info.get('years') or {}).get(str(eb['y'])) or {}
+        if em.get('Total'):
+            g, net_gap = eb['gen'], abs((eb['imp'] - eb['exp']) - (em.get('NetImports') or 0))
+            if abs(g - em['Total']) > 0.10 * em['Total'] or net_gap > 0.05 * max(g, em['Total'], em.get('Demand') or 0):
+                eb['differs'] = True
         out[name]['elec'] = eb                   # electricity: generated -> trade, energy industry, losses -> consumed
     if sum(years[latest]['s'][i] for i in (0, 1, 2, 4, 5)) <= 0:
         out[name]['onlyElectricity'] = True                     # fuels not reported, only electricity (Puerto Rico)
