@@ -205,6 +205,11 @@ const GLOBE_GROUPS = [
   { id: 'opec', chip: 'OPEC', name: 'OPEC', bloc: true, iso: 'DZA COG GNQ GAB IRN IRQ KWT LBY NGA SAU ARE VEN' },
   { id: 'brics', chip: 'BRICS', name: 'BRICS', bloc: true, iso: 'BRA RUS IND CHN ZAF EGY ETH IRN ARE IDN' },
 ];
+// on trial (test page): three more blocs
+if (window.ENERGLE_TEST) GLOBE_GROUPS.push(
+  { id: 'oecd', chip: 'OECD', name: 'OECD', bloc: true, iso: 'AUS AUT BEL CAN CHL COL CRI CZE DNK EST FIN FRA DEU GRC HUN ISL IRL ISR ITA JPN KOR LVA LTU LUX MEX NLD NZL NOR POL PRT SVK SVN ESP SWE CHE TUR GBR USA' },
+  { id: 'nato', chip: 'NATO', name: 'NATO', bloc: true, iso: 'ALB BEL BGR CAN HRV CZE DNK EST FIN FRA DEU GRC HUN ISL ITA LVA LTU LUX MNE NLD MKD NOR POL PRT ROU SVK SVN ESP SWE TUR GBR USA' },
+  { id: 'asean', chip: 'ASEAN', name: 'ASEAN', bloc: true, iso: 'BRN KHM IDN LAO MYS MMR PHL SGP THA VNM TLS' });
 GLOBE_GROUPS.forEach(g => { if (g.iso) { const set = new Set(g.iso.split(' ')); g.test = c => set.has(c.iso3); } });
 const groupOf = id => GLOBE_GROUPS.find(g => g.id === id) || GLOBE_GROUPS[0];
 const REGION_NAMES = Object.fromEntries(GLOBE_GROUPS.map(g => [g.id, g.name]));
@@ -477,6 +482,9 @@ const GLOBE_DEFS = {
   g7: 'Canada, France, Germany, Italy, Japan, the United Kingdom and the United States.',
   opec: 'The 12 members of OPEC: Algeria, Congo, Equatorial Guinea, Gabon, Iran, Iraq, Kuwait, Libya, Nigeria, Saudi Arabia, the UAE and Venezuela.',
   brics: 'Brazil, Russia, India, China and South Africa, plus Egypt, Ethiopia, Iran and the UAE (joined 2024) and Indonesia (2025).',
+  oecd: 'The 38 members of the OECD, the club of mostly high-income economies: most of Europe, North America, Japan, South Korea, Australia, New Zealand, Israel, Turkey, and Chile, Colombia, Costa Rica and Mexico.',
+  nato: 'The 32 members of NATO: the United States, Canada and 30 European countries, Finland (2023) and Sweden (2024) the newest. Albania has no electricity data here, so 31 are added up.',
+  asean: 'The 11 members of ASEAN: Brunei, Cambodia, Indonesia, Laos, Malaysia, Myanmar, the Philippines, Singapore, Thailand, Vietnam and Timor-Leste (2025).',
   major: 'Generated 100 TWh or more in its latest year of data.',
   highcap: 'Electricity demand of 7 MWh or more per person in its latest year of data.',
   green: 'Renewables (hydro, wind, solar, bioenergy and other renewables) make up 70% or more of generation in its latest year. Nuclear does not count as renewable.',
@@ -533,6 +541,7 @@ const GLOBE_VIEWS = {
   namerica: [-92, 33, 3900], samerica: [-60, -19, 3500],
   eu: [13, 51, 2200], g7: [-35, 45, 6200], opec: [20, 18, 5200], brics: [62, 18, 6500],
 };
+if (window.ENERGLE_TEST) Object.assign(GLOBE_VIEWS, { oecd: [-25, 40, 7000], nato: [-35, 50, 6800], asean: [113, 8, 3400] });
 let GLOBE_PROJ = 'globe';
 function globeProj(type) {
   if (!GLOBE || GLOBE_PROJ === type) return;
@@ -2208,6 +2217,7 @@ if (globeOn()) document.addEventListener('DOMContentLoaded', () => {
   window.ensureUsername = function () {
     const p = _ens.apply(this, arguments);
     const note = document.querySelector('#username-modal p'); if (note) note.textContent = 'How you appear on the leaderboard. You can change it later in Stats.';
+    if (window.ENERGLE_TEST) nameGuard();
     return p;
   };
   // Stats: a small "Change name" link under the name
@@ -2501,3 +2511,32 @@ if (UC_ON()) document.addEventListener('DOMContentLoaded', () => {
   const f = window.renderCharts; if (typeof f !== 'function') return;
   window.renderCharts = function () { const r = f.apply(this, arguments); ucLoad().then(() => { try { ucRender(); } catch (e) {} }).catch(() => {}); return r; };
 });
+
+
+// ============================================================
+//  FIRST NAME: TAKEN NAMES ARE REFUSED (test page). The name box no longer suggests a real player's name (its old
+//  example, "e.g. OscarV", was being typed in as is), and before the name is accepted it is claimed for this device:
+//  a name another player already holds is refused, so nobody's results land under someone else's name. If the check
+//  can't reach the server, the name is accepted as before.
+// ============================================================
+function nameGuard() {
+  const modal = document.getElementById('username-modal'); if (!modal || modal.dataset.guard) return;
+  modal.dataset.guard = '1';
+  const input = modal.querySelector('#username-input'), err = modal.querySelector('#username-error'), btn = modal.querySelector('#username-confirm');
+  if (!input || !btn) return;
+  input.placeholder = 'e.g. SolarFox';
+  let ok = '', busy = false;
+  const check = async e => {
+    const v = input.value.trim();
+    if (ok && v === ok) return;                                  // already checked: let the game take the name
+    if (v.length < 2 || v.length > 20 || !/^[a-zA-Z0-9_ .\-]+$/.test(v)) return;   // the game explains these
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (busy) return; busy = true; btn.disabled = true; err.style.color = '#888'; err.textContent = 'Checking…';
+    let r = null; try { r = await sbRpc('claim_name', { p_name: v, p_key: playerKey() }); } catch (x) {}
+    busy = false; btn.disabled = false; err.style.color = '';
+    if (r === 'other') { err.textContent = 'Someone already plays as “' + v + '”. Pick another name.'; input.focus(); return; }
+    err.textContent = ''; ok = v; NAME_CLAIM = r === 'mine' ? 'mine' : NAME_CLAIM; btn.click();
+  };
+  btn.addEventListener('click', check, true);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') check(e); }, true);
+}
