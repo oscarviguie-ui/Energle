@@ -2446,11 +2446,16 @@ if (EV_ON()) document.addEventListener('DOMContentLoaded', () => {
 // ============================================================
 const UC_ON = () => globeOn() && !!window.USE_CARD;
 const UC_SECTORS = [
-  { k: 'Industry', c: '#5b6b82', tip: 'Factories, mines and construction' },
-  { k: 'Transport', c: '#d98a2b', tip: 'Road, rail, domestic flights and shipping, pipelines. International flights and shipping are not counted' },
-  { k: 'Homes', c: '#c0567a', tip: 'Heating, cooking, cooling and appliances in households' },
-  { k: 'Services & other', c: '#3f95a8', tip: 'Offices, shops, schools, hospitals, farming and fishing' },
-  { k: 'Feedstocks', c: '#9a7b5f', tip: 'Fuels used as a raw material, not burnt: plastics, fertiliser, asphalt, lubricants' }
+  { k: 'Industry', c: '#5b6b82', tip: 'Factories, mines and construction',
+    ic: '<path d="M3 20V11l5 3v-3l5 3v-3l5 3V5h3v15z"/><path d="M7 17h2M12 17h2M16.5 17h1.5"/>' },
+  { k: 'Transport', c: '#d98a2b', tip: 'Road, rail, domestic flights and shipping, pipelines. International flights and shipping are not counted',
+    ic: '<path d="M4 15l1.6-4.6A2 2 0 0 1 7.5 9h9a2 2 0 0 1 1.9 1.4L20 15v3h-2M4 15v3h2M4 15h16"/><circle cx="8" cy="18" r="1.6"/><circle cx="16" cy="18" r="1.6"/>' },
+  { k: 'Homes', c: '#c0567a', tip: 'Heating, cooking, cooling and appliances in households',
+    ic: '<path d="M3.5 11.5L12 5l8.5 6.5"/><path d="M6 10v10h12V10"/><path d="M10 20v-5h4v5"/>' },
+  { k: 'Services', c: '#3f95a8', tip: 'Offices, shops, schools and hospitals, plus farming, fishing and anything unspecified',
+    ic: '<rect x="5" y="4" width="14" height="16" rx="1.2"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M11 20v-3.5h2V20"/>' },
+  { k: 'Feedstocks', c: '#9a7b5f', tip: 'Fuels used as a raw material, not burnt: plastics, fertiliser, asphalt, lubricants',
+    ic: '<path d="M9.5 3.5h5M10.5 3.5v6L5.3 18a2 2 0 0 0 1.7 3h10a2 2 0 0 0 1.7-3l-5.2-8.5v-6"/><path d="M7.4 15h9.2"/>' }
 ];
 let UC_DATA = null, UC_MODE = 'e', UC_CHART = null, UC_LOADING = null;
 function ucLoad() {
@@ -2468,6 +2473,12 @@ function ucPop(name) {   // people, from the electricity data (demand ÷ demand 
   const i = ALL_DATA[name]; if (!i || !i.latestDpc) return 0;
   const d = i.years[i.latestYear] || {}; return d.Demand ? d.Demand * 1e6 / i.latestDpc : 0;
 }
+let UC_WORLD_POP = 0;
+function ucWorldPop() {   // people in all the countries the card covers
+  if (!UC_WORLD_POP) UC_WORLD_POP = Object.keys(UC_DATA.by).reduce((a, n) => a + ucPop(n), 0);
+  return UC_WORLD_POP;
+}
+function ucIcon(sec) { return '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' + sec.ic + '</svg>'; }
 function ucRender() {
   const legend = document.getElementById('legend-shared');
   let card = document.getElementById('use-card');
@@ -2477,37 +2488,46 @@ function ucRender() {
     legend.insertAdjacentHTML('afterend', '<section id="use-card" aria-label="How the energy is used"></section>');
     card = document.getElementById('use-card');
     card.addEventListener('click', e => { const b = e.target.closest('[data-uc]'); if (b && b.dataset.uc !== UC_MODE) { UC_MODE = b.dataset.uc; ucRender(); } });
+    // pointing at a sector picks out its line in the chart
+    const pick = i => { if (!UC_CHART) return; UC_CHART.data.datasets.forEach((d, j) => { d.borderColor = i == null || i === j ? d._c : d._c + '30'; d.borderWidth = i === j ? 3 : 2; }); UC_CHART.update('none'); };
+    card.addEventListener('mouseover', e => { const t = e.target.closest('[data-si]'); pick(t ? +t.dataset.si : null); });
+    card.addEventListener('mouseleave', () => pick(null));
   }
   const el = UC_MODE === 'el', y = String(info.latestYear), d = info.years[y][UC_MODE];
   const secs = UC_SECTORS.slice(0, d.length), total = d.reduce((a, b) => a + b, 0);
   const wy = UC_DATA.world[y] || UC_DATA.world[Object.keys(UC_DATA.world).sort().pop()];
   const w = wy[UC_MODE], wt = w.reduce((a, b) => a + b, 0);
-  const pop = ucPop(target.name), per = pop ? total * 1e6 / pop : 0;
-  const gap = (info.notReported || []).map(i => UC_SECTORS[i].k.toLowerCase());
-  const rows = secs.map((s, i) => {
-    const sh = total ? d[i] / total : 0, ws = wt ? w[i] / wt : 0, nr = (info.notReported || []).includes(i);
-    return '<div class="uc-row" title="' + s.tip + '">'
-      + '<span class="uc-name"><i style="background:' + s.c + '"></i>' + s.k + '</span>'
-      + '<span class="uc-track"><span class="uc-fill" style="width:' + (sh * 100).toFixed(1) + '%;background:' + s.c + '"></span>'
-      + '<span class="uc-world" style="left:' + (ws * 100).toFixed(1) + '%" title="World: ' + ucPct(ws) + '"></span></span>'
-      + '<span class="uc-pct">' + (nr ? '—' : ucPct(sh)) + '</span><span class="uc-twh">' + (nr ? 'n/a' : ucFmt(d[i])) + '</span></div>';
+  const pop = ucPop(target.name), per = pop ? total * 1e6 / pop : 0, wper = ucWorldPop() ? wt * 1e6 / ucWorldPop() : 0;
+  const gap = info.notReported || [];
+  const sh = d.map(v => total ? v / total : 0), ws = w.map(v => wt ? v / wt : 0);
+  const top = sh.indexOf(Math.max(...sh));
+  const fmtPer = v => (v >= 10 ? Math.round(v) : v.toFixed(1)) + ' MWh';
+  const bar = (arr, cls) => '<div class="uc-bar ' + cls + '">' + secs.map((s, i) => arr[i] > 0
+    ? '<span data-si="' + i + '" style="flex:' + arr[i].toFixed(4) + ' 0 0;background:' + s.c + '" title="' + s.k + ': ' + ucPct(arr[i]) + '"></span>' : '').join('') + '</div>';
+  const tiles = secs.map((s, i) => {
+    const nr = gap.includes(i), diff = Math.round((sh[i] - ws[i]) * 100);
+    return '<div class="uc-tile' + (i === top ? ' is-top' : '') + '" data-si="' + i + '" style="--c:' + s.c + '" title="' + s.tip + '">'
+      + '<span class="uc-ic">' + ucIcon(s) + '</span>'
+      + '<span class="uc-pc">' + (nr ? '—' : ucPct(sh[i])) + '</span>'
+      + '<span class="uc-nm">' + s.k + '</span>'
+      + '<span class="uc-wd">' + (nr ? 'not reported' : 'World ' + ucPct(ws[i]) + (Math.abs(diff) >= 3 ? ' <b class="' + (diff > 0 ? 'up' : 'dn') + '">' + (diff > 0 ? '▲' : '▼') + '</b>' : '')) + '</span></div>';
   }).join('');
   card.innerHTML = '<div class="uc-head"><span class="stat-label">' + (el ? 'Who uses the electricity' : 'Who uses the energy') + ' — ' + y + '</span>'
     + '<div class="uc-switch" role="group" aria-label="Energy or electricity">'
     + '<button type="button" data-uc="e" aria-pressed="' + !el + '">All energy</button>'
     + '<button type="button" data-uc="el" aria-pressed="' + el + '">Electricity</button></div></div>'
     + '<div class="uc-body"><div class="uc-left">'
-    + '<div class="uc-total"><strong>' + ucFmt(total) + '</strong> ' + (el ? 'of electricity used' : 'of final energy used')
-    + (per ? ' · <strong>' + (per >= 10 ? Math.round(per) : per.toFixed(1)) + ' MWh</strong> per person' : '') + '</div>'
-    + '<div class="uc-rows">' + rows + '</div>'
-    + '<p class="uc-key"><span class="uc-world-key"></span> world share' + (gap.length ? ' · ' + gap.join(', ') + ' not reported' : '') + '</p></div>'
+    + '<div class="uc-stats"><div class="uc-stat"><span class="uc-big">' + ucFmt(total) + '</span><span class="uc-sub">' + (el ? 'electricity used' : 'final energy used') + '</span></div>'
+    + (per ? '<div class="uc-stat"><span class="uc-big">' + fmtPer(per) + '</span><span class="uc-sub">per person · World ' + fmtPer(wper) + '</span></div>' : '') + '</div>'
+    + '<div class="uc-bars"><span class="uc-bl">' + escHtml(target.name) + '</span>' + bar(sh, 'is-c') + '<span class="uc-bl">World</span>' + bar(ws, 'is-w') + '</div>'
+    + '<div class="uc-tiles" style="--n:' + secs.length + '">' + tiles + '</div></div>'
     + '<div class="uc-right"><p class="chart-label">' + (el ? 'Electricity' : 'Final energy') + ' use by sector (TWh)</p><div class="uc-chart"><canvas id="uc-canvas"></canvas></div></div></div>'
     + '<p class="og-src og-src--in uc-src">Source: UN Energy Statistics Database (UNSD)</p>';
   if (UC_CHART) { UC_CHART.destroy(); UC_CHART = null; }
   const ys = Object.keys(info.years).sort(), cv = document.getElementById('uc-canvas');
   if (window.Chart && cv) UC_CHART = new Chart(cv, {
     type: 'line',
-    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, data: ys.map(yy => info.years[yy][UC_MODE][i]), borderColor: s.c, backgroundColor: s.c,
+    data: { labels: ys, datasets: secs.map((s, i) => ({ label: s.k, _c: s.c, data: ys.map(yy => gap.includes(i) ? null : info.years[yy][UC_MODE][i]), borderColor: s.c, backgroundColor: s.c,
       borderWidth: 2, pointRadius: 0, pointHoverRadius: 3, tension: .25 })) },
     options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' ' + c.dataset.label + ': ' + ucFmt(c.parsed.y) } } },
