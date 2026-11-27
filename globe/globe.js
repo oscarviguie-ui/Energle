@@ -2611,9 +2611,9 @@ function ucFlowSVG(m, W, Hbox) {
     const hs = sv[j] ? v / sv[j] * S[j].h : 0, ha = av[i] ? v / av[i] * A[i].h : 0;
     const ya = sOff[j], yb = aOff[i]; sOff[j] += hs; aOff[i] += ha;
     const L = x0 + NW, R = x1;
-    links += '<path class="uf-l" data-s="' + j + '" data-a="' + i + '" fill="' + src.c + '" d="M' + L + ',' + ya.toFixed(1) + 'C' + xm + ',' + ya.toFixed(1) + ' ' + xm + ',' + yb.toFixed(1) + ' ' + R + ',' + yb.toFixed(1)
-      + 'L' + R + ',' + (yb + ha).toFixed(1) + 'C' + xm + ',' + (yb + ha).toFixed(1) + ' ' + xm + ',' + (ya + hs).toFixed(1) + ' ' + L + ',' + (ya + hs).toFixed(1) + 'Z">'
-      + '<title>' + src.k + ' → ' + UC_SECTORS[i].k + ': ' + ucFmt(v) + ' (' + ucPct(v / sv[j]) + ' of ' + src.k.toLowerCase() + ', ' + ucPct(v / av[i]) + ' of ' + UC_SECTORS[i].k.toLowerCase() + ')</title></path>';
+    links += '<path class="uf-l" data-s="' + j + '" data-a="' + i + '" data-v="' + v + '" data-ps="' + (sv[j] ? v / sv[j] : 0) + '" data-pa="' + (av[i] ? v / av[i] : 0) + '" data-pt="' + v / tot + '" fill="' + src.c + '" d="M' + L + ',' + ya.toFixed(1) + 'C' + xm + ',' + ya.toFixed(1) + ' ' + xm + ',' + yb.toFixed(1) + ' ' + R + ',' + yb.toFixed(1)
+      + 'L' + R + ',' + (yb + ha).toFixed(1) + 'C' + xm + ',' + (yb + ha).toFixed(1) + ' ' + xm + ',' + (ya + hs).toFixed(1) + ' ' + L + ',' + (ya + hs).toFixed(1) + 'Z"'
+      + ' aria-label="' + src.k + ' to ' + UC_SECTORS[i].k + ': ' + ucFmt(v) + '"></path>';   // the box comes from ucLinkTip
   }); });
   const labels = (nodes, vals, list, side) => {     // labels beside the nodes, nudged apart so none overlap
     const items = nodes.map((n, i) => ({ i, c: n.y + n.h / 2, n, v: vals[i] })).filter(o => o.v > 0).sort((a, b) => a.c - b.c);
@@ -2643,6 +2643,7 @@ function ucFlowDraw() {
 }
 function ucPick(kind, i) {   // light up one source or application: its bands in the flow, its line in the chart
   const card = document.getElementById('use-card'); if (!card) return;
+  if (UC_LINK_ON) { UC_LINK_ON = false; hideTooltip(); }
   card.classList.toggle('uf-on', i != null);
   card.querySelectorAll('.uf-l').forEach(p => p.classList.toggle('is-hi', i != null && p.dataset[kind] === String(i)));
   card.querySelectorAll('[data-l],[data-r]').forEach(n => n.classList.toggle('is-hi', i != null && ((kind === 's' && n.dataset.l === String(i)) || (kind === 'a' && n.dataset.r === String(i)))));
@@ -2670,7 +2671,7 @@ function ucTooltip(context) {
 // the game hides its tooltip whenever the mouse leaves the main charts: not while it is on this card's chart
 document.addEventListener('DOMContentLoaded', () => {
   const _hide = window.hideTooltip; if (typeof _hide !== 'function') return;
-  window.hideTooltip = function () { if (UC_TIP_ON) return; return _hide.apply(this, arguments); };
+  window.hideTooltip = function () { if (UC_TIP_ON || UC_LINK_ON) return; return _hide.apply(this, arguments); };
   document.addEventListener('mousemove', e => { if (UC_TIP_ON && !e.target.closest('#uc-canvas')) { UC_TIP_ON = false; _hide(); } });
 });
 function ucPanelFit() {   // the panel covers the left column; if its list is taller (small phones), the column grows
@@ -2750,9 +2751,11 @@ function ucRender() {
       if (t.dataset.si != null) return ucPick(UC_MODE === 's' ? 's' : 'a', +t.dataset.si);
       if (t.dataset.l != null) return ucPick('s', +t.dataset.l);
       if (t.dataset.r != null) return ucPick('a', +t.dataset.r);
-      ucPick('s', +t.dataset.s);
+      ucLinkTip(t, e);
     });
+    card.addEventListener('mousemove', e => { const t = e.target.closest('.uf-l'); if (t) ucLinkTip(t, e); });
     card.addEventListener('mouseleave', () => ucPick(null));
+    card.addEventListener('click', e => { const t = e.target.closest('.uf-l'); if (t) ucLinkTip(t, e); });   // phones: a tap
   }
   const U = UC_UNITS[UC_UNIT];
   const src = UC_MODE === 's', y = String(info.latestYear), d = info.years[y][UC_MODE];
@@ -2774,7 +2777,8 @@ function ucRender() {
   const grp = (cap, idx, cls) => '<div class="uc-tg ' + cls + '" style="--n:' + idx.length + '"><span class="uc-tgl">' + cap + '</span><div class="uc-tiles">' + idx.map(tile).join('') + '</div></div>';
   const tiles = src
     ? '<div class="uc-tgs">' + grp('Fuels used on site', UC_SRC_ORDER.filter(j => UC_SOURCES[j].g === 'f'), 'is-f') + grp('Made elsewhere', UC_SRC_ORDER.filter(j => UC_SOURCES[j].g === 'd'), 'is-d') + '</div>'
-    : '<div class="uc-tgs"><div class="uc-tg" style="--n:' + secs.length + '"><div class="uc-tiles">' + secs.map((_, i) => tile(i)).join('') + '</div></div></div>';
+    // applications in three plain groups, laid out like the sources' two, so the switch doesn't change the card's height
+    : '<div class="uc-tgs">' + grp('Making things', [0, 4], 'is-m') + grp('Moving', [1], 'is-v') + grp('Buildings', [2, 3], 'is-b') + '</div>';
   const defs = (src ? UC_SRC_ORDER.map(j => UC_SOURCES[j]) : UC_SECTORS)
     .map(x => '<li><span class="uc-hi" style="--c:' + x.c + '">' + ucIcon(x) + '</span><span><b>' + x.k + '</b>' + x.tip + '</span></li>').join('');
   const chev = '<svg class="uc-chev" viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 4.5L6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -3254,3 +3258,43 @@ if (window.ENERGLE_TEST) {
   window.globeSide = function () { const r = _gs.apply(this, arguments); exLockSoon(); return r; };
   window.addEventListener('resize', () => requestAnimationFrame(exRowLock));
 }
+
+// ============================================================
+//  THE FLOW, BRANCH BY BRANCH: hover a band (tap, on phones) and it alone lights up, with its two ends, and a box like
+//  the charts' says what it carries: how much, its share of all final energy, of its source and of its application.
+// ============================================================
+let UC_LINK_ON = false;
+function ucLinkTip(p, e) {
+  const card = document.getElementById('use-card'), svg = p.ownerSVGElement; if (!card || !svg) return;
+  const j = +p.dataset.s, i = +p.dataset.a, S = UC_SOURCES[j], A = UC_SECTORS[i];
+  card.classList.add('uf-on');
+  card.querySelectorAll('.uf-l').forEach(q => q.classList.toggle('is-hi', q === p));
+  card.querySelectorAll('[data-l],[data-r]').forEach(n => n.classList.toggle('is-hi', n.dataset.l === String(j) || n.dataset.r === String(i)));
+  const k = UC_MODE === 's' ? j : i;
+  if (UC_CHART) { UC_CHART.$pick = k;
+    UC_CHART.data.datasets.forEach(d => { const on = k === d._i; d.borderColor = on ? d._c : d._c + '2e'; d.borderWidth = on ? 2.8 : 2; });
+    UC_CHART.update('none'); }
+  const pc = x => { const v = x * 100; return (v > 0 && v < 1 ? '<1' : v < 10 ? v.toFixed(1) : Math.round(v)) + '%'; };
+  const row = (c, l, v, q, b) => '<div class="tt-row' + (b ? ' tt-row--b' : '') + '"><span class="tt-sw" style="background:' + c + '"></span><span class="tt-l">' + l + '</span><span class="tt-v">' + v + '</span><span class="tt-p">' + q + '</span></div>';
+  const html = '<div class="tt-h">' + S.k + ' → ' + A.k + '</div>'
+    + row(S.c, 'Carried', ucFmt(+p.dataset.v), '', true) + '<div class="tt-sep"></div>'
+    + row('#1a1a1a', 'of all final energy', '', pc(+p.dataset.pt), false)
+    + row(S.c, 'of all ' + S.k.toLowerCase(), '', pc(+p.dataset.ps), false)
+    + row(A.c, 'of all ' + A.k.toLowerCase(), '', pc(+p.dataset.pa), false);
+  const r = svg.getBoundingClientRect();
+  UC_LINK_ON = true; showTooltip(html, svg, e.clientX - r.left, e.clientY - r.top);
+}
+document.addEventListener('pointerdown', e => {   // a tap anywhere else closes it
+  if (UC_LINK_ON && !e.target.closest('#use-card .uf-l')) { UC_LINK_ON = false; hideTooltip(); ucPick(null); }
+}, true);
+
+// the tiles keep one height whichever way the card is switched (a tile name on two lines would otherwise move
+// everything below): the tallest seen at this card width holds, and the shorter set stretches to it
+const UC_TGS_H = {};
+{ const _r = window.ucRender;
+  window.ucRender = function () {
+    const out = _r.apply(this, arguments);
+    const card = document.getElementById('use-card'), tgs = card && card.querySelector('.uc-tgs');
+    if (tgs) { const k = Math.round(card.clientWidth); UC_TGS_H[k] = Math.max(UC_TGS_H[k] || 0, tgs.offsetHeight); tgs.style.minHeight = UC_TGS_H[k] + 'px'; }
+    return out;
+  }; }

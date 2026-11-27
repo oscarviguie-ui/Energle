@@ -1218,8 +1218,9 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-flow { flex: none; height: 300px; min-height: 0; }
 }
 @container (max-width: 560px) {
-  .uc-tgs { flex-direction: column; gap: 10px; }
-  .uc-tg.is-f .uc-tiles, .uc-tg.is-d .uc-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* two rows: sources 4 | 2, applications 2 + 1 | 2; every row full width */
+  .uc-tgs { flex-direction: row; flex-wrap: wrap; gap: 10px 10px; }
+  .uc-tg.is-f, .uc-tg.is-d, .uc-tg.is-b { flex-basis: 100%; }
   .uc-tiles { gap: 5px; }
   .uc-tile { padding: 8px 2px 7px; border-radius: 6px; }
   .uc-ic { width: 32px; height: 32px; margin-bottom: 2px; }
@@ -1336,8 +1337,9 @@ body.view-energy .co2-col, body.view-energy .co2-note, body.view-energy .co2-smo
   .uc-body { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 20px; }
   .uc-chart { flex: 1; height: auto; min-height: 200px; }
   .uc-flow { flex: 1 1 auto; height: auto; min-height: 260px; }
-  .uc-tgs { flex-direction: column; gap: 8px; }
-  .uc-tg.is-f .uc-tiles, .uc-tg.is-d .uc-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* two rows: sources 4 | 2, applications 2 + 1 | 2; every row full width */
+  .uc-tgs { flex-direction: row; flex-wrap: wrap; gap: 8px 10px; }
+  .uc-tg.is-f, .uc-tg.is-d, .uc-tg.is-b { flex-basis: 100%; }
   .uc-tiles { gap: 6px; }
   .uc-tile { padding: 7px 2px 6px; }
   .uc-ic { width: 30px; height: 30px; margin-bottom: 2px; }
@@ -1418,3 +1420,7 @@ body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-sh
   body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .ug-grid > *, body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .nv-grid > *,
   body.ex-rowlock.at-globe .gl-side #clue-cards .ic-card > .pp-grid > * { display: flex; flex-direction: column; justify-content: center; }
 }
+
+/* the tiles fill the height the card keeps for them (see UC_TGS_H) */
+#use-card .uc-tgs { align-content: stretch; }
+#use-card .uc-tg > .uc-tiles { flex: 1 1 auto; }
