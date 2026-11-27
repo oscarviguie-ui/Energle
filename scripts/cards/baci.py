@@ -128,9 +128,14 @@ def summarise(rows, codes, year, countries):
                     for p, row in head.iterrows()]
         if len(tail):
             t = tail.drop(columns='total').sum()
+            tv = vol.loc[tail.index].sum(axis=1, min_count=1)
             partners.append({'iso3': 'OTHER', 'total': round(float(tail['total'].sum()) / 1e6, 2),
                              'fuels': {f: round(float(t[f]) / 1e6, 2) for f in FUEL if f in t and t[f] > 0},
-                             'vol': vols(vol.loc[tail.index].sum(min_count=1))})
+                             'vol': vols(vol.loc[tail.index].sum(min_count=1)),
+                             # who is inside "Others": how many partners, and the biggest few ($ bn, thousand boe/d)
+                             'n': int(len(tail)),
+                             'top': [[p, round(float(row['total']) / 1e6, 2), round(float(tv[p]) * KBD, 2) if pd.notna(tv[p]) else None]
+                                     for p, row in tail.iloc[:6].iterrows()]})
         by_fuel = df.groupby('fuel')['v'].sum()
         known = float(df.loc[df['boe'].notna(), 'v'].sum())
         extra = {'vol_total': round(float(df['boe'].sum()) * KBD, 2), 'vol_cov': round(known / total, 3) if total > 0 else None}

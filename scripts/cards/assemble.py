@@ -192,7 +192,10 @@ def build(raw, game, log=print):
                         continue
                     a2 = 'OTHER' if p['iso3'] == 'OTHER' else (iso2.get(p['iso3'], '').upper() or 'OTHER')
                     vol = {f: r(v, 2) for f, v in (p.get('vol') or {}).items() if f in fuels and v >= 0.005}   # thousand boe a day
-                    rows.append([a2, 'Others' if p['iso3'] == 'OTHER' else _name(p['iso3'], countries), fuels, vol])
+                    row = [a2, 'Others' if p['iso3'] == 'OTHER' else _name(p['iso3'], countries), fuels, vol]
+                    if p['iso3'] == 'OTHER' and p.get('top'):     # the biggest partners inside "Others", for its hover box
+                        row.append({'n': p.get('n'), 'top': [[_name(i, countries), v, b] for i, v, b in p['top'] if v and v >= 0.005]})
+                    rows.append(row)
                 return rows
             IN, OUT = side(imp), side(exp)
             if sum(sum(x[2].values()) for x in IN + OUT) >= 0.05:

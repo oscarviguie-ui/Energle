@@ -2671,7 +2671,7 @@ function ucTooltip(context) {
 // the game hides its tooltip whenever the mouse leaves the main charts: not while it is on this card's chart
 document.addEventListener('DOMContentLoaded', () => {
   const _hide = window.hideTooltip; if (typeof _hide !== 'function') return;
-  window.hideTooltip = function () { if (UC_TIP_ON || UC_LINK_ON) return; return _hide.apply(this, arguments); };
+  window.hideTooltip = function () { if (UC_TIP_ON || UC_LINK_ON || FT_TIP_ON) return; return _hide.apply(this, arguments); };
   document.addEventListener('mousemove', e => { if (UC_TIP_ON && !e.target.closest('#uc-canvas')) { UC_TIP_ON = false; _hide(); } });
 });
 function ucPanelFit() {   // the panel covers the left column; if its list is taller (small phones), the column grows
@@ -3482,3 +3482,30 @@ if (window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
   // linking puts this device under the other key: ask again once the key has changed
   setInterval(() => { if (gsKey() && gsKey() !== DEV_KEY && DEV_KEY) deviceTouch(); }, 3000);
 });
+
+// ============================================================
+//  FUEL TRADE: WHO IS IN "OTHERS" (test). Hover "Others" (tap, on phones) for its biggest partners, in the card's
+//  current unit, and how many more there are. The list comes with the card data (BACI, the partners past the top few).
+// ============================================================
+let FT_TIP_ON = false;
+function ftOthersTip(lab, e) {
+  let o = null; try { o = JSON.parse(lab.dataset.top || ''); } catch (x) {}
+  if (!o || !o.top || !o.top.length) return false;
+  const side = lab.classList.contains('ft-lab--r') ? 'Sells to' : 'Buys from';
+  const more = Math.max(0, (o.n || 0) - o.top.length);
+  const html = '<div class="tt-h">' + side + ' · Others' + (o.n ? ' (' + o.n + ' countries)' : '') + '</div>'
+    + o.top.map(t => '<div class="ft-tt"><span>' + escHtml(t[0]) + '</span><b>' + escHtml(t[1]) + '</b></div>').join('')
+    + (more ? '<div class="tt-sep"></div><div class="ft-tt ft-tt--more">and ' + more + ' more</div>' : '');
+  const r = lab.getBoundingClientRect();
+  FT_TIP_ON = true; showTooltip(html, lab, e && e.clientX != null ? e.clientX - r.left : r.width / 2, e && e.clientY != null ? e.clientY - r.top : 0);
+  return true;
+}
+if (window.ENERGLE_TEST) {
+  document.addEventListener('mouseover', e => {
+    const lab = e.target.closest && e.target.closest('.ft-lab[data-top]');
+    if (lab && lab.dataset.top) ftOthersTip(lab, e);
+    else if (FT_TIP_ON) { FT_TIP_ON = false; hideTooltip(); }
+  });
+  document.addEventListener('click', e => { const lab = e.target.closest && e.target.closest('.ft-lab[data-top]'); if (lab && lab.dataset.top) ftOthersTip(lab, e); });
+  document.addEventListener('pointerdown', e => { if (FT_TIP_ON && !(e.target.closest && e.target.closest('.ft-lab[data-top]'))) { FT_TIP_ON = false; hideTooltip(); } }, true);
+}

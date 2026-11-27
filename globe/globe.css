@@ -1477,3 +1477,10 @@ body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-sh
 .dv-line b { font-weight: 600; color: #1a1a1a; }
 .dv-line .dv-seen { color: #999; }
 #device-modal .rn-body > .dv-line { margin: 0 0 12px; padding: 8px 10px; border-radius: 8px; background: #f3f7f4; }
+
+/* fuel trade: "Others" opens a list of its members on hover */
+body.ex-test .ft-lab[data-top]:not([data-top=""]) { cursor: default; }
+body.ex-test .ft-lab[data-top]:not([data-top=""]) .ft-name { text-decoration: underline dotted #aaa; text-underline-offset: 3px; }
+.ft-tt { display: flex; justify-content: space-between; gap: 18px; padding: 1px 0; }
+.ft-tt b { font-variant-numeric: tabular-nums; }
+.ft-tt--more { color: #999; }
