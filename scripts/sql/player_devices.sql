@@ -17,6 +17,7 @@ revoke all on public.player_devices from anon, authenticated;
 create or replace function public.touch_device(p_key text, p_device text, p_label text)
 returns table (device_id text, label text, last_seen timestamptz)
 language plpgsql security definer set search_path = public as $$
+#variable_conflict use_column
 begin
   if p_key is null or p_key !~ '^[0-9a-f]{32,64}$' or p_device is null or p_device !~ '^[0-9a-f]{16,64}$' then return; end if;
   -- a device that moved to another key (linked) leaves its old one
