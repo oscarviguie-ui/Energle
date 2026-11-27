@@ -3475,7 +3475,10 @@ if (window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
   const _dm = window.showDeviceModal;
   window.showDeviceModal = function () { const r = _dm.apply(this, arguments); deviceShow(); return r; };
   const _stats = window.showStatsModal;
-  window.showStatsModal = function () { const r = _stats.apply(this, arguments); deviceShow(); if (gsKey() !== DEV_KEY || !DEVICES) deviceTouch(); return r; };
+  // Stats asks again each time it opens (a device linked since the page loaded shows up without a reload)
+  let lastAsk = 0;
+  window.showStatsModal = function () { const r = _stats.apply(this, arguments); deviceShow(); if (Date.now() - lastAsk > 4000) { lastAsk = Date.now(); deviceTouch(); } return r; };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - lastAsk > 15000) { lastAsk = Date.now(); deviceTouch(); } });
   // linking puts this device under the other key: ask again once the key has changed
   setInterval(() => { if (gsKey() && gsKey() !== DEV_KEY && DEV_KEY) deviceTouch(); }, 3000);
 });
