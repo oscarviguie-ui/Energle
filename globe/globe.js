@@ -3418,3 +3418,64 @@ if (window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
   };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - GS.last > 15000) gsPull(); });
 });
+
+// ============================================================
+//  THIS NAME'S DEVICES (test). Each browser keeps a random device id; on opening it tells touch_device "this device,
+//  under this key, looks like an iPhone · Safari", and gets back every device on the key. When there is more than one,
+//  Stats says so under the name ("On 2 devices: this Mac, iPhone · today"), and so does the "Use on another device"
+//  window. Without the database function (scripts/sql/player_devices.sql) nothing shows.
+// ============================================================
+let DEVICES = null, DEV_KEY = null;
+function deviceId() {
+  let d = null; try { d = localStorage.getItem('energle_device_id'); } catch (e) {}
+  if (d && /^[0-9a-f]{16,64}$/.test(d)) return d;
+  const b = new Uint8Array(12); crypto.getRandomValues(b); d = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  try { localStorage.setItem('energle_device_id', d); } catch (e) {}
+  return d;
+}
+function deviceLabel() {
+  const ua = navigator.userAgent || '', p = (navigator.userAgentData && navigator.userAgentData.platform) || '';
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'iPad'
+    : /Android/.test(ua) ? (/Mobile/.test(ua) ? 'Android phone' : 'Android tablet') : /Mac/.test(ua) || /mac/i.test(p) ? 'Mac'
+    : /Windows/.test(ua) ? 'Windows PC' : /CrOS/.test(ua) ? 'Chromebook' : /Linux/.test(ua) ? 'Linux PC' : 'Device';
+  const br = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+  return br ? os + ' · ' + br : os;
+}
+async function deviceTouch() {
+  const k = gsKey(); if (!k) return null;
+  try { const r = await sbRpc('touch_device', { p_key: k, p_device: deviceId(), p_label: deviceLabel() }); DEVICES = Array.isArray(r) ? r : null; DEV_KEY = k; }
+  catch (e) { DEVICES = null; }
+  deviceShow();
+  return DEVICES;
+}
+function deviceSeen(t) {
+  const d = new Date(t), days = Math.floor((Date.now() - d) / 864e5);
+  return isNaN(days) ? '' : days < 1 ? 'today' : days < 2 ? 'yesterday' : days < 30 ? days + ' days ago' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+function deviceLineHTML() {
+  if (!DEVICES || DEVICES.length < 2) return '';
+  const me = deviceId();
+  const items = DEVICES.slice().sort((a, b) => (b.device_id === me) - (a.device_id === me))
+    .map(d => d.device_id === me ? '<b>this ' + escHtml((d.label || 'device').split(' · ')[0]) + '</b>'
+      : (([os, br]) => escHtml(os || 'another device') + ' <span class="dv-seen">(' + (br ? escHtml(br) + ', ' : '') + deviceSeen(d.last_seen) + ')</span>')((d.label || '').split(' · ')));
+  return '<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="3" width="9" height="7" rx="1"/><path d="M4 12.5h4M6 10v2.5"/><rect x="11" y="5" width="3.5" height="8" rx="1"/></svg>'
+    + '<span>On ' + DEVICES.length + ' devices: ' + items.join(', ') + '</span>';
+}
+function deviceShow() {       // wherever the name is shown with its links: Stats, and the device window
+  const html = deviceLineHTML();
+  document.querySelectorAll('#stats-modal .sx-who, #device-modal .rn-body').forEach(host => {
+    let el = host.querySelector('.dv-line');
+    if (!html) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('span'); el.className = 'dv-line'; if (host.classList.contains('rn-body')) host.prepend(el); else host.appendChild(el); }
+    el.innerHTML = html;
+  });
+}
+if (window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(deviceTouch, 800);
+  const _dm = window.showDeviceModal;
+  window.showDeviceModal = function () { const r = _dm.apply(this, arguments); deviceShow(); return r; };
+  const _stats = window.showStatsModal;
+  window.showStatsModal = function () { const r = _stats.apply(this, arguments); deviceShow(); if (gsKey() !== DEV_KEY || !DEVICES) deviceTouch(); return r; };
+  // linking puts this device under the other key: ask again once the key has changed
+  setInterval(() => { if (gsKey() && gsKey() !== DEV_KEY && DEV_KEY) deviceTouch(); }, 3000);
+});

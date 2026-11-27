@@ -1470,3 +1470,10 @@ body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-sh
 .uc-play .fe-grow:nth-child(4) .fe-gbar > span { animation-delay: 0.46s; }
 .uc-play .fe-grow:nth-child(5) .fe-gbar > span { animation-delay: 0.58s; }
 @media (prefers-reduced-motion: reduce) { .uc-play *, .fe-vis .nx-map path[data-i] { animation: none !important; transition: none !important; } }
+
+/* "On 2 devices: this Mac, iPhone · Safari · today" under the name (Stats) and atop the device window */
+.dv-line { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; font-size: .74rem; line-height: 1.4; color: #555; text-align: left; }
+.dv-line svg { flex: none; margin-top: 2px; color: #2f8a52; }
+.dv-line b { font-weight: 600; color: #1a1a1a; }
+.dv-line .dv-seen { color: #999; }
+#device-modal .rn-body > .dv-line { margin: 0 0 12px; padding: 8px 10px; border-radius: 8px; background: #f3f7f4; }
