@@ -3493,7 +3493,7 @@ function ftOthersTip(lab, e) {
   if (!o || !o.top || !o.top.length) return false;
   const side = lab.classList.contains('ft-lab--r') ? 'Sells to' : 'Buys from';
   const more = Math.max(0, (o.n || 0) - o.top.length);
-  const html = '<div class="tt-h">' + side + ' · Others' + (o.n ? ' (' + o.n + ' countries)' : '') + '</div>'
+  const html = '<div class="tt-h">' + side + ' · Others' + (o.n ? ' (' + o.n + ' partners)' : '') + '</div>'
     + o.top.map(t => '<div class="ft-tt"><span>' + escHtml(t[0]) + '</span><b>' + escHtml(t[1]) + '</b></div>').join('')
     + (more ? '<div class="tt-sep"></div><div class="ft-tt ft-tt--more">and ' + more + ' more</div>' : '');
   const r = lab.getBoundingClientRect();
