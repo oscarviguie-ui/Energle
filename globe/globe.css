@@ -572,6 +572,12 @@ body.at-globe #legend-shared .legend-item { cursor: pointer; }
   body.gl-page .subtitle .sub-sep, body.gl-page .subtitle .sub-rest { display: none; }
   body.gl-page .subtitle-row .sub-date { flex-shrink: 0; font-size: 14px; line-height: 1.2; align-self: center; }
 }
+/* phones: a past puzzle's row keeps its two lines (arrows and title, then status and "← Archive"); the one-line rule
+   above had squeezed the title under the next arrow */
+@media (max-width: 600px) {
+  body.gl-page .subtitle-row.ar-row { flex-wrap: wrap; gap: 8px; }
+  body.gl-page .subtitle-row.ar-row .ar-nav { flex: 1 1 100%; justify-content: space-between; }
+}
 /* phones (test page), final: the header items keep their natural size and share the line evenly,
    each centred on the wordmark; the current mode keeps its name while there is room (≥ 380px) */
 @media (max-width: 600px) {
