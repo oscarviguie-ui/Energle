@@ -1424,3 +1424,49 @@ body.at-globe.ex-test #use-card .uc-tile.is-map { border-color: var(--c); box-sh
 /* the tiles fill the height the card keeps for them (see UC_TGS_H) */
 #use-card .uc-tgs { align-content: stretch; }
 #use-card .uc-tg > .uc-tiles { flex: 1 1 auto; }
+
+/* final energy: entrance animations (ucPlay; the What's new demo too). Transforms and opacity only. */
+@keyframes ufGrowY { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes ufSweep { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes ufFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ucRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes feDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.uc-play .uf-node { transform-box: fill-box; transform-origin: center; animation: ufGrowY .45s cubic-bezier(.2,.8,.2,1) both; }
+.uc-play .uf-l { transform-box: fill-box; transform-origin: left center; animation: ufSweep .75s cubic-bezier(.3,.7,.2,1) both; }
+.uc-play .uf-t { animation: ufFade .4s ease both; }
+.uc-play .uc-tile, .uc-play .fe-tile { animation: ucRise .45s cubic-bezier(.2,.8,.2,1) both; }
+.uc-play .uc-tgl { animation: ufFade .4s ease .2s both; }
+.uc-play .fe-ln { stroke-dasharray: 1; animation: feDraw 1.3s ease-in-out .25s both; }
+.uc-play .fe-lb { animation: ufFade .4s ease 1.4s both; }
+.uc-play .fe-gbar > span { transform-origin: left center; animation: ufSweep .6s cubic-bezier(.3,.7,.2,1) both; }
+.uc-play .fe-gkey { animation: ufFade .4s ease .9s both; }
+.fe-vis .nx-map path[data-i] { transition: fill .9s ease; }
+.uc-play .uf-node[data-l="0"] { animation-delay: 0.00s; } .uc-play .uf-t[data-l="0"] { animation-delay: 0.55s; }
+.uc-play .uf-l[data-s="0"] { animation-delay: 0.25s; }
+.uc-play .uc-tile[data-si="0"] { animation-delay: 0.30s; } .uc-play .fe-tile:nth-child(1) { animation-delay: 0.20s; }
+.uc-play .uf-node[data-l="1"] { animation-delay: 0.05s; } .uc-play .uf-t[data-l="1"] { animation-delay: 0.60s; }
+.uc-play .uf-l[data-s="1"] { animation-delay: 0.34s; }
+.uc-play .uc-tile[data-si="1"] { animation-delay: 0.37s; } .uc-play .fe-tile:nth-child(2) { animation-delay: 0.27s; }
+.uc-play .uf-node[data-l="2"] { animation-delay: 0.10s; } .uc-play .uf-t[data-l="2"] { animation-delay: 0.65s; }
+.uc-play .uf-l[data-s="2"] { animation-delay: 0.43s; }
+.uc-play .uc-tile[data-si="2"] { animation-delay: 0.44s; } .uc-play .fe-tile:nth-child(3) { animation-delay: 0.34s; }
+.uc-play .uf-node[data-l="3"] { animation-delay: 0.15s; } .uc-play .uf-t[data-l="3"] { animation-delay: 0.70s; }
+.uc-play .uf-l[data-s="3"] { animation-delay: 0.52s; }
+.uc-play .uc-tile[data-si="3"] { animation-delay: 0.51s; } .uc-play .fe-tile:nth-child(4) { animation-delay: 0.41s; }
+.uc-play .uf-node[data-l="4"] { animation-delay: 0.20s; } .uc-play .uf-t[data-l="4"] { animation-delay: 0.75s; }
+.uc-play .uf-l[data-s="4"] { animation-delay: 0.61s; }
+.uc-play .uc-tile[data-si="4"] { animation-delay: 0.58s; } .uc-play .fe-tile:nth-child(5) { animation-delay: 0.48s; }
+.uc-play .uf-node[data-l="5"] { animation-delay: 0.25s; } .uc-play .uf-t[data-l="5"] { animation-delay: 0.80s; }
+.uc-play .uf-l[data-s="5"] { animation-delay: 0.70s; }
+.uc-play .uc-tile[data-si="5"] { animation-delay: 0.65s; } .uc-play .fe-tile:nth-child(6) { animation-delay: 0.55s; }
+.uc-play .uf-node[data-r="0"] { animation-delay: 0.70s; } .uc-play .uf-t[data-r="0"] { animation-delay: 1.00s; }
+.uc-play .uf-node[data-r="1"] { animation-delay: 0.75s; } .uc-play .uf-t[data-r="1"] { animation-delay: 1.05s; }
+.uc-play .uf-node[data-r="2"] { animation-delay: 0.80s; } .uc-play .uf-t[data-r="2"] { animation-delay: 1.10s; }
+.uc-play .uf-node[data-r="3"] { animation-delay: 0.85s; } .uc-play .uf-t[data-r="3"] { animation-delay: 1.15s; }
+.uc-play .uf-node[data-r="4"] { animation-delay: 0.90s; } .uc-play .uf-t[data-r="4"] { animation-delay: 1.20s; }
+.uc-play .fe-grow:nth-child(1) .fe-gbar > span { animation-delay: 0.10s; }
+.uc-play .fe-grow:nth-child(2) .fe-gbar > span { animation-delay: 0.22s; }
+.uc-play .fe-grow:nth-child(3) .fe-gbar > span { animation-delay: 0.34s; }
+.uc-play .fe-grow:nth-child(4) .fe-gbar > span { animation-delay: 0.46s; }
+.uc-play .fe-grow:nth-child(5) .fe-gbar > span { animation-delay: 0.58s; }
+@media (prefers-reduced-motion: reduce) { .uc-play *, .fe-vis .nx-map path[data-i] { animation: none !important; transition: none !important; } }

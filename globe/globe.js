@@ -3168,7 +3168,7 @@ function feDemoStart(root, mapSvg) {
   const chinaSVG = (Wd, Hd) => {
     const ys = Object.keys(ch.years).sort(), x0 = 34, x1 = Wd - 86, y0 = 10, y1 = Hd - 22;
     const max = Math.max(...ys.flatMap(y => ch.years[y].s)), X = i => x0 + (x1 - x0) * i / (ys.length - 1), Y = v => y1 - (y1 - y0) * v / max;
-    const line = (j, w, o) => '<polyline fill="none" stroke="' + UC_SOURCES[j].c + '" stroke-width="' + w + '" opacity="' + o + '" stroke-linejoin="round" points="' + ys.map((y, i) => X(i).toFixed(1) + ',' + Y(ch.years[y].s[j]).toFixed(1)).join(' ') + '"/>';
+    const line = (j, w, o) => '<polyline class="fe-ln" pathLength="1" fill="none" stroke="' + UC_SOURCES[j].c + '" stroke-width="' + w + '" opacity="' + o + '" stroke-linejoin="round" points="' + ys.map((y, i) => X(i).toFixed(1) + ',' + Y(ch.years[y].s[j]).toFixed(1)).join(' ') + '"/>';
     const last = j => Y(ch.years[ys[ys.length - 1]].s[j]);
     let ticks = ''; for (let k = 0; k <= 4; k++) { const v = max * k / 4, yy = Y(v); ticks += '<line x1="' + x0 + '" x2="' + x1 + '" y1="' + yy + '" y2="' + yy + '" stroke="#efeeea"/><text x="' + (x0 - 6) + '" y="' + (yy + 3) + '" text-anchor="end" class="fe-ax">' + ucNum(v / 1000, v ? 1 : 0) + '</text>'; }
     const yl = [0, Math.floor((ys.length - 1) / 2), ys.length - 1].map(i => '<text x="' + X(i) + '" y="' + (Hd - 6) + '" text-anchor="middle" class="fe-ax">' + ys[i] + '</text>').join('');
@@ -3195,7 +3195,8 @@ function feDemoStart(root, mapSvg) {
     mapSvg && { cap: 'In Explore, a click on any tile colours the map. Here: electricity’s share of each country’s final energy.',
       draw: () => mapSvg, after: box => {
         const m = new Map(Object.values(by).filter(v => v.iso3 && !v.onlyElectricity).map(v => [v.iso3, share(v)[3]])), mx = Math.max(...m.values());
-        box.querySelectorAll('path[data-i]').forEach(p => { const v = m.get(p.dataset.i); if (v != null) p.style.fill = nxMix(UC_SOURCES[3].c, Math.min(1, v / mx)); });
+        const paint = () => box.querySelectorAll('path[data-i]').forEach(p => { const v = m.get(p.dataset.i); if (v != null) p.style.fill = nxMix(UC_SOURCES[3].c, Math.min(1, v / mx)); });
+        if (REDUCED_MOTION) paint(); else requestAnimationFrame(() => requestAnimationFrame(paint));   // the colours wash in (CSS transition)
       } },
     grp.length > 1 && { cap: 'Add up any region, bloc or trait. Biomass is ' + (af ? pct(af.sh[4]) : '') + ' of Africa’s final energy, ' + (eu ? pct(eu.sh[4]) : '') + ' of Europe’s; district heat ' + (eu ? pct(eu.sh[5]) : '') + ' of Europe’s.',
       draw: () => grpHTML() },
@@ -3204,7 +3205,8 @@ function feDemoStart(root, mapSvg) {
   dots.innerHTML = steps.map((st, k) => '<button type="button" class="fe-dot" role="tab" aria-label="Step ' + (k + 1) + '" data-k="' + k + '"></button>').join('');
   const show = k => {
     i = k; const st = steps[k], w = Math.round(vis.clientWidth) || 560, h = Math.round(vis.clientHeight) || 250;
-    vis.classList.remove('is-in'); vis.innerHTML = st.draw(w, h); if (st.after) st.after(vis);
+    vis.classList.remove('is-in', 'uc-play'); vis.innerHTML = st.draw(w, h); if (st.after) st.after(vis);
+    if (!REDUCED_MOTION) { void vis.offsetWidth; vis.classList.add('uc-play'); vis.querySelectorAll('.uc-pc').forEach((el, k) => ucCount(el, 250 + k * 70)); }
     requestAnimationFrame(() => vis.classList.add('is-in'));
     cap.textContent = st.cap;
     dots.querySelectorAll('.fe-dot').forEach((d, j) => d.setAttribute('aria-selected', String(j === k)));
@@ -3296,5 +3298,49 @@ const UC_TGS_H = {};
     const out = _r.apply(this, arguments);
     const card = document.getElementById('use-card'), tgs = card && card.querySelector('.uc-tgs');
     if (tgs) { const k = Math.round(card.clientWidth); UC_TGS_H[k] = Math.max(UC_TGS_H[k] || 0, tgs.offsetHeight); tgs.style.minHeight = UC_TGS_H[k] + 'px'; }
+    return out;
+  }; }
+
+// ============================================================
+//  FINAL ENERGY: ENTRANCE ANIMATIONS, in the main page's manner. When the card comes into view (on a new country, or a
+//  switch between sources and applications; not a unit change): the two figures and the tiles' percentages count up,
+//  the flow's nodes grow and its bands sweep out from the left, source by source, the tiles rise in, and the chart's
+//  lines draw from left to right like the main chart's. Nothing moves the layout: transforms and opacity only.
+// ============================================================
+function ucCount(el, delay, dur) {       // counts the number inside a text ("2.39 PWh", "40%") up from zero
+  const txt = el.textContent, m = txt.match(/^([^\d]*)(\d[\d,]*(?:\.\d+)?)(.*)$/); if (!m || /[<>]/.test(m[1])) return;   // "<1%" stays as it is
+  const to = parseFloat(m[2].replace(/,/g, '')), dec = (m[2].split('.')[1] || '').length, comma = m[2].includes(',');
+  const fmt = v => { const t = v.toFixed(dec); return comma ? Number(t).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : t; };
+  const tok = (el._ucTok || 0) + 1; el._ucTok = tok; el.textContent = m[1] + fmt(0) + m[3];
+  const t0 = performance.now() + (delay || 0), D = dur || 750;
+  const f = now => { if (el._ucTok !== tok) return; const k = Math.max(0, Math.min(1, (now - t0) / D)), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = k >= 1 ? txt : m[1] + fmt(to * e) + m[3]; if (k < 1) requestAnimationFrame(f); };
+  requestAnimationFrame(f);
+}
+let UC_SKIP_ANIM = false, UC_IO = null;
+document.addEventListener('change', e => { if (e.target.closest && e.target.closest('#use-card .uc-unit')) UC_SKIP_ANIM = true; }, true);
+function ucPlay(card) {
+  card.dataset.pending = '';
+  if (UC_CHART) {
+    const cv = UC_CHART.canvas; cv.style.visibility = '';
+    UC_CHART.options.animation = {}; UC_CHART.options.animations = lineDrawAnimation(UC_CHART.data.labels.length);
+    UC_CHART.reset(); UC_CHART.update();
+    setTimeout(() => { if (UC_CHART && UC_CHART.canvas === cv) { UC_CHART.options.animation = false; UC_CHART.options.animations = {}; } }, 2600);
+  }
+  card.querySelectorAll('.uc-big').forEach((el, k) => ucCount(el, k * 120));
+  card.querySelectorAll('.uc-tile .uc-pc').forEach(el => ucCount(el, 300 + (+el.closest('.uc-tile').dataset.si || 0) * 70));
+  card.classList.remove('uc-play'); void card.offsetWidth; card.classList.add('uc-play');
+  clearTimeout(card._ucPlayT); card._ucPlayT = setTimeout(() => card.classList.remove('uc-play'), 2400);   // later redraws (a resize) stay still
+}
+if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) { const _r = window.ucRender;   // (script.js, which defines REDUCED_MOTION, loads after this file)
+  window.ucRender = function () {
+    const skip = UC_SKIP_ANIM; UC_SKIP_ANIM = false;
+    const out = _r.apply(this, arguments);
+    const card = document.getElementById('use-card'); if (!card || skip) return out;
+    card.dataset.pending = '1';
+    if (UC_CHART) UC_CHART.canvas.style.visibility = 'hidden';       // drawn when it plays, not before
+    if (!UC_IO && window.IntersectionObserver) UC_IO = new IntersectionObserver(es => es.forEach(en => {
+      if (en.isIntersecting && en.target.dataset.pending === '1') ucPlay(en.target); }), { threshold: 0.2 });
+    if (UC_IO) { UC_IO.unobserve(card); UC_IO.observe(card); } else ucPlay(card);
     return out;
   }; }
