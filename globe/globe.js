@@ -3344,3 +3344,77 @@ if (!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matche
     if (UC_IO) { UC_IO.unobserve(card); UC_IO.observe(card); } else ucPlay(card);
     return out;
   }; }
+
+// ============================================================
+//  ONE GAME ACROSS LINKED DEVICES (test). Every game a device plays (today's, or a past puzzle) is saved under the
+//  player's key with save_game: its guesses, the clue cards bought, whether it is over. When a page opens, or comes
+//  back into view, it asks load_games for the key's recent games: a game the other device has taken further (more
+//  guesses, or finished) replaces this one's and today's puzzle is shown again as it stands; a finished game here is
+//  never replaced. The key is the secret that "Use on another device" carries over, so only the player's own devices
+//  can read these games. Without the database functions (scripts/sql/player_games.sql) it all just does nothing.
+// ============================================================
+const GS = { ok: true, sent: {}, busy: null, last: 0, started: false };
+function gsKey() { try { const k = localStorage.getItem(PLAYER_KEY_LS); return k && /^[0-9a-f]{32,64}$/.test(k) ? k : null; } catch (e) { return null; } }
+function gsPush(day, src, g, cards, done) {
+  const k = gsKey(); if (!GS.ok || !k || !day || !g || !g.length) return;
+  const sig = day + '|' + g.join(',') + '|' + JSON.stringify(cards || []) + '|' + !!done; if (GS.sent[day] === sig) return;
+  GS.sent[day] = sig;
+  sbRpc('save_game', { p_key: k, p_day: day, p_src: src, p_guesses: g, p_cards: cards || [], p_done: !!done })
+    .catch(e => { delete GS.sent[day]; if (/ 404$/.test(e.message)) GS.ok = false; });
+}
+function gsPushAll() {          // whatever this device has played lately goes up (the server keeps the furthest)
+  const h = loadHistory(), from = getDayNumber() - 60;
+  Object.entries(h).forEach(([d, e]) => { if (+d >= from && e && e.g && e.g.length) gsPush(+d, e.src === 'archive' ? 'archive' : 'daily', e.g, e.c, e.done); });
+}
+async function gsPull() {
+  const k = gsKey(); if (!GS.ok || !k || GS.busy) return GS.busy;
+  GS.last = Date.now();
+  GS.busy = (async () => {
+    let rows = null;
+    try { rows = await sbRpc('load_games', { p_key: k, p_from: getDayNumber() - 60 }); }
+    catch (e) { if (/ 404$/.test(e.message)) GS.ok = false; return; }
+    if (!Array.isArray(rows)) return;
+    const today = getDayNumber(), h = loadHistory();
+    let redraw = false, newlyDone = false;
+    rows.forEach(r => {
+      const g = Array.isArray(r.guesses) ? r.guesses : [], loc = h[r.day], lg = (loc && loc.g) || [];
+      const ahead = !(loc && loc.done) && (r.done ? true : g.length > lg.length && lg.every((x, i) => g[i] === x));
+      if (!ahead || !g.length) return;
+      GS.sent[r.day] = r.day + '|' + g.join(',') + '|' + JSON.stringify(r.cards || []) + '|' + !!r.done;   // no echo back
+      saveHistoryEntry(r.day, { g, c: r.cards || [], done: !!r.done, src: r.src || 'daily', ps: true });
+      if (r.day === today && (r.src || 'daily') === 'daily') {
+        try { localStorage.setItem(LS_KEY, JSON.stringify({ day: today, guesses: g, gameOver: !!r.done, submitted: !!r.done, pathSent: !!r.done, cards: r.cards || [], cardsSent: !!r.done })); } catch (e) {}
+        redraw = true; newlyDone = !!r.done;
+      }
+    });
+    if (redraw && MODE === 'normal') {
+      restoreDailyGame();
+      if (newlyDone) {         // this device's own record of the day (streak, guess counts) catches up too
+        const won = guesses.length > 0 && target && guesses[guesses.length - 1].iso3 === target.iso3;
+        try { recordDailyResult(won, cellsUsed()); } catch (e) {}
+        const sw = document.getElementById('mode-nav');
+        if (sw && typeof modeSwitcherHTML === 'function') { const tmp = document.createElement('div'); tmp.innerHTML = modeSwitcherHTML(); sw.replaceWith(tmp.firstElementChild); if (typeof fitHeader === 'function') fitHeader(); }
+      }
+    }
+    gsPushAll();
+  })().finally(() => { GS.busy = null; });
+  return GS.busy;
+}
+if (window.ENERGLE_TEST) document.addEventListener('DOMContentLoaded', () => {
+  const _save = window.saveDailyState;
+  if (typeof _save === 'function') window.saveDailyState = function () {
+    const r = _save.apply(this, arguments);
+    try {
+      if (MODE === 'normal') gsPush(getDayNumber(), 'daily', guesses.map(c => c.iso3), SHOP.saveData(), gameOver);
+      else if (MODE === 'archive' && ARCHIVE_DAY) { const e = loadHistory()[ARCHIVE_DAY]; if (e) gsPush(ARCHIVE_DAY, 'archive', e.g, e.c, e.done); }
+    } catch (e) {}
+    return r;
+  };
+  const _restore = window.restoreDailyGame;
+  if (typeof _restore === 'function') window.restoreDailyGame = function () {
+    const r = _restore.apply(this, arguments);
+    if (!GS.started) { GS.started = true; setTimeout(gsPull, 300); }
+    return r;
+  };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - GS.last > 15000) gsPull(); });
+});
